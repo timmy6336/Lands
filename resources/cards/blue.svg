@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a6fa8"/>
+      <stop offset="50%" stop-color="#0e3d6b"/>
+      <stop offset="100%" stop-color="#071e3a"/>
+    </linearGradient>
+    <linearGradient id="vignette" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="280" fill="url(#bg)" rx="6"/>
+  <line x1="0" y1="20" x2="200" y2="20" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="42" x2="200" y2="42" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="64" x2="200" y2="64" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="86" x2="200" y2="86" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="108" x2="200" y2="108" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="130" x2="200" y2="130" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="152" x2="200" y2="152" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="174" x2="200" y2="174" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="196" x2="200" y2="196" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="218" x2="200" y2="218" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="240" x2="200" y2="240" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <line x1="0" y1="262" x2="200" y2="262" stroke="#99ddff" stroke-width="0.4" stroke-opacity="0.12"/>
+  <rect x="8" y="8" width="184" height="264" fill="none" stroke="#99ddff" stroke-width="1.5" stroke-opacity="0.4" rx="4"/>
+  <rect width="200" height="280" fill="url(#vignette)" rx="6"/>
+  <text x="100" y="130" font-size="110" font-family="Georgia, serif" font-weight="bold" text-anchor="middle" dominant-baseline="middle" opacity="0.14" fill="#99ddff">I</text>
+  <rect x="8" y="8" width="184" height="28" fill="#99ddff" fill-opacity="0.12" rx="3"/>
+  <text x="100" y="27" font-size="11" font-family="Georgia, serif" font-weight="bold" text-anchor="middle" fill="#99ddff" letter-spacing="3">ISLAND</text>
+  <circle cx="20" cy="20" r="5" fill="#99ddff" fill-opacity="0.25"/>
+  <circle cx="180" cy="20" r="5" fill="#99ddff" fill-opacity="0.25"/>
+  <circle cx="20" cy="260" r="5" fill="#99ddff" fill-opacity="0.25"/>
+  <circle cx="180" cy="260" r="5" fill="#99ddff" fill-opacity="0.25"/>
+</svg>

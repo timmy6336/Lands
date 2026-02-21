@@ -1,0 +1,21 @@
+{
+  "appId": "com.lands.game",
+  "productName": "Lands",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**",
+    "node_modules/**",
+    "package.json"
+  ],
+  "extraResources": [
+    { "from": "client/dist", "to": "client/dist" },
+    { "from": "resources",   "to": "resources"   }
+  ],
+  "win": {
+    "target": [{ "target": "portable", "arch": ["x64"] }],
+    "signingHashAlgorithms": null,
+    "sign": null
+  }
+}

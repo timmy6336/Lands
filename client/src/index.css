@@ -1,0 +1,126 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #1a1a2e;
+  --surface:   #16213e;
+  --surface2:  #0f3460;
+  --accent:    #e94560;
+  --text:      #eaeaea;
+  --muted:     #8892b0;
+  --border:    #2d3561;
+  --radius:    8px;
+
+  /* land colors */
+  --white-land:  #f0ead6;
+  --red-land:    #c0392b;
+  --blue-land:   #2980b9;
+  --green-land:  #27ae60;
+  --black-land:  #1a1a2a;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.5rem 1.2rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: opacity 0.15s, transform 0.1s;
+}
+button:hover:not(:disabled) { opacity: 0.85; }
+button:active:not(:disabled) { transform: scale(0.97); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 0.5rem 0.8rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+}
+input:focus { border-color: var(--accent); }
+
+h1 { font-size: 2.5rem; letter-spacing: 0.1em; }
+h2 { font-size: 1.4rem; }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-danger {
+  background: #922;
+  color: #fff;
+}
+
+/* ── Card animations ─────────────────────────────────────────────────────── */
+
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(16px) scale(0.88); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes card-enter-hand {
+  from { opacity: 0; transform: translateY(-12px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);   }
+}
+
+/* Applied to cards that can be clicked — CSS handles the hover lift */
+.card-interactive {
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+.card-interactive:hover {
+  transform: translateY(-10px) scale(1.05) !important;
+  box-shadow: 0 14px 30px rgba(255,255,255,0.2) !important;
+  z-index: 20;
+  position: relative;
+}
+
+/* Applied to field color-stacks that are selectable targets */
+.field-stack-interactive {
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.field-stack-interactive:hover {
+  transform: translateY(-8px);
+  filter: brightness(1.25);
+  z-index: 20;
+  position: relative;
+}
+
+/* Overlay backdrop */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.overlay-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  min-width: 340px;
+  max-width: 600px;
+  width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
