@@ -1,3 +1,13 @@
+// EffectPrompt.tsx — Handles all interactive effect resolution prompts that require
+// the active player to make a choice. Covers:
+//   • Red   — pick one of the opponent's lands to destroy
+//   • Green — pick one of the opponent's hand cards to steal (shown face-down)
+//   • Blue  — look at opponent's top deck card; optionally put it on bottom
+//   • Black / show — view opponent's whole hand (no choice needed, auto-confirms)
+//   • Black / pick — pick a card from opponent's hand to destroy
+// The component receives the relevant subset of GameState and fires onAction when
+// the player confirms their selection.
+
 import { useState } from 'react';
 import { GameState, Card as CardType } from '@lands/shared';
 import { Card } from './Card';
@@ -18,10 +28,18 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
 
   // ── Red: attacker picks opponent land to destroy ──────────────────────────
   if (effect.type === 'red_pick' && isMyTurn) {
+    // Deduplicate by color — one representative card per type is shown;
+    // destroying it removes one land of that color from the field.
+    const seen = new Set<string>();
+    const dedupedField = opponent.field.filter(c => {
+      if (seen.has(c.color)) return false;
+      seen.add(c.color);
+      return true;
+    });
     return <PickPrompt
       title="Red Land Effect"
-      subtitle="Choose one of your opponent's lands to destroy."
-      cards={opponent.field}
+      subtitle="Choose a land type to destroy. One land of that type will be removed."
+      cards={dedupedField}
       customizations={opponent.customizations}
       allowFizzle={opponent.field.length === 0}
       onConfirm={(id) => onRespond({ type: 'red_pick', targetCardId: id })}
@@ -30,10 +48,17 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
 
   // ── Green: attacker picks from own graveyard ──────────────────────────────
   if (effect.type === 'green_pick' && isMyTurn) {
+    // Deduplicate by color — one representative per type shown.
+    const seen = new Set<string>();
+    const dedupedGraveyard = me.graveyard.filter(c => {
+      if (seen.has(c.color)) return false;
+      seen.add(c.color);
+      return true;
+    });
     return <PickPrompt
       title="Green Land Effect"
-      subtitle="Choose a land from your graveyard to return to your hand."
-      cards={me.graveyard}
+      subtitle="Choose a land type to retrieve from your graveyard."
+      cards={dedupedGraveyard}
       customizations={me.customizations}
       allowFizzle={me.graveyard.length === 0}
       onConfirm={(id) => onRespond({ type: 'green_pick', targetCardId: id })}
@@ -46,13 +71,13 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
     return (
       <div className="overlay">
         <div className="overlay-box">
-          <h2 style={{ color: 'var(--blue-land)' }}>Blue Land Effect</h2>
-          <p style={{ color: 'var(--muted)' }}>Top card of your deck:</p>
+          <h2 className="m-0" style={{ color: 'var(--blue-land)' }}>Blue Land Effect</h2>
+          <p className="text-muted m-0">Top card of your deck:</p>
           {topCard
             ? <Card card={topCard} customizations={me.customizations} />
-            : <p style={{ color: 'var(--muted)' }}>Deck is empty.</p>
+            : <p className="text-muted m-0">Deck is empty.</p>
           }
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div className="flex gap-3">
             <button className="btn-primary" onClick={() => onRespond({ type: 'blue_look', keepOnTop: true })}>
               Keep on Top
             </button>
@@ -80,11 +105,11 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
     return (
       <div className="overlay">
         <div className="overlay-box">
-          <h2 style={{ color: '#888' }}>Black Land Effect</h2>
-          <p style={{ color: 'var(--muted)' }}>
+          <h2 className="m-0" style={{ color: '#888' }}>Black Land Effect</h2>
+          <p className="text-muted m-0">
             Your opponent revealed these cards. Choose one to discard.
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div className="flex flex-wrap gap-2">
             {shown.map(c => (
               <Card
                 key={c.id} card={c}
@@ -111,8 +136,8 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
   if (msg) {
     return (
       <div className="overlay">
-        <div className="overlay-box" style={{ alignItems: 'center' }}>
-          <p style={{ color: 'var(--muted)', textAlign: 'center' }}>{msg}</p>
+        <div className="overlay-box items-center">
+          <p className="text-muted text-center m-0">{msg}</p>
         </div>
       </div>
     );
@@ -138,12 +163,12 @@ function PickPrompt({
   return (
     <div className="overlay">
       <div className="overlay-box">
-        <h2>{title}</h2>
-        <p style={{ color: 'var(--muted)' }}>{subtitle}</p>
+        <h2 className="m-0">{title}</h2>
+        <p className="text-muted m-0">{subtitle}</p>
         {cards.length === 0
-          ? <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>No valid targets — effect fizzles.</p>
+          ? <p className="text-muted text-sm m-0">No valid targets — effect fizzles.</p>
           : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div className="flex flex-wrap gap-2">
               {cards.map(c => (
                 <Card
                   key={c.id} card={c}
@@ -155,7 +180,7 @@ function PickPrompt({
             </div>
           )
         }
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div className="flex gap-3">
           <button
             className="btn-primary"
             disabled={!selected && !allowFizzle}
@@ -176,43 +201,48 @@ function BlackShowPrompt({
   customizations: any;
   onConfirm: (ids: string[]) => void;
 }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Track as ordered array so we can show selection order numbers
+  const [selected, setSelected] = useState<string[]>([]);
   const maxSelect = Math.min(3, hand.length);
   const mustShowAll = hand.length <= 3;
 
   function toggle(id: string) {
     setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); }
-      else if (next.size < maxSelect) { next.add(id); }
-      return next;
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= maxSelect) return prev;
+      return [...prev, id];
     });
   }
 
   return (
     <div className="overlay">
       <div className="overlay-box">
-        <h2 style={{ color: '#888' }}>Black Land Effect</h2>
-        <p style={{ color: 'var(--muted)' }}>
+        <h2 className="m-0" style={{ color: '#888' }}>Black Land Effect</h2>
+        <p className="text-muted m-0">
           {mustShowAll
             ? 'Your entire hand will be revealed to your opponent.'
-            : 'Choose 3 cards from your hand to reveal to your opponent.'}
+            : `Choose 3 cards from your hand to reveal to your opponent. (${selected.length}/3)`}
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          {hand.map(c => (
-            <Card
-              key={c.id} card={c}
-              customizations={customizations}
-              selected={mustShowAll || selected.has(c.id)}
-              onClick={mustShowAll ? undefined : () => toggle(c.id)}
-              disabled={!mustShowAll && !selected.has(c.id) && selected.size >= maxSelect}
-            />
-          ))}
+        <div className="flex flex-wrap gap-2">
+          {hand.map(c => {
+            const orderIdx = selected.indexOf(c.id);
+            const isSelected = mustShowAll || orderIdx !== -1;
+            return (
+              <Card
+                key={c.id} card={c}
+                customizations={customizations}
+                selected={isSelected}
+                selectionIndex={!mustShowAll && orderIdx !== -1 ? orderIdx + 1 : undefined}
+                onClick={mustShowAll ? undefined : () => toggle(c.id)}
+                disabled={!mustShowAll && orderIdx === -1 && selected.length >= maxSelect}
+              />
+            );
+          })}
         </div>
         <button
           className="btn-primary"
-          disabled={!mustShowAll && selected.size < maxSelect}
-          onClick={() => onConfirm(mustShowAll ? hand.map(c => c.id) : [...selected])}
+          disabled={!mustShowAll && selected.length < maxSelect}
+          onClick={() => onConfirm(mustShowAll ? hand.map(c => c.id) : selected)}
         >
           Reveal {mustShowAll ? 'All' : 'Selected'}
         </button>

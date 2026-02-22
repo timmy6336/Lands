@@ -1,11 +1,30 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// server/src/socketHandlers.ts
+//
+// Wires Socket.io events to game logic.  Called once per socket connection
+// from server.ts:  `io.on('connection', socket => registerHandlers(io, socket))`
+//
+// Architecture note: each socket automatically joins two Socket.io rooms:
+//   • socket.id   — so we can emit directly to one player with io.to(playerId)
+//   • roomCode    — so we can broadcast to both players with io.to(roomCode)
+//
+// Multiplayer flow:
+//   create_room → join_room → [customization] → set_ready →
+//   RPS (rps_pick / rps_choose) → game starts → gameplay events →
+//   rematch_vote or disconnect
+//
+// Single-player flow:
+//   create_singleplayer → game starts immediately (no customization/RPS)
+// ─────────────────────────────────────────────────────────────────────────────
 import { Server, Socket } from 'socket.io';
 import {
   ServerToClientEvents, ClientToServerEvents,
   InterServerEvents, SocketData, GameState, PlayerState,
-  DEFAULT_CUSTOMIZATIONS, RpsChoice,
+  DEFAULT_CUSTOMIZATIONS, RpsChoice, ReplayFile,
 } from '../../shared/types';
 import { RoomManager } from './RoomManager';
 import { GameEngine } from './game/GameEngine';
+import { AIPlayer } from './ai/AIPlayer';
 
 type IO = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type Sock = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -19,14 +38,75 @@ const rematchVoteMap = new Map<string, Set<string>>();
 const rpsPickMap   = new Map<string, Map<string, RpsChoice>>(); // roomCode → Map<playerId, choice>
 const rpsWinnerMap = new Map<string, 0 | 1>();                  // roomCode → player index (0|1) who won RPS
 
+// Single-player AI instances: roomCode → AIPlayer
+const singlePlayerAIs = new Map<string, AIPlayer>();
+
+// ── Replay helper ─────────────────────────────────────────────────────────────
+
+/** Assemble a ReplayFile from the engine’s snapshot history.  Called when phase === 'ended'. */
+function buildReplay(engine: GameEngine, mode: ReplayFile['mode']): ReplayFile {
+  const state = engine.state;
+  return {
+    id: state.gameId,
+    date: new Date().toISOString(),
+    playerNames: [state.players[0].name, state.players[1].name],
+    winner: state.winner ?? null,
+    winReason: state.winReason,
+    turnCount: state.turnNumber,
+    mode,
+    snapshots: engine.replaySnapshots,
+  };
+}
+
+/**
+ * Attach an onStateChange handler to an engine that:
+ *  1. Broadcasts sanitized state to both players after every mutation.
+ *  2. Emits replay_complete to both players when the game ends.
+ *
+ * Must be called AFTER creating the engine and BEFORE the first emit
+ * so the initial state reaches clients.
+ */
+function wireEngine(io: IO, engine: GameEngine, p0id: string, p1id: string, mode: ReplayFile['mode']) {
+  engine.onStateChange = (state) => {
+    broadcastState(io, state);
+    if (state.phase === 'ended') {
+      const replay = buildReplay(engine, mode);
+      io.to(p0id).emit('replay_complete', replay);
+      io.to(p1id).emit('replay_complete', replay);
+    }
+  };
+}
+
 // ── Broadcast helpers ─────────────────────────────────────────────────────────
 
+/**
+ * Send a tailored GameState snapshot to each player.
+ *
+ * Sanitization applied:
+ *  • Opponent’s hand and deck are cleared (hidden information).
+ *  • During effect_blue_look: the topCard in pendingEffect is hidden from the
+ *    non-active player (they shouldn’t see what the attacker is looking at).
+ *  • viewerIndex is set so each player’s client knows which side of the board
+ *    is “theirs”.
+ *  • rematchVotes can be injected externally (used when building vote-progress UI).
+ */
 function broadcastState(io: IO, state: GameState, votes?: [boolean, boolean]) {
   const [p0, p1] = state.players;
   const base: GameState = votes ? { ...state, rematchVotes: votes } : state;
 
-  io.to(p0.id).emit('game_state', { ...base, players: [p0,          hiddenHand(p1)], viewerIndex: 0 });
-  io.to(p1.id).emit('game_state', { ...base, players: [hiddenHand(p0), p1        ], viewerIndex: 1 });
+  // Sanitize: hide blue_look topCard from the non-active player
+  function sanitize(s: GameState, viewerIndex: 0 | 1): GameState {
+    if (s.phase === 'effect_blue_look' && s.currentPlayerIndex !== viewerIndex && s.pendingEffect) {
+      return { ...s, pendingEffect: { type: 'blue_look' } };
+    }
+    return s;
+  }
+
+  const for0 = sanitize({ ...base, players: [p0,           hiddenHand(p1)], viewerIndex: 0 }, 0);
+  const for1 = sanitize({ ...base, players: [hiddenHand(p0), p1          ], viewerIndex: 1 }, 1);
+
+  io.to(p0.id).emit('game_state', for0);
+  io.to(p1.id).emit('game_state', for1);
 }
 
 function hiddenHand(player: PlayerState): PlayerState {
@@ -35,6 +115,7 @@ function hiddenHand(player: PlayerState): PlayerState {
 
 // ── RPS helpers ───────────────────────────────────────────────────────────────
 
+/** Returns a Rock-Paper-Scissors outcome from the two choices: 0 if player 0 wins, 1 if player 1 wins, 'draw'. */
 function resolveRps(a: RpsChoice, b: RpsChoice): 0 | 1 | 'draw' {
   if (a === b) return 'draw';
   if (
@@ -65,6 +146,11 @@ function emitRpsState(
 
 // ── Handler registration ──────────────────────────────────────────────────────
 
+/**
+ * Register all Socket.io event listeners for a single connected socket.
+ * Called once per connection from server.ts.
+ * `id` is the socket’s unique ID, which doubles as the player’s ID throughout the game.
+ */
 export function registerHandlers(io: IO, socket: Sock) {
   const { id } = socket;
 
@@ -78,6 +164,26 @@ export function registerHandlers(io: IO, socket: Sock) {
     socket.data.playerName = playerName;
     socket.join(code);
     socket.emit('room_created', { roomCode: code });
+  });
+
+  socket.on('create_singleplayer', ({ playerName, difficulty, settings }) => {
+    const { roomCode, engine, aiPlayer } = rooms.createSinglePlayerRoom(id, playerName, difficulty, settings);
+
+    socket.data.playerId  = id;
+    socket.data.roomCode  = roomCode;
+    socket.data.playerName = playerName;
+    socket.join(id);
+    socket.join(roomCode);
+
+    socket.emit('room_created', { roomCode });
+
+    // Wire broadcast first, then activate AI (it chains on top)
+    engine.onStateChange = (state) => broadcastState(io, state);
+    singlePlayerAIs.set(roomCode, aiPlayer);
+    aiPlayer.activate(engine);
+
+    // Send initial state to human
+    broadcastState(io, engine.state);
   });
 
   socket.on('join_room', ({ roomCode, playerName }) => {
@@ -176,7 +282,8 @@ export function registerHandlers(io: IO, socket: Sock) {
 
     const engine = rooms.startGame(code, firstPlayer);
     if (!engine) return;
-    engine.onStateChange = (state) => broadcastState(io, state);
+    const [ep0, ep1] = room.players;
+    wireEngine(io, engine, ep0.id, ep1.id, 'multiplayer');
     broadcastState(io, engine.state);
   });
 
@@ -207,11 +314,6 @@ export function registerHandlers(io: IO, socket: Sock) {
     room?.engine?.effectResponse(id, data);
   });
 
-  socket.on('pre_target_response', ({ cardId }) => {
-    const room = rooms.getRoomByPlayerId(id);
-    room?.engine?.preTargetResponse(id, cardId);
-  });
-
   // ── Surrender ────────────────────────────────────────────────────────────────
 
   socket.on('surrender', () => {
@@ -232,23 +334,44 @@ export function registerHandlers(io: IO, socket: Sock) {
     const votes = rematchVoteMap.get(code)!;
     votes.add(id);
 
+    // In single-player rooms, the AI auto-votes for rematch immediately
+    const ai = singlePlayerAIs.get(code);
+    if (ai) votes.add(ai.playerId);
+
     // Use engine.state.players order — this matches the viewerIndex each client received.
-    // room.players order can differ if RPS swapped who goes first.
     const [ep0, ep1] = room.engine.state.players;
     const voteState: [boolean, boolean] = [votes.has(ep0.id), votes.has(ep1.id)];
 
     if (voteState[0] && voteState[1]) {
-      // Both voted — start a new game (rematch skips RPS, keeps same order)
       rematchVoteMap.delete(code);
-      const [p0, p1] = room.players;
-      const newEngine = new GameEngine(code, p0, p1, room.settings);
-      room.engine = newEngine;
-      newEngine.onStateChange = (state) => broadcastState(io, state);
-      broadcastState(io, newEngine.state);
+
+      if (ai) {
+        // Server-based single-player: AI doesn't do RPS, restart immediately
+        const [p0, p1] = room.players;
+        const newEngine = new GameEngine(code, p0, p1, room.settings);
+        room.engine = newEngine;
+        wireEngine(io, newEngine, ep0.id, ep1.id, 'single-player');
+        ai.activate(newEngine);
+        broadcastState(io, newEngine.state);
+      } else {
+        // Multiplayer: go back to RPS so players choose who goes first again
+        room.engine = null;
+        emitRpsState(io, room, 'rps_pick');
+      }
     } else {
-      // Partial vote — broadcast current state with vote info
       broadcastState(io, room.engine.state, voteState);
     }
+  });
+
+  // ── Chat ─────────────────────────────────────────────────────────────────────
+
+  socket.on('chat_message', ({ message }) => {
+    const room = rooms.getRoomByPlayerId(id);
+    if (!room) return;
+    const trimmed = message.trim().slice(0, 300);
+    if (!trimmed) return;
+    // Broadcast to all players in the room, including the sender (for confirmation)
+    io.to(room.code).emit('chat_message', { playerName: socket.data.playerName, message: trimmed });
   });
 
   socket.on('disconnect', () => {
@@ -256,6 +379,7 @@ export function registerHandlers(io: IO, socket: Sock) {
   });
 }
 
+/** Build a placeholder PlayerState for the lobby/RPS phases before the GameEngine creates real ones. */
 function makePendingPlayer(id: string, name: string): PlayerState {
   return {
     id, name,

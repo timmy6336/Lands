@@ -1,3 +1,15 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// client/src/hooks/useSound.ts
+//
+// Synthesizes game sound effects using the Web Audio API.
+// No audio files are loaded — every sound is generated in real time via
+// oscillators, noise buffers, and gain envelopes.
+//
+// A single AudioContext is shared for the lifetime of the component
+// (stored in a ref).  It’s lazily created on first use and resumed on each
+// call to work around browser autoplay policies that suspend AudioContext
+// until the user interacts with the page.
+// ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useRef } from 'react';
 
 function getCtx(ref: React.MutableRefObject<AudioContext | null>): AudioContext {

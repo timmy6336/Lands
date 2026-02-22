@@ -13,6 +13,9 @@
     { "from": "client/dist", "to": "client/dist" },
     { "from": "resources",   "to": "resources"   }
   ],
+  "extraFiles": [
+    { "from": "README.md", "to": "README.md" }
+  ],
   "win": {
     "target": [{ "target": "portable", "arch": ["x64"] }],
     "signingHashAlgorithms": null,

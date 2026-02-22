@@ -21,27 +21,27 @@ const cards = [
   {
     name: 'white',
     bg: '#d6ceb0', shine: '#f0e8cc', dark: '#a89060',
-    text: '#5a4020', label: 'PLAINS', initial: 'P',
+    text: '#5a4020', label: 'WHITE', initial: 'W',
   },
   {
     name: 'red',
     bg: '#8b1a1a', shine: '#c0392b', dark: '#5a0000',
-    text: '#ffccaa', label: 'MOUNTAIN', initial: 'M',
+    text: '#ffccaa', label: 'RED', initial: 'R',
   },
   {
     name: 'blue',
     bg: '#0e3d6b', shine: '#1a6fa8', dark: '#071e3a',
-    text: '#99ddff', label: 'ISLAND', initial: 'I',
+    text: '#99ddff', label: 'BLUE', initial: 'B',
   },
   {
     name: 'green',
     bg: '#1a4d2e', shine: '#2d7a47', dark: '#0a2414',
-    text: '#aaeecc', label: 'FOREST', initial: 'F',
+    text: '#aaeecc', label: 'GREEN', initial: 'G',
   },
   {
     name: 'black',
     bg: '#0d0d0d', shine: '#2a2a2a', dark: '#000000',
-    text: '#887799', label: 'SWAMP', initial: 'S',
+    text: '#887799', label: 'BLACK', initial: 'K',
   },
 ];
 

@@ -16,9 +16,11 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "paths": {
-      "@lands/shared": ["../shared/types.ts"]
+      "@lands/shared": ["../shared/types.ts"],
+      "@lands/game/*": ["../server/src/game/*"],
+      "@lands/ai/*":   ["../server/src/ai/*"]
     },
     "baseUrl": "."
   },
-  "include": ["src/**/*", "../shared/**/*"]
+  "include": ["src/**/*", "../shared/**/*", "../server/src/game/**/*", "../server/src/ai/**/*"]
 }
