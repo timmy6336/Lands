@@ -18,10 +18,18 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
 
   // ── Red: attacker picks opponent land to destroy ──────────────────────────
   if (effect.type === 'red_pick' && isMyTurn) {
+    // Deduplicate by color — one representative card per type is shown;
+    // destroying it removes one land of that color from the field.
+    const seen = new Set<string>();
+    const dedupedField = opponent.field.filter(c => {
+      if (seen.has(c.color)) return false;
+      seen.add(c.color);
+      return true;
+    });
     return <PickPrompt
       title="Red Land Effect"
-      subtitle="Choose one of your opponent's lands to destroy."
-      cards={opponent.field}
+      subtitle="Choose a land type to destroy. One land of that type will be removed."
+      cards={dedupedField}
       customizations={opponent.customizations}
       allowFizzle={opponent.field.length === 0}
       onConfirm={(id) => onRespond({ type: 'red_pick', targetCardId: id })}
@@ -30,10 +38,17 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
 
   // ── Green: attacker picks from own graveyard ──────────────────────────────
   if (effect.type === 'green_pick' && isMyTurn) {
+    // Deduplicate by color — one representative per type shown.
+    const seen = new Set<string>();
+    const dedupedGraveyard = me.graveyard.filter(c => {
+      if (seen.has(c.color)) return false;
+      seen.add(c.color);
+      return true;
+    });
     return <PickPrompt
       title="Green Land Effect"
-      subtitle="Choose a land from your graveyard to return to your hand."
-      cards={me.graveyard}
+      subtitle="Choose a land type to retrieve from your graveyard."
+      cards={dedupedGraveyard}
       customizations={me.customizations}
       allowFizzle={me.graveyard.length === 0}
       onConfirm={(id) => onRespond({ type: 'green_pick', targetCardId: id })}

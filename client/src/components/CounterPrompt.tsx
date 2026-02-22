@@ -72,28 +72,6 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
                 ? 'Your land was countered. Spend 2 Blue cards to counter their counter.'
                 : `Opponent played a ${pendingCard.color} land. Spend 1 Blue + 1 ${pendingCard.color} to counter.`}
             </p>
-            {/* Show pre-targeted card (red = your land being destroyed, green = their graveyard retrieve) */}
-            {!isCounterCounter && gameState.preTargetCardId && (() => {
-              if (pendingCard.color === 'red') {
-                const target = gameState.players[myIndex].field.find(c => c.id === gameState.preTargetCardId);
-                if (target) return (
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-[0.8rem] shrink-0" style={{ color: 'var(--red-land)' }}>Targeting your land:</span>
-                    <Card card={target} customizations={gameState.players[myIndex].customizations} small />
-                  </div>
-                );
-              }
-              if (pendingCard.color === 'green') {
-                const target = gameState.players[1 - myIndex].graveyard.find(c => c.id === gameState.preTargetCardId);
-                if (target) return (
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-[0.8rem] shrink-0" style={{ color: 'var(--green-land)' }}>Retrieving from graveyard:</span>
-                    <Card card={target} customizations={gameState.players[1 - myIndex].customizations} small />
-                  </div>
-                );
-              }
-              return null;
-            })()}
             {timeLeft !== null && (
               <p className="mt-2 text-[1.4rem] font-bold m-0" style={{ color: timeLeft <= 3 ? '#e74c3c' : 'var(--text)' }}>
                 {timeLeft}s
