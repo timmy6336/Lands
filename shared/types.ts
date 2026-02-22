@@ -47,6 +47,8 @@ export type GamePhase =
   | 'effect_black_show'  // opponent picks 3 cards to reveal (Black effect)
   | 'effect_black_pick'  // active player picks which card to discard
   | 'effect_blue_look'   // active player sees top card, decides top/bottom
+  | 'pre_target_red'     // active player pre-selects red target before counter window
+  | 'pre_target_green'   // active player pre-selects green target before counter window
   | 'effect_red_pick'    // active player picks opponent land to destroy
   | 'effect_green_pick'  // active player picks graveyard land to retrieve
   | 'ended';
@@ -88,6 +90,7 @@ export interface GameState {
   counterChain: CounterChainEntry[];
   counterDeadline?: number;     // unix ms, when counter window auto-closes
   pendingEffect?: PendingEffect;
+  preTargetCardId?: string;     // card pre-selected before counter window (red/green)
   winner?: 0 | 1 | 'draw';
   winReason?: string;
   settings: GameSettings;
@@ -101,6 +104,19 @@ export interface GameState {
   };
 }
 
+// ── Replay typings ───────────────────────────────────────────────────────────
+
+export interface ReplayFile {
+  id: string;
+  date: string;                        // ISO date string
+  playerNames: [string, string];
+  winner: 0 | 1 | 'draw' | null;
+  winReason?: string;
+  turnCount: number;
+  mode: 'single-player' | 'multiplayer';
+  snapshots: GameState[];              // full unsanitized states (both hands visible)
+}
+
 // ── Socket event typings ────────────────────────────────────────────────────
 
 export interface ServerToClientEvents {
@@ -108,6 +124,7 @@ export interface ServerToClientEvents {
   room_created: (data: { roomCode: string }) => void;
   error: (msg: string) => void;
   chat_message: (data: ChatMessage) => void;
+  replay_complete: (replay: ReplayFile) => void;
 }
 
 export interface ClientToServerEvents {

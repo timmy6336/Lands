@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { GameState, AIDifficulty, GameSettings, ClientToServerEvents } from '@lands/shared';
+import { GameState, AIDifficulty, GameSettings, ClientToServerEvents, ReplayFile } from '@lands/shared';
 import { GameEngine } from '@lands/game/GameEngine';
 import { AIPlayer, AI_NAMES } from '@lands/ai/AIPlayer';
 
@@ -28,10 +28,11 @@ export function useLocalGame(params: LocalGameParams | null): {
 } {
   const [gameState, setGameState] = useState<GameState | null>(null);
 
-  const engineRef = useRef<GameEngine | null>(null);
-  const aiRef     = useRef<AIPlayer    | null>(null);
-  const paramsRef = useRef(params);
-  paramsRef.current = params;
+  const engineRef    = useRef<GameEngine | null>(null);
+  const aiRef        = useRef<AIPlayer    | null>(null);
+  const paramsRef    = useRef(params);
+  paramsRef.current  = params;
+  const replaySaved  = useRef(false);
 
   /**
    * Spin up a fresh engine + AI.
@@ -40,6 +41,7 @@ export function useLocalGame(params: LocalGameParams | null): {
    * writing stale state after a rematch.
    */
   function startGame(p: LocalGameParams) {
+    replaySaved.current = false;
     const ai = new AIPlayer(p.difficulty);
 
     // If the human wants to go second, AI is player 0 (goes first), human is player 1
@@ -77,6 +79,22 @@ export function useLocalGame(params: LocalGameParams | null): {
       }
 
       setGameState(sanitized);
+
+      // Save replay once when the game ends
+      if (state.phase === 'ended' && !replaySaved.current && window.electronAPI) {
+        replaySaved.current = true;
+        const replay: ReplayFile = {
+          id: state.gameId,
+          date: new Date().toISOString(),
+          playerNames: [state.players[0].name, state.players[1].name],
+          winner: state.winner ?? null,
+          winReason: state.winReason,
+          turnCount: state.turnNumber,
+          mode: 'single-player',
+          snapshots: engineInstance.replaySnapshots,
+        };
+        window.electronAPI.saveReplay(replay).catch(() => {});
+      }
     };
 
     ai.activate(engine);

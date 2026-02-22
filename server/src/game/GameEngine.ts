@@ -61,6 +61,9 @@ function discardToGraveyard(player: PlayerState, card: Card): void {
 export class GameEngine {
   state: GameState;
 
+  /** Full unsanitized snapshots captured at every state change — used for replays */
+  replaySnapshots: GameState[] = [];
+
   /** Timers stored outside state (they don't need to be serialised to clients) */
   private counterTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -500,6 +503,8 @@ export class GameEngine {
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   private emit() {
+    // Deep-clone for the replay — captures full state including both hands
+    this.replaySnapshots.push(JSON.parse(JSON.stringify(this.state)) as GameState);
     this.onStateChange(this.state);
   }
 

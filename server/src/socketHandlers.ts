@@ -2,7 +2,7 @@ import { Server, Socket } from 'socket.io';
 import {
   ServerToClientEvents, ClientToServerEvents,
   InterServerEvents, SocketData, GameState, PlayerState,
-  DEFAULT_CUSTOMIZATIONS, RpsChoice,
+  DEFAULT_CUSTOMIZATIONS, RpsChoice, ReplayFile,
 } from '../../shared/types';
 import { RoomManager } from './RoomManager';
 import { GameEngine } from './game/GameEngine';
@@ -22,6 +22,34 @@ const rpsWinnerMap = new Map<string, 0 | 1>();                  // roomCode → 
 
 // Single-player AI instances: roomCode → AIPlayer
 const singlePlayerAIs = new Map<string, AIPlayer>();
+
+// ── Replay helper ─────────────────────────────────────────────────────────────
+
+function buildReplay(engine: GameEngine, mode: ReplayFile['mode']): ReplayFile {
+  const state = engine.state;
+  return {
+    id: state.gameId,
+    date: new Date().toISOString(),
+    playerNames: [state.players[0].name, state.players[1].name],
+    winner: state.winner ?? null,
+    winReason: state.winReason,
+    turnCount: state.turnNumber,
+    mode,
+    snapshots: engine.replaySnapshots,
+  };
+}
+
+/** Wire onStateChange on an engine, broadcasting state and emitting replay on game end. */
+function wireEngine(io: IO, engine: GameEngine, p0id: string, p1id: string, mode: ReplayFile['mode']) {
+  engine.onStateChange = (state) => {
+    broadcastState(io, state);
+    if (state.phase === 'ended') {
+      const replay = buildReplay(engine, mode);
+      io.to(p0id).emit('replay_complete', replay);
+      io.to(p1id).emit('replay_complete', replay);
+    }
+  };
+}
 
 // ── Broadcast helpers ─────────────────────────────────────────────────────────
 
@@ -211,7 +239,8 @@ export function registerHandlers(io: IO, socket: Sock) {
 
     const engine = rooms.startGame(code, firstPlayer);
     if (!engine) return;
-    engine.onStateChange = (state) => broadcastState(io, state);
+    const [ep0, ep1] = room.players;
+    wireEngine(io, engine, ep0.id, ep1.id, 'multiplayer');
     broadcastState(io, engine.state);
   });
 
@@ -276,7 +305,7 @@ export function registerHandlers(io: IO, socket: Sock) {
       const [p0, p1] = room.players;
       const newEngine = new GameEngine(code, p0, p1, room.settings);
       room.engine = newEngine;
-      newEngine.onStateChange = (state) => broadcastState(io, state);
+      wireEngine(io, newEngine, ep0.id, ep1.id, 'multiplayer');
       // Reattach AI to the new engine
       if (ai) ai.activate(newEngine);
       broadcastState(io, newEngine.state);

@@ -181,6 +181,46 @@ ipcMain.handle('reset-card-image', async (_event, color: string) => {
   }
 });
 
+// ── IPC: replays ──────────────────────────────────────────────────────────────
+
+function replaysDir(): string {
+  return path.join(app.getPath('userData'), 'replays');
+}
+
+ipcMain.handle('save-replay', async (_event, replay: unknown) => {
+  const dir = replaysDir();
+  fs.mkdirSync(dir, { recursive: true });
+  const r = replay as { id: string };
+  fs.writeFileSync(path.join(dir, `${r.id}.json`), JSON.stringify(replay));
+});
+
+ipcMain.handle('list-replays', async () => {
+  const dir = replaysDir();
+  if (!fs.existsSync(dir)) return [];
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+  const metas: unknown[] = [];
+  for (const f of files) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8')) as Record<string, unknown>;
+      const { snapshots: _snap, ...meta } = raw;
+      metas.push(meta);
+    } catch { /* skip corrupt files */ }
+  }
+  return (metas as Array<{ date: string }>).sort((a, b) => b.date.localeCompare(a.date));
+});
+
+ipcMain.handle('load-replay', async (_event, id: string) => {
+  const p = path.join(replaysDir(), `${id}.json`);
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf-8'));
+  } catch { return null; }
+});
+
+ipcMain.handle('delete-replay', async (_event, id: string) => {
+  const p = path.join(replaysDir(), `${id}.json`);
+  if (fs.existsSync(p)) fs.unlinkSync(p);
+});
+
 // ── IPC: settings ─────────────────────────────────────────────────────────────
 
 function settingsFilePath(): string {

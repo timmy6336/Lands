@@ -2,9 +2,10 @@ interface Props {
   onPlay: () => void;
   onSettings: () => void;
   onRules: () => void;
+  onReplays: () => void;
 }
 
-export function HomeScreen({ onPlay, onSettings, onRules }: Props) {
+export function HomeScreen({ onPlay, onSettings, onRules, onReplays }: Props) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-10">
       <div className="text-center">
@@ -31,6 +32,13 @@ export function HomeScreen({ onPlay, onSettings, onRules }: Props) {
           style={{ fontSize: '1rem', padding: '0.7rem 2rem' }}
         >
           📖 Rules
+        </button>
+        <button
+          className="btn-secondary"
+          onClick={onReplays}
+          style={{ fontSize: '1rem', padding: '0.7rem 2rem' }}
+        >
+          ▷ Replays
         </button>
         <button
           className="btn-secondary"

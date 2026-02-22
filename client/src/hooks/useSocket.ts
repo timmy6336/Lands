@@ -41,6 +41,9 @@ export function useSocket(serverUrl: string | null) {
     socket.on('room_created', ({ roomCode: code }) => setRoomCode(code));
     socket.on('error', (msg) => setError(msg));
     socket.on('chat_message', (msg) => setChatMessages(prev => [...prev, msg]));
+    socket.on('replay_complete', (replay) => {
+      window.electronAPI?.saveReplay(replay).catch(() => {});
+    });
 
     return () => {
       socket.disconnect();

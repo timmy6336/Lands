@@ -17,6 +17,10 @@ interface ElectronAPI {
   resetCardImage(color: string): Promise<void>;
   getSettings(): Promise<AppSettings>;
   saveSettings(s: AppSettings): Promise<void>;
+  saveReplay(replay: unknown): Promise<void>;
+  listReplays(): Promise<unknown[]>;
+  loadReplay(id: string): Promise<unknown>;
+  deleteReplay(id: string): Promise<void>;
 }
 
 declare global {

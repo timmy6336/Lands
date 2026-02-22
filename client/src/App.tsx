@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChatMessage, GameSettings } from '@lands/shared';
+import { ChatMessage, GameSettings, ReplayFile } from '@lands/shared';
 import { useSocket } from './hooks/useSocket';
 import { useLocalGame, LocalGameParams } from './hooks/useLocalGame';
 import { CardImagesContext, useCardImagesProvider } from './hooks/useCardImages';
@@ -15,6 +15,8 @@ import { GameBoard } from './components/GameBoard';
 import { GameOver } from './components/GameOver';
 import { RpsScreen } from './components/RpsScreen';
 import { RulesScreen } from './components/RulesScreen';
+import { ReplayBrowser } from './components/ReplayBrowser';
+import { ReplayViewer } from './components/ReplayViewer';
 
 function PageTransition({ children, keyProp }: { children: React.ReactNode; keyProp: string }) {
   return (
@@ -33,7 +35,7 @@ function PageTransition({ children, keyProp }: { children: React.ReactNode; keyP
   );
 }
 
-type Screen = 'home' | 'play-menu' | 'single-player-menu' | 'single-player' | 'settings' | 'rules' | 'host' | 'join';
+type Screen = 'home' | 'play-menu' | 'single-player-menu' | 'single-player' | 'settings' | 'rules' | 'host' | 'join' | 'replays' | 'replay-viewer';
 
 // In browser dev mode (no Electron), connect directly to the Vite-proxied server.
 const BROWSER_SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
@@ -54,6 +56,7 @@ function AppInner() {
   const [pendingJoin, setPendingJoin] = useState<{ roomCode: string; settings: GameSettings } | null>(null);
   const [hostSettings, setHostSettings] = useState<GameSettings>({ counterTimeLimitSeconds: 15 });
   const [localGameParams, setLocalGameParams] = useState<LocalGameParams | null>(null);
+  const [replayToView, setReplayToView] = useState<ReplayFile | null>(null);
 
   // Saved Electron settings (port, UPnP) — loaded once
   const [defaultPort, setDefaultPort] = useState(3001);
@@ -298,6 +301,33 @@ function AppInner() {
     );
   }
 
+  if (screen === 'replays') {
+    return (
+      <PageTransition keyProp="replays">
+        <ReplayBrowser
+          onBack={() => setScreen('home')}
+          onView={(replay) => {
+            setReplayToView(replay);
+            setScreen('replay-viewer');
+          }}
+        />
+      </PageTransition>
+    );
+  }
+
+  if (screen === 'replay-viewer' && replayToView) {
+    return (
+      <PageTransition keyProp="replay-viewer">
+        <CardImagesContext.Provider value={cardImageUrls}>
+          <ReplayViewer
+            replay={replayToView}
+            onBack={() => setScreen('replays')}
+          />
+        </CardImagesContext.Provider>
+      </PageTransition>
+    );
+  }
+
   // ── Home screen (default) ─────────────────────────────────────────────────
 
   // Non-Electron dev convenience: auto-connect to VITE_SERVER_URL if set
@@ -311,6 +341,7 @@ function AppInner() {
         onPlay={() => setScreen('play-menu')}
         onSettings={() => setScreen('settings')}
         onRules={() => setScreen('rules')}
+        onReplays={() => setScreen('replays')}
       />
     </PageTransition>
   );

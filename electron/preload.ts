@@ -30,4 +30,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   saveSettings: (s: unknown) =>
     ipcRenderer.invoke('save-settings', s),
+
+  saveReplay: (replay: unknown) =>
+    ipcRenderer.invoke('save-replay', replay),
+
+  listReplays: () =>
+    ipcRenderer.invoke('list-replays'),
+
+  loadReplay: (id: string) =>
+    ipcRenderer.invoke('load-replay', id),
+
+  deleteReplay: (id: string) =>
+    ipcRenderer.invoke('delete-replay', id),
 });
