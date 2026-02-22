@@ -1,3 +1,13 @@
+// EffectPrompt.tsx — Handles all interactive effect resolution prompts that require
+// the active player to make a choice. Covers:
+//   • Red   — pick one of the opponent's lands to destroy
+//   • Green — pick one of the opponent's hand cards to steal (shown face-down)
+//   • Blue  — look at opponent's top deck card; optionally put it on bottom
+//   • Black / show — view opponent's whole hand (no choice needed, auto-confirms)
+//   • Black / pick — pick a card from opponent's hand to destroy
+// The component receives the relevant subset of GameState and fires onAction when
+// the player confirms their selection.
+
 import { useState } from 'react';
 import { GameState, Card as CardType } from '@lands/shared';
 import { Card } from './Card';

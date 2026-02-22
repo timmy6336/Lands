@@ -1,3 +1,20 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// client/src/hooks/useGameLog.ts
+//
+// Generates a human-readable game log by diff-ing consecutive GameState
+// snapshots.  Each time gameState changes, the hook compares the new state
+// against a stored snapshot of the previous state and emits log entries for
+// whatever changed.
+//
+// Why diff instead of relying on server events?
+//   The server only sends GameState (not named events per action), so the log
+//   must reconstruct what happened by comparing field lengths, graveyard contents,
+//   turn numbers, phases, etc.
+//
+// Ordering guarantee: because each comparison fires in one useEffect call,
+// related events always appear in the correct order:
+//   land resolves / red destroys / green retrieves → then turn changes.
+// ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from 'react';
 import { Card, GameState } from '@lands/shared';
 
@@ -11,6 +28,7 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** The subset of GameState fields we diff each render. Kept narrow to avoid false positives. */
 interface Snapshot {
   turnNumber: number;
   pendingPlayId: string | undefined;
@@ -25,6 +43,15 @@ interface Snapshot {
   currentPlayerIdx: 0 | 1;
 }
 
+/**
+ * Maintains a scrolling list of timestamped log entries for the game.
+ * Compares each incoming gameState against the previous snapshot to detect
+ * what changed and add the appropriate message(s).
+ *
+ * Returns:
+ *   entries    — the full log array (append-only; IDs are monotonically increasing)
+ *   addEntry   — for injecting external entries (e.g. chat messages in the log)
+ */
 export function useGameLog(gameState: GameState): { entries: LogEntry[]; addEntry: (msg: string) => void } {
   const startRef = useRef(Date.now());
   const [entries, setEntries] = useState<LogEntry[]>([]);

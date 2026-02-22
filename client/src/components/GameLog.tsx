@@ -1,5 +1,8 @@
+// Scrolling log panel showing timestamped game events.
+// Receives `entries` from useGameLog() and auto-scrolls to the bottom on new entries.
 import { useEffect, useRef } from 'react';
-import { LogEntry } from '../hooks/useGameLog';
+import { LogEntry } from 'src/hooks/useGameLog';
+
 
 interface Props {
   entries: LogEntry[];

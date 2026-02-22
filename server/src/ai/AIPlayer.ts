@@ -1,3 +1,26 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// server/src/ai/AIPlayer.ts
+//
+// AI opponent that hooks into a running GameEngine by chaining onto
+// its onStateChange callback.  Every time state changes, onStateChange fires,
+// the AI checks whether it needs to act, schedules a think delay, then calls
+// the engine’s public API exactly as if it were a human socket handler.
+//
+// Three difficulty levels control:
+//   • Think delay (how long before the AI acts)
+//   • Random move chance (probability of ignoring strategy entirely)
+//   • Knowledge tracking (hard AI remembers cards revealed by Black effect)
+//
+// Strategic decision pipeline (hard/medium):
+//   doPlayCard   → pickBestCard → scoreCard  (evaluate every card; play highest)
+//   doCounter    → evaluateCounter            (threat scoring 0–100 vs threshold)
+//   doCounterCounter                          (play when card is critical or blues surplus)
+//   doBlackPick  → pickCardToDiscard          (targets counter cards first when holding win)
+//   doBlackShow  → pickCardsToReveal          (protects blues and win-path cards)
+//   doBlueLook                                (keep-on-top if useful, else send to bottom)
+//   doRedPick    → chooseBestRedTarget        (destroy what hurts them most)
+//   doGreenPick  → chooseBestGreenTarget      (retrieve what advances own win path)
+// ─────────────────────────────────────────────────────────────────────────────
 import { v4 as uuidv4 } from 'uuid';
 import { GameState, Card, Color, PlayerState, ALL_COLORS, AIDifficulty } from '../../../shared/types';
 import { GameEngine } from '../game/GameEngine';
@@ -33,6 +56,10 @@ interface WinPath {
   cardsNeeded: number; // how many more cards on field to win
 }
 
+/**
+ * All win paths the player could realistically pursue, sorted by fewest cards needed.
+ * Used to score which card to play and which targets to pick in effect phases.
+ */
 function getWinPaths(player: PlayerState): WinPath[] {
   const fieldCounts = new Map<Color, number>();
   for (const c of player.field) {
@@ -265,6 +292,7 @@ export class AIPlayer {
   /**
    * Estimates the probability (0–1) that the opponent can counter a card of `cardColor`.
    * Hard difficulty uses knowledge from previous black reveals.
+   * Other difficulties fall back to a purely probabilistic model based on hand size.
    */
   private estimateCounterRisk(opponent: PlayerState, cardColor: Color): number {
     if (this.difficulty === 'hard' && this.knownHumanCards.size > 0) {
@@ -339,6 +367,18 @@ export class AIPlayer {
     return best;
   }
 
+  /**
+   * Score a single card for the “play this turn” decision.
+   * Returns a numeric score — higher = more desirable to play.
+   *
+   * Key scoring logic:
+   *   • Winning card: normally 1000 (play immediately), but reduced if the AI
+   *     should defer (no CC defense, counter risk is high, opponent isn’t urgent).
+   *   • In deferral mode: Black (900) > Green-retrieves-Blue (850) > Red (820) > Blue (5–40)
+   *     so the AI actively sets up before committing the win card.
+   *   • Non-deferral: scores based on opponent threat, own win path progress, and
+   *     blue preservation.
+   */
   private scoreCard(
     card: Card,
     me: PlayerState,
@@ -530,6 +570,17 @@ export class AIPlayer {
     }
   }
 
+  /**
+   * Evaluate whether to counter the pending play.
+   *
+   * The decision is based on a "threat score" (0–100):
+   *   • Each card color has a base threat estimate.
+   *   • Score is adjusted for: opponent win proximity, blues remaining after counter,
+   *     own win proximity, and whether we’re holding a winning card.
+   *   • Threshold 45: counter if threat >= 45.
+   *
+   * Always counters winning plays regardless of score.
+   */
   private evaluateCounter(
     me: PlayerState,
     opponent: PlayerState,

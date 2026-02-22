@@ -1,7 +1,24 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// client/src/components/Card.tsx
+//
+// Renders a single land card.
+// Appearance is driven by the card’s color and the player’s Customizations
+// (which can rename “Plains” to anything the player wants).
+//
+// States the card can be in (props):
+//   faceDown     — renders `<HiddenCard>` (back side), used for opponent hand
+//   selected     — green glow outline, used in multi-select effect prompts
+//   disabled     — dimmed, non-interactive (greyed out in effect prompts)
+//   selectionIndex — shows a numbered badge for ordered multi-select
+//   small        — reduced size for graveyard / deck display
+//
+// Card image comes from useCardImages() context — defaults to bundled SVG
+// but can be overridden per-color with user-uploaded images.
+// ─────────────────────────────────────────────────────────────────────────────
 import { useState } from 'react';
-import { Card as CardType, Color, Customizations, DEFAULT_CUSTOMIZATIONS } from '@lands/shared';
 import { useCardImages } from '../hooks/useCardImages';
 import { useUISettings } from '../hooks/useUISettings';
+import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
 
 const COLOR_CSS: Record<Color, string> = {
   white: 'var(--white-land)',

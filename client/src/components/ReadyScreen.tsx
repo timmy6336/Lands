@@ -1,5 +1,10 @@
+// Customization + ready screen shown after both players join.
+// Each player can customize their land display names before clicking Ready.
+// Shows the opponent’s customizations live as they update.
+// When both players are ready, RPS begins.
 import { useState } from 'react';
-import { GameState, DEFAULT_CUSTOMIZATIONS } from '@lands/shared';
+import { DEFAULT_CUSTOMIZATIONS, GameState } from '@lands/shared';
+
 
 interface Props {
   gameState: GameState;

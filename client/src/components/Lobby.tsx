@@ -1,3 +1,6 @@
+// Multiplayer lobby: starts the server (host) or connects to one (join), shows
+// the local + public IP addresses, and handles UPnP port forwarding.
+// Uses IPC via window.electronAPI to start the server and query network info.
 import { useEffect, useState } from 'react';
 import { GameSettings } from '@lands/shared';
 

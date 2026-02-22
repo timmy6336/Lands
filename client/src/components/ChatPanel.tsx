@@ -1,3 +1,5 @@
+// Expandable text chat panel displayed on the left edge of GameBoard.
+// Messages are also injected into the game log so the chat history is preserved.
 import { useEffect, useRef, useState } from 'react';
 import { ChatMessage } from '@lands/shared';
 

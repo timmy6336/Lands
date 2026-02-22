@@ -1,3 +1,6 @@
+// RulesScreen.tsx — Static rules reference screen explaining card colors, effects, the
+// counter system, and win conditions. Rendered as scrollable content with a Back button.
+
 interface Props {
   onBack: () => void;
 }

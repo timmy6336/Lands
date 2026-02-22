@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { writeFileSync } from 'fs';
+
+const content = `import { useEffect, useRef, useState } from 'react';
 import { ReplayFile } from '@lands/shared';
 import { Field } from './Field';
 import { Hand } from './Hand';
@@ -61,9 +63,9 @@ export function ReplayViewer({ replay, onBack }: Props) {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     borderRadius: 8, padding: '0.4rem 1rem',
     fontSize: '0.85rem', flexShrink: 0,
-    background: active ? `rgba(${color}, 0.1)` : 'var(--surface)',
-    border: active ? `2px solid rgba(${color}, 0.55)` : '2px solid transparent',
-    boxShadow: active ? `0 0 12px rgba(${color}, 0.2)` : 'none',
+    background: active ? \`rgba(\${color}, 0.1)\` : 'var(--surface)',
+    border: active ? \`2px solid rgba(\${color}, 0.55)\` : '2px solid transparent',
+    boxShadow: active ? \`0 0 12px rgba(\${color}, 0.2)\` : 'none',
     transition: 'background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease',
   });
 
@@ -88,7 +90,7 @@ export function ReplayViewer({ replay, onBack }: Props) {
         cards={opponent.hand}
         hiddenCount={opponent.hand.length === 0 ? opponent.handCount : undefined}
         customizations={opponent.customizations}
-        label={`${opponent.name}'s Hand`}
+        label={\`\${opponent.name}'s Hand\`}
       />
 
       {/* Opponent field + graveyard + deck */}
@@ -96,7 +98,7 @@ export function ReplayViewer({ replay, onBack }: Props) {
         <Field
           cards={opponent.field}
           customizations={opponent.customizations}
-          label={`${opponent.name}'s Field`}
+          label={\`\${opponent.name}'s Field\`}
         />
         <Graveyard
           cards={opponent.graveyard}
@@ -218,3 +220,11 @@ export function ReplayViewer({ replay, onBack }: Props) {
     </div>
   );
 }
+`;
+
+writeFileSync(
+  'c:/randomApps/Lands/client/src/components/ReplayViewer.tsx',
+  content,
+  'utf8'
+);
+console.log('Written successfully');

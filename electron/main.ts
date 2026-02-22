@@ -1,3 +1,22 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// electron/main.ts — Electron main process
+//
+// Responsible for:
+//   • Creating the BrowserWindow (the app shell)
+//   • Running the game server in-process (start-server / stop-server IPC)
+//   • Exposing OS utilities to the renderer via IPC handlers:
+//       get-ips         — local + public IP for the Lobby copy-paste
+//       attempt-upnp    — optional UPnP port mapping for online play
+//       open-image-dialog / save-card-image / get-card-image-urls / reset-card-image
+//                       — custom card art management
+//       save-replay / list-replays / load-replay / delete-replay
+//                       — replay file management in userData/replays/
+//       get-settings / save-settings
+//                       — persistent user preferences in userData/settings.json
+//
+// All IPC channels are invoked from the renderer via window.electronAPI.*
+// (see electron/preload.ts for the definitions).
+// ─────────────────────────────────────────────────────────────────────────────
 import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
 import path from 'path';
 import fs from 'fs';
@@ -14,6 +33,12 @@ let currentUpnpPort: number | null = null;
 
 // ── Window ───────────────────────────────────────────────────────────────────
 
+/**
+ * Create the main application window.
+ * In development, loads from the Vite dev server (http://localhost:5173) and
+ * opens DevTools.  In production, loads the built index.html from the bundled
+ * resources directory.
+ */
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -61,6 +86,10 @@ ipcMain.handle('stop-server', async () => {
 
 // ── IPC: IP lookup ────────────────────────────────────────────────────────────
 
+/**
+ * Find the first non-loopback IPv4 address on any network interface.
+ * Used in the Lobby to show the local IP address that other LAN players can use.
+ */
 function getLocalIP(): string {
   const ifaces = os.networkInterfaces();
   for (const list of Object.values(ifaces)) {

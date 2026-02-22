@@ -1,6 +1,8 @@
+// Renders a player’s graveyard as a compact button that opens a modal card list.
+// All cards are visible (graveyard is public information — needed for Green effect targeting).
 import { useState } from 'react';
-import { Card as CardType, Customizations } from '@lands/shared';
 import { Card } from './Card';
+import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
 
 interface Props {
   cards: CardType[];

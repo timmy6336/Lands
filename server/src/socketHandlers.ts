@@ -1,3 +1,21 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// server/src/socketHandlers.ts
+//
+// Wires Socket.io events to game logic.  Called once per socket connection
+// from server.ts:  `io.on('connection', socket => registerHandlers(io, socket))`
+//
+// Architecture note: each socket automatically joins two Socket.io rooms:
+//   • socket.id   — so we can emit directly to one player with io.to(playerId)
+//   • roomCode    — so we can broadcast to both players with io.to(roomCode)
+//
+// Multiplayer flow:
+//   create_room → join_room → [customization] → set_ready →
+//   RPS (rps_pick / rps_choose) → game starts → gameplay events →
+//   rematch_vote or disconnect
+//
+// Single-player flow:
+//   create_singleplayer → game starts immediately (no customization/RPS)
+// ─────────────────────────────────────────────────────────────────────────────
 import { Server, Socket } from 'socket.io';
 import {
   ServerToClientEvents, ClientToServerEvents,
@@ -25,6 +43,7 @@ const singlePlayerAIs = new Map<string, AIPlayer>();
 
 // ── Replay helper ─────────────────────────────────────────────────────────────
 
+/** Assemble a ReplayFile from the engine’s snapshot history.  Called when phase === 'ended'. */
 function buildReplay(engine: GameEngine, mode: ReplayFile['mode']): ReplayFile {
   const state = engine.state;
   return {
@@ -39,7 +58,14 @@ function buildReplay(engine: GameEngine, mode: ReplayFile['mode']): ReplayFile {
   };
 }
 
-/** Wire onStateChange on an engine, broadcasting state and emitting replay on game end. */
+/**
+ * Attach an onStateChange handler to an engine that:
+ *  1. Broadcasts sanitized state to both players after every mutation.
+ *  2. Emits replay_complete to both players when the game ends.
+ *
+ * Must be called AFTER creating the engine and BEFORE the first emit
+ * so the initial state reaches clients.
+ */
 function wireEngine(io: IO, engine: GameEngine, p0id: string, p1id: string, mode: ReplayFile['mode']) {
   engine.onStateChange = (state) => {
     broadcastState(io, state);
@@ -53,6 +79,17 @@ function wireEngine(io: IO, engine: GameEngine, p0id: string, p1id: string, mode
 
 // ── Broadcast helpers ─────────────────────────────────────────────────────────
 
+/**
+ * Send a tailored GameState snapshot to each player.
+ *
+ * Sanitization applied:
+ *  • Opponent’s hand and deck are cleared (hidden information).
+ *  • During effect_blue_look: the topCard in pendingEffect is hidden from the
+ *    non-active player (they shouldn’t see what the attacker is looking at).
+ *  • viewerIndex is set so each player’s client knows which side of the board
+ *    is “theirs”.
+ *  • rematchVotes can be injected externally (used when building vote-progress UI).
+ */
 function broadcastState(io: IO, state: GameState, votes?: [boolean, boolean]) {
   const [p0, p1] = state.players;
   const base: GameState = votes ? { ...state, rematchVotes: votes } : state;
@@ -78,6 +115,7 @@ function hiddenHand(player: PlayerState): PlayerState {
 
 // ── RPS helpers ───────────────────────────────────────────────────────────────
 
+/** Returns a Rock-Paper-Scissors outcome from the two choices: 0 if player 0 wins, 1 if player 1 wins, 'draw'. */
 function resolveRps(a: RpsChoice, b: RpsChoice): 0 | 1 | 'draw' {
   if (a === b) return 'draw';
   if (
@@ -108,6 +146,11 @@ function emitRpsState(
 
 // ── Handler registration ──────────────────────────────────────────────────────
 
+/**
+ * Register all Socket.io event listeners for a single connected socket.
+ * Called once per connection from server.ts.
+ * `id` is the socket’s unique ID, which doubles as the player’s ID throughout the game.
+ */
 export function registerHandlers(io: IO, socket: Sock) {
   const { id } = socket;
 
@@ -300,15 +343,21 @@ export function registerHandlers(io: IO, socket: Sock) {
     const voteState: [boolean, boolean] = [votes.has(ep0.id), votes.has(ep1.id)];
 
     if (voteState[0] && voteState[1]) {
-      // Both voted — start a new game (rematch skips RPS, keeps same order)
       rematchVoteMap.delete(code);
-      const [p0, p1] = room.players;
-      const newEngine = new GameEngine(code, p0, p1, room.settings);
-      room.engine = newEngine;
-      wireEngine(io, newEngine, ep0.id, ep1.id, 'multiplayer');
-      // Reattach AI to the new engine
-      if (ai) ai.activate(newEngine);
-      broadcastState(io, newEngine.state);
+
+      if (ai) {
+        // Server-based single-player: AI doesn't do RPS, restart immediately
+        const [p0, p1] = room.players;
+        const newEngine = new GameEngine(code, p0, p1, room.settings);
+        room.engine = newEngine;
+        wireEngine(io, newEngine, ep0.id, ep1.id, 'single-player');
+        ai.activate(newEngine);
+        broadcastState(io, newEngine.state);
+      } else {
+        // Multiplayer: go back to RPS so players choose who goes first again
+        room.engine = null;
+        emitRpsState(io, room, 'rps_pick');
+      }
     } else {
       broadcastState(io, room.engine.state, voteState);
     }
@@ -330,6 +379,7 @@ export function registerHandlers(io: IO, socket: Sock) {
   });
 }
 
+/** Build a placeholder PlayerState for the lobby/RPS phases before the GameEngine creates real ones. */
 function makePendingPlayer(id: string, name: string): PlayerState {
   return {
     id, name,

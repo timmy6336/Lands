@@ -16,11 +16,11 @@ Each turn, the active player plays one card from their hand. The played card goe
 
 | Land | Effect |
 |------|--------|
-| **White** (Plains) | Draw a card from your deck |
-| **Red** (Mountain) | Choose one of your opponent's field lands to destroy |
-| **Blue** (Island) | Peek at the top card of your deck — keep it on top or send it to the bottom |
-| **Green** (Forest) | Retrieve a land from your graveyard back to your hand |
-| **Black** (Swamp) | Force your opponent to reveal 3 cards from their hand — pick one to discard |
+| **White** | Draw a card from your deck |
+| **Red** | Choose one of your opponent's field lands to destroy |
+| **Blue** | Peek at the top card of your deck — keep it on top or send it to the bottom |
+| **Green** | Retrieve a land from your graveyard back to your hand |
+| **Black** | Force your opponent to reveal 3 cards from their hand — pick one to discard |
 
 ### Countering
 When an opponent plays a land, you have a window to counter it:
@@ -90,7 +90,36 @@ Three difficulty levels:
 
 ## Version History
 
-### v0.2.0 — Current
+### v0.3.1 — Current
+**MTG Name Removal · Rematch RPS · Effect Result Popups**
+
+- **Land names cleaned up**: Removed all MTG-derived land names (Plains, Mountain, Island, Forest, Swamp). Cards are now labelled by their color only (White, Red, Blue, Green, Black) throughout the UI, card art, and codebase.
+- **Rematch now re-runs RPS (multiplayer)**: After both players vote rematch, the game returns to the Rock-Paper-Scissors screen so players decide who goes first again, just like the start of a new game.
+- **Rematch go-first picker (single-player)**: After choosing rematch in a single-player game, a prompt asks who goes first (you or the AI) before the new game starts.
+- **Effect result popups**: After a Red, Green, Blue, or Black land effect resolves, the *opponent* (not the caster) sees a brief popup showing what happened:
+  - **Red** — which land color was destroyed and from whose field
+  - **Green** — which land color was retrieved and to whose hand
+  - **Blue** — whether the opponent's top deck card was kept on top or sent to the bottom
+  - **Black** — which land color was discarded from whose hand
+- **Per-effect notification toggles**: Each of the four effect popups can be independently enabled or disabled in Settings → Effect Notifications.
+
+---
+
+### v0.3.0
+**Replay System**
+
+- **Replay recording**: Every completed game (single-player and multiplayer) is automatically saved as a replay file in `userData/replays/`.
+- **Replay Browser**: Accessible from the home screen via the Replays button. Lists all saved replays with metadata — date, players, winner, turn count, and mode. Replays can be watched or deleted.
+- **Replay Viewer**: Watch any saved game step by step. The viewer replicates the exact game board layout (opponent field, hands, status bar, your field) so it reads identically to a live game.
+  - **Controls** (bottom bar): Play/Pause auto-advance, step backward/forward one snapshot, jump to start/end, scrubber slider, and speed buttons (0.5×, 1×, 2×, 4×)
+  - **Flip perspective**: Swap which player's side is shown at the bottom
+  - Both hands are fully visible during replay
+- **Snapshot capture**: The game engine records a deep-clone of the full `GameState` after every state emission, ensuring every phase transition and effect is replayable.
+- **Multiplayer support**: After an online game ends the server emits the full replay to both players, who each save it locally.
+
+---
+
+### v0.2.0
 **Counter & Targeting Overhaul + UI Polish**
 
 - **Targeting order fixed**: Red and Green lands now open the counter window *before* the attacker picks their target. Previously the target was selected first, revealing information before the opponent decided whether to counter. Target selection now happens after the counter window resolves.

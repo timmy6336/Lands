@@ -1,9 +1,29 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// shared/types.ts — the single source of truth for every type in the app
+//
+// This file is imported by ALL three packages: the React client, the Node server,
+// and the Electron main process.  It has zero runtime dependencies (no imports
+// from any package) and must stay that way so each package can import it without
+// pulling in unintended code.
+//
+// Reading order if you want to understand the data model:
+//   1. Color / Card          — the atomic game pieces
+//   2. PlayerState           — one player’s full snapshot
+//   3. GamePhase             — the state-machine diagram for a single game
+//   4. GameState             — the whole game at one point in time
+//   5. ReplayFile            — a saved sequence of GameState snapshots
+//   6. ServerToClientEvents  — what the server can push to clients
+//   7. ClientToServerEvents  — what clients can send to the server
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** The five land colors available in the game. */
 export type Color = 'white' | 'red' | 'blue' | 'green' | 'black';
 
 export const ALL_COLORS: Color[] = ['white', 'red', 'blue', 'green', 'black'];
 
+/** A card in a player's hand, deck, field, or graveyard. */
 export interface Card {
-  id: string;
+  id: string;   // UUID, unique across the entire game
   color: Color;
 }
 
@@ -14,13 +34,19 @@ export interface CardCustomization {
 export type Customizations = Record<Color, CardCustomization>;
 
 export const DEFAULT_CUSTOMIZATIONS: Customizations = {
-  white: { displayName: 'Plains' },
-  red:   { displayName: 'Mountain' },
-  blue:  { displayName: 'Island' },
-  green: { displayName: 'Forest' },
-  black: { displayName: 'Swamp' },
+  white: { displayName: 'White' },
+  red:   { displayName: 'Red' },
+  blue:  { displayName: 'Blue' },
+  green: { displayName: 'Green' },
+  black: { displayName: 'Black' },
 };
 
+/**
+ * One player’s complete game state.
+ * The server sanitizes this before sending to each client:
+ *   - `hand` and `deck` are replaced with [] for the *opponent* (hidden information).
+ *   - `handCount` and `deckCount` are always accurate so the UI can show counts.
+*/
 export interface PlayerState {
   id: string;
   name: string;
@@ -35,6 +61,21 @@ export interface PlayerState {
   isConnected: boolean;
 }
 
+/**
+ * The full turn/phase state machine.  A game flows through these phases in order:
+ *
+ *   waiting → customizing → rps_pick → rps_choose
+ *     → (game starts) → playing_play
+ *         → [counter_window → [counter_response]] (repeating until chain resolves)
+ *         → effect_* phases (zero or one per turn, depending on land color)
+ *         → back to playing_play (next player’s turn)
+ *     → ended
+ *
+ * Phases with the `pre_target_*` prefix are special: they occur BEFORE the counter
+ * window for Red/Green cards so the attacker commits to a target, but that target
+ * isn't revealed to the defender until the counter window resolves.  This prevents
+ * the defender from using the target info to decide whether to counter.
+ */
 export type GamePhase =
   | 'waiting'            // 1 player in room, waiting for second
   | 'customizing'        // both players connected, customizing before ready
@@ -56,6 +97,15 @@ export type GamePhase =
 export type RpsChoice = 'rock' | 'paper' | 'scissors';
 export type AIDifficulty = 'easy' | 'medium' | 'hard';
 
+/**
+ * Represents one step in the counter-chain for the current pending play.
+ * Chain structure:
+ *   [0] play          — the attacker’s land card
+ *   [1] counter       — defender spends Blue + matching to negate it
+ *   [2] counter_counter — attacker spends 2 Blue to negate the counter
+ *   [3] counter (again) — and so on…
+ * Chain length is odd → the play resolves; even → countered.
+ */
 export interface CounterChainEntry {
   playerId: string;
   type: 'play' | 'counter' | 'counter_counter';
@@ -63,6 +113,15 @@ export interface CounterChainEntry {
   extraCard?: Card;      // counter: the matching-color card discarded with the Blue
 }
 
+/**
+ * Carries extra data needed by effect-resolution phases.
+ * Only one PendingEffect exists at a time, matching the current GamePhase:
+ *   black_show  — waiting for defender to reveal 3 cards
+ *   black_pick  — attacker picks which revealed card to discard (shownCards filled in)
+ *   blue_look   — attacker sees their deck’s top card (topCard filled in)
+ *   red_pick    — attacker picks an opponent field card to destroy
+ *   green_pick  — attacker picks a graveyard card to retrieve
+ */
 export interface PendingEffect {
   type: 'black_show' | 'black_pick' | 'blue_look' | 'red_pick' | 'green_pick';
   shownCards?: Card[];   // Black pick phase: cards opponent revealed
@@ -79,6 +138,11 @@ export interface GameSettings {
   isSinglePlayer?: boolean;             // true when playing against AI
 }
 
+/**
+ * The complete game snapshot at a single point in time.
+ * This is what gets serialized and sent over the network,
+ * stored in replay files, and held in React state on the client.
+ */
 export interface GameState {
   gameId: string;
   roomCode: string;
@@ -95,6 +159,12 @@ export interface GameState {
   winReason?: string;
   settings: GameSettings;
   rematchVotes?: [boolean, boolean]; // which players have voted for rematch
+  /** Populated for one turn after an effect resolves, so the UI can show a result popup to the non-attacker. */
+  effectResult?:
+    | { type: 'red';   cardColor: Color; ownerName: string; attackerIndex: 0 | 1 }
+    | { type: 'green'; cardColor: Color; ownerName: string; attackerIndex: 0 | 1 }
+    | { type: 'blue';  keptOnTop: boolean;                  attackerIndex: 0 | 1 }
+    | { type: 'black'; cardColor: Color; ownerName: string; attackerIndex: 0 | 1 };
   /** Set by server per-player so clients always know their own index */
   viewerIndex?: 0 | 1;
   /** Result of the most recent RPS round */
@@ -119,6 +189,7 @@ export interface ReplayFile {
 
 // ── Socket event typings ────────────────────────────────────────────────────
 
+/** Typed Socket.io events the server can push to connected clients. */
 export interface ServerToClientEvents {
   game_state: (state: GameState) => void;
   room_created: (data: { roomCode: string }) => void;
@@ -127,6 +198,7 @@ export interface ServerToClientEvents {
   replay_complete: (replay: ReplayFile) => void;
 }
 
+/** Typed Socket.io events clients can send to the server. */
 export interface ClientToServerEvents {
   create_room:        (data: { playerName: string; settings: GameSettings }) => void;
   create_singleplayer:(data: { playerName: string; difficulty: AIDifficulty; settings: GameSettings }) => void;

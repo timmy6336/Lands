@@ -1,3 +1,6 @@
+// Rock-Paper-Scissors screen shown before the game starts to determine who goes first.
+// Both players simultaneously pick; ties show the result and re-run;
+// the winner then picks which player goes first (can be either player).
 import { useEffect, useState } from 'react';
 import { GameState, RpsChoice } from '@lands/shared';
 

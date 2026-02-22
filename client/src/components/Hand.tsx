@@ -1,3 +1,7 @@
+// Renders a row of cards from a player’s hand.
+// When `hiddenCount` is set and `cards` is empty, shows that many face-down
+// HiddenCard placeholders (used for the opponent’s hand where content is secret).
+// Supports click-to-select for the playing_play phase via `selectableIds` + `onSelect`.
 import { Card as CardType, Customizations } from '@lands/shared';
 import { Card, HiddenCard } from './Card';
 

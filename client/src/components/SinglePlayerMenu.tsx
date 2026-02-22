@@ -1,3 +1,4 @@
+// Single-player configuration screen: choose AI difficulty, counter time limit, and who goes first.
 import { useState } from 'react';
 import { AIDifficulty, GameSettings } from '@lands/shared';
 

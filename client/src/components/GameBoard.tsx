@@ -1,5 +1,24 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// client/src/components/GameBoard.tsx
+//
+// The main game screen rendered during an active game.
+// Composed of five visible layers (top to bottom):
+//   1. Opponent info bar    — name, turn indicator, hand count
+//   2. Opponent Hand        — face-down if opponent (hidden cards shown as backs)
+//   3. Opponent Field       — lands in play, grouped by color; + Graveyard + Deck
+//   4. Status bar           — turn number, current phase label, countdown timer
+//   5. My Field             — same structure as opponent
+//   6. My Hand              — face-up, selectable during playing_play
+//   7. My info bar          — name, surrender button, Log/Chat toggles
+//
+// Floating overlays (conditional):
+//   CounterPrompt     — defender’s counter window
+//   EffectPrompt      — target selection for Red/Green/Blue/Black effects
+//   GameLog panel     — side drawer
+//   ChatPanel         — side drawer
+// ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from 'react';
-import { ChatMessage, GameState, ClientToServerEvents } from '@lands/shared';
+import { ChatMessage, GameState, ClientToServerEvents, Color } from '@lands/shared';
 import { Field } from './Field';
 import { Hand } from './Hand';
 import { Graveyard } from './Graveyard';
@@ -8,6 +27,7 @@ import { CounterPrompt } from './CounterPrompt';
 import { EffectPrompt } from './EffectPrompt';
 import { GameLog } from './GameLog';
 import { ChatPanel } from './ChatPanel';
+import { useUISettings } from '../hooks/useUISettings';
 import { useSound } from '../hooks/useSound';
 import { useGameLog } from '../hooks/useGameLog';
 
@@ -34,12 +54,52 @@ const PHASE_LABELS: Record<string, string> = {
   effect_black_pick: 'Black land effect',
 };
 
+const EFFECT_COLORS: Record<string, string> = {
+  white: '#d6ceb0',
+  red:   '#c0392b',
+  blue:  '#1a6fa8',
+  green: '#2d7a47',
+  black: '#887799',
+};
+
 export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, playerName }: Props) {
   const [surrenderConfirm, setSurrenderConfirm] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const { playDraw, playPlay, playCounter } = useSound();
   const { entries: logEntries, addEntry: addLogEntry } = useGameLog(gameState);
+  const {
+    showEffectResultRed, showEffectResultGreen,
+    showEffectResultBlue, showEffectResultBlack,
+  } = useUISettings();
+
+  // Effect result popup — only shown to the non-attacker, and only if the setting is enabled.
+  type EffectPopup =
+    | { type: 'red';   cardColor: Color; ownerName: string }
+    | { type: 'green'; cardColor: Color; ownerName: string }
+    | { type: 'blue';  keptOnTop: boolean }
+    | { type: 'black'; cardColor: Color; ownerName: string };
+  const [effectPopup, setEffectPopup] = useState<EffectPopup | null>(null);
+  useEffect(() => {
+    const r = gameState.effectResult;
+    if (!r) return;
+    // Only show to the opponent — not the player who played the effect
+    if (gameState.viewerIndex === r.attackerIndex) return;
+    const settingOn =
+      (r.type === 'red'   && showEffectResultRed)   ||
+      (r.type === 'green' && showEffectResultGreen) ||
+      (r.type === 'blue'  && showEffectResultBlue)  ||
+      (r.type === 'black' && showEffectResultBlack);
+    if (!settingOn) return;
+    setEffectPopup(r);
+  }, [gameState.effectResult]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-dismiss the effect popup after 3 seconds
+  useEffect(() => {
+    if (!effectPopup) return;
+    const id = setTimeout(() => setEffectPopup(null), 3000);
+    return () => clearTimeout(id);
+  }, [effectPopup]);
 
   // Mirror incoming chat messages into the game log
   const prevChatLenRef = useRef(0);
@@ -260,6 +320,88 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
           {isMyTurn
             ? `Waiting for ${opponent.name} to respond…`
             : `${opponent.name} played a ${gameState.pendingPlay.color} land`}
+        </div>
+      )}
+
+      {/* Effect result popup */}
+      {effectPopup && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+        >
+          <div
+            className="pointer-events-auto rounded-xl border border-border flex flex-col items-center gap-3 text-center cursor-pointer"
+            style={{
+              background: 'var(--surface)',
+              boxShadow: `0 0 28px rgba(0,0,0,0.55), 0 0 0 2px ${'cardColor' in effectPopup ? EFFECT_COLORS[effectPopup.cardColor] : EFFECT_COLORS.blue}55`,
+              padding: '1.5rem 2rem',
+              maxWidth: 320,
+            }}
+            onClick={() => setEffectPopup(null)}
+          >
+            {effectPopup.type === 'red' ? (
+              <>
+                <span style={{ fontSize: '2.5rem' }}>💥</span>
+                <p className="m-0 font-semibold" style={{ color: EFFECT_COLORS.red, fontSize: '1rem' }}>
+                  Land Destroyed
+                </p>
+                <div
+                  className="rounded-lg px-4 py-2 font-bold text-sm"
+                  style={{ background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}
+                >
+                  {effectPopup.cardColor.charAt(0).toUpperCase() + effectPopup.cardColor.slice(1)} land
+                </div>
+                <p className="text-muted text-sm m-0">
+                  Removed from <strong className="text-foreground">{effectPopup.ownerName}</strong>'s field
+                </p>
+              </>
+            ) : effectPopup.type === 'green' ? (
+              <>
+                <span style={{ fontSize: '2.5rem' }}>♻️</span>
+                <p className="m-0 font-semibold" style={{ color: EFFECT_COLORS.green, fontSize: '1rem' }}>
+                  Land Retrieved
+                </p>
+                <div
+                  className="rounded-lg px-4 py-2 font-bold text-sm"
+                  style={{ background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}
+                >
+                  {effectPopup.cardColor.charAt(0).toUpperCase() + effectPopup.cardColor.slice(1)} land
+                </div>
+                <p className="text-muted text-sm m-0">
+                  Returned to <strong className="text-foreground">{effectPopup.ownerName}</strong>'s hand
+                </p>
+              </>
+            ) : effectPopup.type === 'blue' ? (
+              <>
+                <span style={{ fontSize: '2.5rem' }}>🔮</span>
+                <p className="m-0 font-semibold" style={{ color: EFFECT_COLORS.blue, fontSize: '1rem' }}>
+                  Blue Land Effect
+                </p>
+                <p className="text-muted text-sm m-0">
+                  Opponent's top deck card was{' '}
+                  <strong className="text-foreground">
+                    {effectPopup.keptOnTop ? 'kept on top' : 'sent to the bottom'}
+                  </strong>
+                </p>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: '2.5rem' }}>💀</span>
+                <p className="m-0 font-semibold" style={{ color: EFFECT_COLORS.black, fontSize: '1rem' }}>
+                  Card Discarded
+                </p>
+                <div
+                  className="rounded-lg px-4 py-2 font-bold text-sm"
+                  style={{ background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}
+                >
+                  {effectPopup.cardColor.charAt(0).toUpperCase() + effectPopup.cardColor.slice(1)} land
+                </div>
+                <p className="text-muted text-sm m-0">
+                  Discarded from <strong className="text-foreground">{effectPopup.ownerName}</strong>'s hand
+                </p>
+              </>
+            )}
+            <p className="text-muted text-[0.7rem] m-0">click to dismiss</p>
+          </div>
         </div>
       )}
 

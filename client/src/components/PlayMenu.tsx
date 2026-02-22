@@ -1,3 +1,4 @@
+// Mode selection screen: choose between Single Player (vs AI) or Multiplayer (host/join).
 interface Props {
   onSinglePlayer: () => void;
   onHost: () => void;

@@ -1,14 +1,16 @@
+// Settings screen: manage server port, UPnP, player name, and custom card artwork.
+// Card image changes persist to Electron’s userData/cards/ directory.
 import { useEffect, useState } from 'react';
-import { Color, ALL_COLORS } from '@lands/shared';
 import { AppSettings } from '../electron.d';
+import { ALL_COLORS, Color } from '@lands/shared';
 import { useUISettings } from '../hooks/useUISettings';
 
 const COLOR_LABELS: Record<Color, string> = {
-  white: 'White / Plains',
-  red:   'Red / Mountain',
-  blue:  'Blue / Island',
-  green: 'Green / Forest',
-  black: 'Black / Swamp',
+  white: 'White',
+  red:   'Red',
+  blue:  'Blue',
+  green: 'Green',
+  black: 'Black',
 };
 
 const COLOR_PREVIEW_BG: Record<Color, string> = {
@@ -28,7 +30,14 @@ interface Props {
 
 export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }: Props) {
   const isElectron = !!window.electronAPI;
-  const { showCardTypeOnHover, setShowCardTypeOnHover, showCardEffectsOnHover, setShowCardEffectsOnHover } = useUISettings();
+  const {
+    showCardTypeOnHover, setShowCardTypeOnHover,
+    showCardEffectsOnHover, setShowCardEffectsOnHover,
+    showEffectResultRed, setShowEffectResultRed,
+    showEffectResultGreen, setShowEffectResultGreen,
+    showEffectResultBlue, setShowEffectResultBlue,
+    showEffectResultBlack, setShowEffectResultBlack,
+  } = useUISettings();
 
   const [defaultPort, setDefaultPort] = useState(3001);
   const [upnpEnabled, setUpnpEnabled] = useState(false);
@@ -146,7 +155,34 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
           />
           <span className="text-muted text-sm">Show card effect on hover</span>
         </label>
+      </section>
 
+      {/* Effect Notifications */}
+      <section>
+        <h3 className="text-foreground mb-1 text-base mt-0">Effect Notifications</h3>
+        <p className="text-muted text-sm mb-3 mt-0">Show a popup to the opponent after an effect resolves.</p>
+        <div className="bg-surface border border-border rounded-[10px] px-5 py-4 flex flex-col gap-3 max-w-[420px]">
+          {([
+            { key: 'red',   label: 'Red — land destroyed',                   val: showEffectResultRed,   set: setShowEffectResultRed   },
+            { key: 'green', label: 'Green — land retrieved from graveyard',   val: showEffectResultGreen, set: setShowEffectResultGreen },
+            { key: 'blue',  label: 'Blue — deck card kept on top / sent to bottom', val: showEffectResultBlue, set: setShowEffectResultBlue },
+            { key: 'black', label: 'Black — card discarded from hand',        val: showEffectResultBlack, set: setShowEffectResultBlack },
+          ] as const).map(({ key, label, val, set }) => (
+            <label key={key} className="flex items-center justify-between gap-4 cursor-pointer">
+              <span className="text-muted text-sm">{label}</span>
+              <input
+                type="checkbox"
+                checked={val}
+                onChange={e => set(e.target.checked)}
+                style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
+              />
+            </label>
+          ))}
+        </div>
+      </section>
+
+      {/* Card Images */}
+      <section>
         <div className="flex flex-wrap gap-4">
           {ALL_COLORS.map(color => (
             <div key={color} className="bg-surface border border-border rounded-[10px] p-3 flex flex-col gap-2 items-center min-w-[120px]">

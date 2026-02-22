@@ -1,6 +1,10 @@
+// Renders a player’s field (lands in play).
+// Cards are visually grouped by color into stacks, each showing a count badge.
+// When `selectableIds` is provided (Red/Green effect prompts), only those cards
+// are clickable; the rest are dimmed.
 import { useState } from 'react';
-import { Card as CardType, Color, Customizations, DEFAULT_CUSTOMIZATIONS } from '@lands/shared';
 import { Card } from './Card';
+import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
 
 interface Props {
   cards: CardType[];

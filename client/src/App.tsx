@@ -1,3 +1,22 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// client/src/App.tsx — top-level screen router
+//
+// Manages which screen is displayed and owns all the top-level state that
+// needs to be shared between screens (server URL, player name, game settings…).
+//
+// Screen routing:
+//   home              — main menu
+//   play-menu         — multiplayer / single-player selector
+//   single-player-menu — AI difficulty + go-first choice
+//   single-player     — active local game (routed to GameBoard/GameOver)
+//   host / join       — multiplayer room creation/joining (connects socket)
+//   replays           — saved replay browser
+//   replay-viewer     — watching a replay
+//   settings / rules  — info screens
+//
+// When `gameState` is non-null and not in 'waiting', in-game screens
+// (RpsScreen, GameBoard, GameOver) take priority over nav screens.
+// ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatMessage, GameSettings, ReplayFile } from '@lands/shared';
@@ -56,6 +75,7 @@ function AppInner() {
   const [pendingJoin, setPendingJoin] = useState<{ roomCode: string; settings: GameSettings } | null>(null);
   const [hostSettings, setHostSettings] = useState<GameSettings>({ counterTimeLimitSeconds: 15 });
   const [localGameParams, setLocalGameParams] = useState<LocalGameParams | null>(null);
+  const [pendingSPRematch, setPendingSPRematch] = useState(false);
   const [replayToView, setReplayToView] = useState<ReplayFile | null>(null);
 
   // Saved Electron settings (port, UPnP) — loaded once
@@ -119,6 +139,7 @@ function AppInner() {
     setServerUrl(null);
     setPendingJoin(null);
     setLocalGameParams(null);
+    setPendingSPRematch(false);
     roomActionSent.current = false;
     setScreen('home');
   }
@@ -167,13 +188,54 @@ function AppInner() {
     }
 
     if (phase === 'ended') {
+      // Single-player: show a go-first picker before restarting
+      if (pendingSPRematch && isLocalGame && localGameParams) {
+        const aiName = gameState.players[localGameParams.goFirst ? 1 : 0].name;
+        return (
+          <div className="flex flex-col items-center justify-center h-full gap-6 text-center p-8">
+            <h2 className="text-accent m-0">Rematch — Who goes first?</h2>
+            <div className="flex gap-4 flex-wrap justify-center">
+              <button
+                className="btn-primary"
+                style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}
+                onClick={() => {
+                  setPendingSPRematch(false);
+                  setLocalGameParams(prev => prev ? { ...prev, goFirst: true, rematchCount: (prev.rematchCount ?? 0) + 1 } : null);
+                }}
+              >
+                {playerName} goes first
+              </button>
+              <button
+                className="btn-secondary"
+                style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}
+                onClick={() => {
+                  setPendingSPRematch(false);
+                  setLocalGameParams(prev => prev ? { ...prev, goFirst: false, rematchCount: (prev.rematchCount ?? 0) + 1 } : null);
+                }}
+              >
+                {aiName} goes first
+              </button>
+            </div>
+            <button className="btn-secondary" style={{ padding: '0.5rem 1.5rem' }} onClick={goHome}>
+              Leave Game
+            </button>
+          </div>
+        );
+      }
+
       return (
         <CardImagesContext.Provider value={cardImageUrls}>
           <GameOver
             gameState={gameState}
             myIndex={myIndex}
             onPlayAgain={goHome}
-            onRematch={() => send('rematch_vote')}
+            onRematch={() => {
+              if (isLocalGame) {
+                setPendingSPRematch(true);
+              } else {
+                send('rematch_vote');
+              }
+            }}
           />
         </CardImagesContext.Provider>
       );

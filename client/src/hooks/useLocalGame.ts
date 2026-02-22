@@ -1,3 +1,21 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// client/src/hooks/useLocalGame.ts
+//
+// Runs the game engine and AI entirely inside the Electron renderer process.
+// No network or server port is needed for single-player games.
+//
+// How it works:
+//   1. Creates a GameEngine with the human and AI player IDs.
+//   2. Creates an AIPlayer and calls aiPlayer.activate(engine), which chains
+//      onto engine.onStateChange so the AI reacts to every state change.
+//   3. engine.onStateChange sanitizes the state (hides AI hand/deck) then
+//      calls setGameState to trigger a React re-render.
+//   4. The `send` function translates socket-style events into direct
+//      engine method calls (e.g. 'play_card' → engine.playCard).
+//   5. On rematch, startGame() is called again with fresh state, and the
+//      engineInstance guard ensures stale callbacks from the old engine
+//      can no longer update React state.
+// ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from 'react';
 import { GameState, AIDifficulty, GameSettings, ClientToServerEvents, ReplayFile } from '@lands/shared';
 import { GameEngine } from '@lands/game/GameEngine';
@@ -8,6 +26,8 @@ export interface LocalGameParams {
   difficulty: AIDifficulty;
   settings: GameSettings;
   goFirst: boolean;
+  /** Incremented on each rematch so the engine always restarts even if goFirst is unchanged. */
+  rematchCount?: number;
 }
 
 type SendFn = <K extends keyof ClientToServerEvents>(
@@ -108,7 +128,7 @@ export function useLocalGame(params: LocalGameParams | null): {
 
   // Stable key so we don't recreate the engine on unrelated re-renders
   const paramsKey = params
-    ? `${params.playerName}|${params.difficulty}|${String(params.settings.counterTimeLimitSeconds)}|${params.goFirst}`
+    ? `${params.playerName}|${params.difficulty}|${String(params.settings.counterTimeLimitSeconds)}|${params.goFirst}|${params.rematchCount ?? 0}`
     : null;
 
   useEffect(() => {
@@ -123,6 +143,11 @@ export function useLocalGame(params: LocalGameParams | null): {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramsKey]);
 
+  /**
+   * Translates socket-style events into direct GameEngine method calls.
+   * Matches the signature of useSocket’s `send` so GameBoard works identically
+   * for both local and multiplayer games.
+   */
   function send<K extends keyof ClientToServerEvents>(
     event: K,
     ...args: Parameters<ClientToServerEvents[K]>

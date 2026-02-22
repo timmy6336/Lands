@@ -1,3 +1,5 @@
+// Main menu screen: entry point of the app.
+// Buttons navigate to Play, Settings, Rules, and Replays.
 interface Props {
   onPlay: () => void;
   onSettings: () => void;

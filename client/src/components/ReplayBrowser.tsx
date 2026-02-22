@@ -1,3 +1,7 @@
+// ReplayBrowser.tsx — Lists saved replay files from the user's data directory (loaded via
+// the electron IPC 'list-replays' channel). Clicking a replay calls onSelect to launch
+// ReplayViewer. Files are sorted newest-first by their embedded timestamp.
+
 import { useEffect, useState } from 'react';
 import { ReplayFile } from '@lands/shared';
 

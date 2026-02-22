@@ -1,3 +1,6 @@
+// Floating overlay shown to the defender during the counter window (phase === 'counter_window')
+// and to the attacker during the counter-counter window (phase === 'counter_response').
+// Handles automatic card pre-selection and shows a confirm step listing which cards will be spent.
 import { useEffect, useState } from 'react';
 import { GameState } from '@lands/shared';
 import { Card } from './Card';

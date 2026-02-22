@@ -1,3 +1,5 @@
+// End-of-game overlay showing the winner, win reason, and rematch/home buttons.
+// Sits on top of GameBoard so the final board state is visible behind it.
 import { GameState } from '@lands/shared';
 
 const FUNNY_DRAW_LINES = [
