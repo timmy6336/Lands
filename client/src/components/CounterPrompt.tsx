@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card as CardType, Color, GameState } from '@lands/shared';
+import { GameState } from '@lands/shared';
 import { Card } from './Card';
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
   myIndex: 0 | 1;
   onCounter: (blueCardId: string, matchingCardId: string) => void;
   onPass: () => void;
-  isCounterCounter?: boolean; // attacker responding to counter
+  isCounterCounter?: boolean;
 }
 
 export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounterCounter }: Props) {
@@ -17,10 +17,7 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
   const isInfinite = gameState.settings.counterTimeLimitSeconds === null;
 
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [selectedBlue1, setSelectedBlue1] = useState<string | null>(null);
-  const [selectedBlue2, setSelectedBlue2] = useState<string | null>(null);
-  const [selectedMatching, setSelectedMatching] = useState<string | null>(null);
-  const [mode, setMode] = useState<'prompt' | 'select'>('prompt');
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (isInfinite || !deadline) { setTimeLeft(null); return; }
@@ -39,23 +36,44 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
     ? blueCards
     : me.hand.filter(c => c.color === pendingCard.color);
 
-  function submitCounter() {
-    if (isCounterCounter) {
-      if (selectedBlue1 && selectedBlue2 && selectedBlue1 !== selectedBlue2) {
-        onCounter(selectedBlue1, selectedBlue2);
-      }
-    } else {
-      if (selectedBlue1 && selectedMatching) {
-        onCounter(selectedBlue1, selectedMatching);
-      }
-    }
-  }
-
   const canCounter = isCounterCounter
     ? blueCards.length >= 2
     : pendingCard.color === 'blue'
-      ? blueCards.length >= 2            // need 2 blues: one to counter, one as the matching blue
+      ? blueCards.length >= 2
       : blueCards.length >= 1 && matchingCards.length >= 1;
+
+  // Auto-select the cards that will be spent — no manual selection needed
+  function getAutoCards(): { blueId: string; matchingId: string } | null {
+    const blue = blueCards[0];
+    if (!blue) return null;
+    if (isCounterCounter) {
+      const second = blueCards.find(c => c.id !== blue.id);
+      if (!second) return null;
+      return { blueId: blue.id, matchingId: second.id };
+    }
+    if (pendingCard.color === 'blue') {
+      const second = blueCards.find(c => c.id !== blue.id);
+      if (!second) return null;
+      return { blueId: blue.id, matchingId: second.id };
+    }
+    const match = matchingCards.find(c => c.id !== blue.id) ?? matchingCards[0];
+    if (!match) return null;
+    return { blueId: blue.id, matchingId: match.id };
+  }
+
+  const autoPicked = getAutoCards();
+
+  function confirm() {
+    if (autoPicked) onCounter(autoPicked.blueId, autoPicked.matchingId);
+  }
+
+  // Cards that will be spent, for display in confirmation
+  const spentCards = autoPicked
+    ? [
+        me.hand.find(c => c.id === autoPicked.blueId)!,
+        me.hand.find(c => c.id === autoPicked.matchingId)!,
+      ].filter(Boolean)
+    : [];
 
   return (
     <div className="overlay">
@@ -81,12 +99,12 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
           </div>
         </div>
 
-        {mode === 'prompt' && (
+        {!confirming && (
           <div className="flex gap-3">
             <button
               className="btn-primary"
               disabled={!canCounter}
-              onClick={() => setMode('select')}
+              onClick={() => setConfirming(true)}
             >
               Counter {!canCounter && '(no cards)'}
             </button>
@@ -94,68 +112,17 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
           </div>
         )}
 
-        {mode === 'select' && (
-          <div className="flex flex-col gap-4">
-            {isCounterCounter ? (
-              <>
-                <p className="text-muted text-sm m-0">
-                  Select 2 Blue cards: ({[selectedBlue1, selectedBlue2].filter(Boolean).length}/2)
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {blueCards.map(c => {
-                    const selIdx = c.id === selectedBlue1 ? 1 : c.id === selectedBlue2 ? 2 : undefined;
-                    return (
-                      <Card
-                        key={c.id}
-                        card={c}
-                        customizations={me.customizations}
-                        selected={c.id === selectedBlue1 || c.id === selectedBlue2}
-                        selectionIndex={selIdx}
-                        onClick={() => {
-                          if (c.id === selectedBlue1) { setSelectedBlue1(null); return; }
-                          if (c.id === selectedBlue2) { setSelectedBlue2(null); return; }
-                          if (!selectedBlue1) setSelectedBlue1(c.id);
-                          else if (!selectedBlue2) setSelectedBlue2(c.id);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-muted text-sm m-0">Select 1 Blue card:</p>
-                <div className="flex flex-wrap gap-2">
-                  {blueCards.map(c => (
-                    <Card key={c.id} card={c} customizations={me.customizations}
-                      selected={c.id === selectedBlue1}
-                      onClick={() => setSelectedBlue1(prev => prev === c.id ? null : c.id)}
-                    />
-                  ))}
-                </div>
-                <p className="text-muted text-sm m-0">Select 1 {pendingCard.color} card:</p>
-                <div className="flex flex-wrap gap-2">
-                  {matchingCards.filter(c => c.id !== selectedBlue1).map(c => (
-                    <Card key={c.id} card={c} customizations={me.customizations}
-                      selected={c.id === selectedMatching}
-                      onClick={() => setSelectedMatching(prev => prev === c.id ? null : c.id)}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-
+        {confirming && (
+          <div className="flex flex-col gap-3">
+            <p className="text-muted text-sm m-0">These cards will be discarded:</p>
+            <div className="flex flex-wrap gap-2">
+              {spentCards.map(c => (
+                <Card key={c.id} card={c} customizations={me.customizations} />
+              ))}
+            </div>
             <div className="flex gap-3">
-              <button
-                className="btn-primary"
-                disabled={isCounterCounter
-                  ? !(selectedBlue1 && selectedBlue2 && selectedBlue1 !== selectedBlue2)
-                  : !(selectedBlue1 && selectedMatching)}
-                onClick={submitCounter}
-              >
-                Confirm Counter
-              </button>
-              <button className="btn-secondary" onClick={() => setMode('prompt')}>Back</button>
+              <button className="btn-primary" onClick={confirm}>Confirm Counter</button>
+              <button className="btn-secondary" onClick={() => setConfirming(false)}>Back</button>
             </div>
           </div>
         )}
