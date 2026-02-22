@@ -242,11 +242,6 @@ export function registerHandlers(io: IO, socket: Sock) {
     room?.engine?.effectResponse(id, data);
   });
 
-  socket.on('pre_target_response', ({ cardId }) => {
-    const room = rooms.getRoomByPlayerId(id);
-    room?.engine?.preTargetResponse(id, cardId);
-  });
-
   // ── Surrender ────────────────────────────────────────────────────────────────
 
   socket.on('surrender', () => {

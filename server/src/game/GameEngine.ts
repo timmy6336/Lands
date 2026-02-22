@@ -142,40 +142,6 @@ export class GameEngine {
     s.pendingPlay = card;
     s.counterChain = [{ playerId, type: 'play', card }];
 
-    // Red/Green with valid targets: enter pre-target phase before counter window
-    const defender = s.players[(1 - pi) as 0 | 1];
-    if (card.color === 'red' && defender.field.length > 0) {
-      s.phase = 'pre_target_red';
-      this.emit();
-      return;
-    }
-    if (card.color === 'green' && player.graveyard.length > 0) {
-      s.phase = 'pre_target_green';
-      this.emit();
-      return;
-    }
-
-    s.phase = 'counter_window';
-    this.startCounterTimer(() => this.resolveCounterWindow());
-    this.emit();
-  }
-
-  preTargetResponse(playerId: string, cardId: string) {
-    const s = this.state;
-    const pi = this.getPlayerIndex(playerId);
-    if (pi !== s.currentPlayerIndex) return;
-    if (s.phase !== 'pre_target_red' && s.phase !== 'pre_target_green') return;
-
-    // Validate that the targeted card exists in the right zone
-    if (s.phase === 'pre_target_red') {
-      const defender = s.players[(1 - pi) as 0 | 1];
-      if (!defender.field.some(c => c.id === cardId)) return;
-    } else {
-      const attacker = s.players[pi];
-      if (!attacker.graveyard.some(c => c.id === cardId)) return;
-    }
-
-    s.preTargetCardId = cardId;
     s.phase = 'counter_window';
     this.startCounterTimer(() => this.resolveCounterWindow());
     this.emit();
@@ -349,10 +315,7 @@ export class GameEngine {
       }
 
       case 'red': {
-        if (s.preTargetCardId) {
-          // Target was pre-selected before counter — resolve immediately
-          this.resolveRedPick(s.preTargetCardId);
-        } else if (defender.field.length === 0) {
+        if (defender.field.length === 0) {
           // Fizzle — no targets
           this.endTurn();
         } else {
@@ -364,11 +327,8 @@ export class GameEngine {
       }
 
       case 'green': {
-        if (s.preTargetCardId) {
-          // Target was pre-selected before counter — resolve immediately
-          this.resolveGreenPick(s.preTargetCardId);
-        } else if (attacker.graveyard.length === 0) {
-          // Fizzle
+        if (attacker.graveyard.length === 0) {
+          // Fizzle — nothing to retrieve
           this.endTurn();
         } else {
           s.pendingEffect = { type: 'green_pick' };
@@ -488,7 +448,6 @@ export class GameEngine {
     s.currentPlayerIndex = s.currentPlayerIndex === 0 ? 1 : 0;
     s.turnNumber++;
     s.pendingEffect = undefined;
-    s.preTargetCardId = undefined;
     // Auto-draw for the new active player
     drawOne(s.players[s.currentPlayerIndex]);
     s.phase = 'playing_play';

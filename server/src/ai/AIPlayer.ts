@@ -205,8 +205,6 @@ export class AIPlayer {
     const needsAct =
       (isMyTurn && (
         state.phase === 'playing_play'    ||
-        state.phase === 'pre_target_red'  ||
-        state.phase === 'pre_target_green'||
         state.phase === 'counter_response'||
         state.phase === 'effect_blue_look'||
         state.phase === 'effect_black_pick'||
@@ -246,22 +244,19 @@ export class AIPlayer {
 
   private act(state: GameState) {
     const myIndex  = this.myIndex;
-    const isMyTurn = state.currentPlayerIndex === myIndex;
     const me       = state.players[myIndex];
     const opponent = state.players[(1 - myIndex) as 0 | 1];
     const random   = Math.random() < RANDOM_CHANCE[this.difficulty];
 
     switch (state.phase) {
       case 'playing_play':     this.doPlayCard(me, opponent, state.turnNumber, random); break;
-      case 'pre_target_red':   this.doPreTargetRed(me, opponent, random); break;
-      case 'pre_target_green': this.doPreTargetGreen(me, random); break;
       case 'counter_window':   this.doCounter(state, me, opponent, random); break;
       case 'counter_response': this.doCounterCounter(state, me, random); break;
       case 'effect_blue_look': this.doBlueLook(state, me, random); break;
       case 'effect_black_show':this.doBlackShow(me, opponent, random); break;
       case 'effect_black_pick':this.doBlackPick(state, me, opponent, random); break;
-      case 'effect_red_pick':  this.doRedPickFallback(opponent, random); break;
-      case 'effect_green_pick':this.doGreenPickFallback(me, random); break;
+      case 'effect_red_pick':  this.doRedPick(opponent, random); break;
+      case 'effect_green_pick':this.doGreenPick(me, random); break;
     }
   }
 
@@ -426,6 +421,9 @@ export class AIPlayer {
         if (me.graveyard.length === 0) return 5; // fizzles
         const target = chooseBestGreenTarget(me.graveyard, me.field, myPaths);
         if (!target) return 8;
+        // In deferral mode: retrieving a blue directly solves the CC defense gap —
+        // score it above red/black setup plays so we grab counter capability first
+        if (deferWin && target.color === 'blue') return 850;
         if (myBest?.type === '5kind' && target.color === myBest.color) return 88;
         if (myBest?.type === 'rainbow') {
           const fieldColors = new Set(me.field.map(c => c.color));
@@ -452,24 +450,6 @@ export class AIPlayer {
         return score;
       }
     }
-  }
-
-  // ── Pre-targeting ─────────────────────────────────────────────────────────
-
-  private doPreTargetRed(me: PlayerState, opponent: PlayerState, random: boolean) {
-    if (opponent.field.length === 0) return;
-    const target = random
-      ? opponent.field[Math.floor(Math.random() * opponent.field.length)]
-      : (chooseBestRedTarget(opponent.field, getWinPaths(opponent)) ?? opponent.field[0]);
-    this.engine.preTargetResponse(this.playerId, target.id);
-  }
-
-  private doPreTargetGreen(me: PlayerState, random: boolean) {
-    if (me.graveyard.length === 0) return;
-    const target = random
-      ? me.graveyard[Math.floor(Math.random() * me.graveyard.length)]
-      : (chooseBestGreenTarget(me.graveyard, me.field, getWinPaths(me)) ?? me.graveyard[0]);
-    this.engine.preTargetResponse(this.playerId, target.id);
   }
 
   // ── Counter logic ─────────────────────────────────────────────────────────
@@ -503,7 +483,7 @@ export class AIPlayer {
     }
 
     // Strategic decision
-    const dec = this.evaluateCounter(state, me, opponent, pending, blues, matching);
+    const dec = this.evaluateCounter(me, opponent, pending, blues, matching);
     if (dec.counter && dec.blueId && dec.matchingId) {
       this.engine.counterResponse(this.playerId, true, dec.blueId, dec.matchingId);
     } else {
@@ -529,12 +509,21 @@ export class AIPlayer {
 
     // Counter-counter when our card is critical
     const myPaths = getWinPaths(this.engine.state.players[this.myIndex]);
+    const myField = this.engine.state.players[this.myIndex].field;
     const best    = myPaths[0];
     const isImportant =
-      isWinningCard(pending, this.engine.state.players[this.myIndex].field) ||
+      isWinningCard(pending, myField) ||
       (best?.type === '5kind' && pending.color === best.color && best.cardsNeeded <= 2);
 
-    if (isImportant) {
+    // With blue surplus (3+), also CC moderately important plays — the extra blue
+    // means we stay above the 2-blue CC threshold even after spending two
+    const hasBlueSurplus = blues.length >= 3;
+    const isModeratelyImportant = hasBlueSurplus && (
+      (best?.type === '5kind' && pending.color === best.color && best.cardsNeeded <= 3) ||
+      (best?.type === 'rainbow' && best.cardsNeeded <= 2)
+    );
+
+    if (isImportant || isModeratelyImportant) {
       this.engine.counterCounterResponse(this.playerId, true, blues[0].id, blues[1].id);
     } else {
       this.engine.counterCounterResponse(this.playerId, false);
@@ -542,7 +531,6 @@ export class AIPlayer {
   }
 
   private evaluateCounter(
-    state: GameState,
     me: PlayerState,
     opponent: PlayerState,
     pending: Card,
@@ -566,18 +554,14 @@ export class AIPlayer {
         break;
 
       case 'red': {
-        if (state.preTargetCardId) {
-          const targeted = me.field.find(c => c.id === state.preTargetCardId);
-          if (targeted) {
-            const myBest = myPaths[0];
-            if (myBest?.type === '5kind' && targeted.color === myBest.color) {
-              // Destroying my main win-path color
-              threat = myBest.cardsNeeded <= 1 ? 88 : 72;
-            } else if (me.field.filter(c => c.color === targeted.color).length === 1) {
-              threat = 55; // only copy of this color on my field
-            } else {
-              threat = 38;
-            }
+        // Target unknown until after counter resolves — use field state to estimate threat
+        const myBest = myPaths[0];
+        if (myBest?.type === '5kind') {
+          const copies = me.field.filter(c => c.color === myBest.color).length;
+          if (copies > 0) {
+            threat = myBest.cardsNeeded <= 1 ? 80 : copies === 1 ? 62 : 45;
+          } else {
+            threat = 40;
           }
         } else {
           threat = 45;
@@ -586,18 +570,14 @@ export class AIPlayer {
       }
 
       case 'green': {
-        if (state.preTargetCardId) {
-          // They're retrieving a card from their graveyard — does it advance their win?
-          const retrieved = opponent.graveyard.find(c => c.id === state.preTargetCardId);
-          if (retrieved) {
-            const futurePaths = getWinPaths({
-              ...opponent,
-              hand: [...opponent.hand, retrieved],
-            });
-            const futureNeeded = futurePaths[0]?.cardsNeeded ?? 999;
-            if (futureNeeded <= 1)      threat = 82;
-            else if (futureNeeded <= 2) threat = 62;
-            else                        threat = 35;
+        // Target card unknown — estimate based on opponent's graveyard depth
+        const oppBest = oppPaths[0];
+        if (oppBest?.type === '5kind' && oppBest.color) {
+          const inGrave = opponent.graveyard.filter(c => c.color === oppBest.color).length;
+          if (inGrave > 0) {
+            threat = oppBest.cardsNeeded <= 2 ? 68 : 45;
+          } else {
+            threat = 38;
           }
         } else {
           threat = 42;
@@ -748,7 +728,7 @@ export class AIPlayer {
     if (random) {
       target = shown[Math.floor(Math.random() * shown.length)];
     } else {
-      target = this.pickCardToDiscard(shown, opponent);
+      target = this.pickCardToDiscard(shown, me, opponent);
     }
 
     // Hard difficulty: remember the other shown cards (still in opponent's hand)
@@ -761,18 +741,22 @@ export class AIPlayer {
     this.engine.effectResponse(this.playerId, { type: 'black_pick', targetCardId: target.id });
   }
 
-  private pickCardToDiscard(shown: Card[], opponent: PlayerState): Card {
+  private pickCardToDiscard(shown: Card[], me: PlayerState, opponent: PlayerState): Card {
     const oppPaths = getWinPaths(opponent);
     const best     = oppPaths[0];
     const fieldColors = new Set(opponent.field.map(c => c.color));
+
+    // When we're holding the winning card, eliminating their counter capability
+    // is the top priority — score their blues above their win-path cards
+    const holdingWinCard = me.hand.some(c => isWinningCard(c, me.field));
 
     const scored = shown.map(card => {
       let score = 0;
       // Discard what hurts them most:
       // Win-path color for 5-kind
       if (best?.type === '5kind' && card.color === best.color) score += 90;
-      // Blue = counter capability
-      if (card.color === 'blue') score += 65;
+      // Blue = counter capability; prioritize above win-path when we hold the win card
+      if (card.color === 'blue') score += holdingWinCard ? 95 : 65;
       // Missing color for rainbow
       if (best?.type === 'rainbow' && !fieldColors.has(card.color)) score += 75;
       return { card, score };
@@ -782,9 +766,7 @@ export class AIPlayer {
     return scored[0].card;
   }
 
-  // Fallback pick phases (shouldn't normally be reached since we pre-target, but kept as safety)
-
-  private doRedPickFallback(opponent: PlayerState, random: boolean) {
+  private doRedPick(opponent: PlayerState, random: boolean) {
     if (opponent.field.length === 0) {
       this.engine.effectResponse(this.playerId, { type: 'red_pick', targetCardId: undefined });
       return;
@@ -795,7 +777,7 @@ export class AIPlayer {
     this.engine.effectResponse(this.playerId, { type: 'red_pick', targetCardId: target.id });
   }
 
-  private doGreenPickFallback(me: PlayerState, random: boolean) {
+  private doGreenPick(me: PlayerState, random: boolean) {
     if (me.graveyard.length === 0) {
       this.engine.effectResponse(this.playerId, { type: 'green_pick', targetCardId: undefined });
       return;

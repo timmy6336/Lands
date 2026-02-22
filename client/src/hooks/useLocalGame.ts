@@ -145,12 +145,6 @@ export function useLocalGame(params: LocalGameParams | null): {
         break;
       }
 
-      case 'pre_target_response': {
-        const { cardId } = (args as [{ cardId: string }])[0];
-        engine.preTargetResponse(HUMAN_ID, cardId);
-        break;
-      }
-
       case 'surrender':
         engine.surrender(HUMAN_ID);
         break;

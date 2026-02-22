@@ -6,7 +6,6 @@ import { Graveyard } from './Graveyard';
 import { DeckDisplay } from './DeckDisplay';
 import { CounterPrompt } from './CounterPrompt';
 import { EffectPrompt } from './EffectPrompt';
-import { PreTargetPrompt } from './PreTargetPrompt';
 import { GameLog } from './GameLog';
 import { ChatPanel } from './ChatPanel';
 import { useSound } from '../hooks/useSound';
@@ -26,8 +25,6 @@ interface Props {
 
 const PHASE_LABELS: Record<string, string> = {
   playing_play:      'Play a land',
-  pre_target_red:    'Targeting…',
-  pre_target_green:  'Targeting…',
   counter_window:    'Counter window open…',
   counter_response:  'Counter-counter window open…',
   effect_red_pick:   'Red land effect',
@@ -91,7 +88,6 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
     'effect_red_pick', 'effect_green_pick', 'effect_blue_look',
     'effect_black_show', 'effect_black_pick',
   ].includes(phase);
-  const isPreTarget = phase === 'pre_target_red' || phase === 'pre_target_green';
 
   // ── Shared info bar style factory ─────────────────────────────────────────
   const activeBarStyle = (active: boolean, color: string): React.CSSProperties => ({
@@ -258,16 +254,8 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         />
       )}
 
-      {isPreTarget && (
-        <PreTargetPrompt
-          gameState={gameState}
-          myIndex={myIndex}
-          onTarget={(cardId) => send('pre_target_response', { cardId })}
-        />
-      )}
-
       {/* Pending play indicator */}
-      {gameState.pendingPlay && !showCounterWindow && !showCounterCounterWindow && !isPreTarget && (
+      {gameState.pendingPlay && !showCounterWindow && !showCounterCounterWindow && (
         <div className="fixed top-3 left-1/2 -translate-x-1/2 bg-surface-2 border border-border rounded-lg px-4 py-1.5 text-sm text-muted pointer-events-none z-50">
           {isMyTurn
             ? `Waiting for ${opponent.name} to respond…`

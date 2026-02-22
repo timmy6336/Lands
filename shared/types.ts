@@ -42,15 +42,13 @@ export type GamePhase =
   | 'rps_choose'         // RPS winner picks who goes first
   | 'playing_draw'       // active player must draw (auto, brief)
   | 'playing_play'       // active player selects a card to play
-  | 'pre_target_red'     // attacker picks red target before counter window opens
-  | 'pre_target_green'   // attacker picks green target before counter window opens
   | 'counter_window'     // defender's counter prompt is open
   | 'counter_response'   // attacker's counter-counter prompt is open
   | 'effect_black_show'  // opponent picks 3 cards to reveal (Black effect)
   | 'effect_black_pick'  // active player picks which card to discard
   | 'effect_blue_look'   // active player sees top card, decides top/bottom
-  | 'effect_red_pick'    // active player picks opponent land to destroy (fallback)
-  | 'effect_green_pick'  // active player picks graveyard land to retrieve (fallback)
+  | 'effect_red_pick'    // active player picks opponent land to destroy
+  | 'effect_green_pick'  // active player picks graveyard land to retrieve
   | 'ended';
 
 export type RpsChoice = 'rock' | 'paper' | 'scissors';
@@ -90,7 +88,6 @@ export interface GameState {
   counterChain: CounterChainEntry[];
   counterDeadline?: number;     // unix ms, when counter window auto-closes
   pendingEffect?: PendingEffect;
-  preTargetCardId?: string;         // pre-selected target for red/green (set before counter window)
   winner?: 0 | 1 | 'draw';
   winReason?: string;
   settings: GameSettings;
@@ -141,8 +138,6 @@ export interface ClientToServerEvents {
     type: PendingEffect['type'];
     [key: string]: unknown;
   }) => void;
-  // attacker confirms pre-target selection (red/green before counter window)
-  pre_target_response: (data: { cardId: string }) => void;
   update_customization: (data: { customizations: Customizations }) => void;
   chat_message: (data: { message: string }) => void;
 }
