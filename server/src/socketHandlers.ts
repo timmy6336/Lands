@@ -6,6 +6,7 @@ import {
 } from '../../shared/types';
 import { RoomManager } from './RoomManager';
 import { GameEngine } from './game/GameEngine';
+import { AIPlayer } from './ai/AIPlayer';
 
 type IO = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type Sock = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -19,14 +20,28 @@ const rematchVoteMap = new Map<string, Set<string>>();
 const rpsPickMap   = new Map<string, Map<string, RpsChoice>>(); // roomCode → Map<playerId, choice>
 const rpsWinnerMap = new Map<string, 0 | 1>();                  // roomCode → player index (0|1) who won RPS
 
+// Single-player AI instances: roomCode → AIPlayer
+const singlePlayerAIs = new Map<string, AIPlayer>();
+
 // ── Broadcast helpers ─────────────────────────────────────────────────────────
 
 function broadcastState(io: IO, state: GameState, votes?: [boolean, boolean]) {
   const [p0, p1] = state.players;
   const base: GameState = votes ? { ...state, rematchVotes: votes } : state;
 
-  io.to(p0.id).emit('game_state', { ...base, players: [p0,          hiddenHand(p1)], viewerIndex: 0 });
-  io.to(p1.id).emit('game_state', { ...base, players: [hiddenHand(p0), p1        ], viewerIndex: 1 });
+  // Sanitize: hide blue_look topCard from the non-active player
+  function sanitize(s: GameState, viewerIndex: 0 | 1): GameState {
+    if (s.phase === 'effect_blue_look' && s.currentPlayerIndex !== viewerIndex && s.pendingEffect) {
+      return { ...s, pendingEffect: { type: 'blue_look' } };
+    }
+    return s;
+  }
+
+  const for0 = sanitize({ ...base, players: [p0,           hiddenHand(p1)], viewerIndex: 0 }, 0);
+  const for1 = sanitize({ ...base, players: [hiddenHand(p0), p1          ], viewerIndex: 1 }, 1);
+
+  io.to(p0.id).emit('game_state', for0);
+  io.to(p1.id).emit('game_state', for1);
 }
 
 function hiddenHand(player: PlayerState): PlayerState {
@@ -78,6 +93,26 @@ export function registerHandlers(io: IO, socket: Sock) {
     socket.data.playerName = playerName;
     socket.join(code);
     socket.emit('room_created', { roomCode: code });
+  });
+
+  socket.on('create_singleplayer', ({ playerName, difficulty, settings }) => {
+    const { roomCode, engine, aiPlayer } = rooms.createSinglePlayerRoom(id, playerName, difficulty, settings);
+
+    socket.data.playerId  = id;
+    socket.data.roomCode  = roomCode;
+    socket.data.playerName = playerName;
+    socket.join(id);
+    socket.join(roomCode);
+
+    socket.emit('room_created', { roomCode });
+
+    // Wire broadcast first, then activate AI (it chains on top)
+    engine.onStateChange = (state) => broadcastState(io, state);
+    singlePlayerAIs.set(roomCode, aiPlayer);
+    aiPlayer.activate(engine);
+
+    // Send initial state to human
+    broadcastState(io, engine.state);
   });
 
   socket.on('join_room', ({ roomCode, playerName }) => {
@@ -232,8 +267,11 @@ export function registerHandlers(io: IO, socket: Sock) {
     const votes = rematchVoteMap.get(code)!;
     votes.add(id);
 
+    // In single-player rooms, the AI auto-votes for rematch immediately
+    const ai = singlePlayerAIs.get(code);
+    if (ai) votes.add(ai.playerId);
+
     // Use engine.state.players order — this matches the viewerIndex each client received.
-    // room.players order can differ if RPS swapped who goes first.
     const [ep0, ep1] = room.engine.state.players;
     const voteState: [boolean, boolean] = [votes.has(ep0.id), votes.has(ep1.id)];
 
@@ -244,11 +282,23 @@ export function registerHandlers(io: IO, socket: Sock) {
       const newEngine = new GameEngine(code, p0, p1, room.settings);
       room.engine = newEngine;
       newEngine.onStateChange = (state) => broadcastState(io, state);
+      // Reattach AI to the new engine
+      if (ai) ai.activate(newEngine);
       broadcastState(io, newEngine.state);
     } else {
-      // Partial vote — broadcast current state with vote info
       broadcastState(io, room.engine.state, voteState);
     }
+  });
+
+  // ── Chat ─────────────────────────────────────────────────────────────────────
+
+  socket.on('chat_message', ({ message }) => {
+    const room = rooms.getRoomByPlayerId(id);
+    if (!room) return;
+    const trimmed = message.trim().slice(0, 300);
+    if (!trimmed) return;
+    // Broadcast to all players in the room, including the sender (for confirmation)
+    io.to(room.code).emit('chat_message', { playerName: socket.data.playerName, message: trimmed });
   });
 
   socket.on('disconnect', () => {

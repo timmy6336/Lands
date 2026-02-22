@@ -54,6 +54,7 @@ export type GamePhase =
   | 'ended';
 
 export type RpsChoice = 'rock' | 'paper' | 'scissors';
+export type AIDifficulty = 'easy' | 'medium' | 'hard';
 
 export interface CounterChainEntry {
   playerId: string;
@@ -68,8 +69,14 @@ export interface PendingEffect {
   topCard?: Card;        // Blue look phase: the top card
 }
 
+export interface ChatMessage {
+  playerName: string;
+  message: string;
+}
+
 export interface GameSettings {
   counterTimeLimitSeconds: number | null; // null = infinite (must click Pass)
+  isSinglePlayer?: boolean;             // true when playing against AI
 }
 
 export interface GameState {
@@ -103,10 +110,12 @@ export interface ServerToClientEvents {
   game_state: (state: GameState) => void;
   room_created: (data: { roomCode: string }) => void;
   error: (msg: string) => void;
+  chat_message: (data: ChatMessage) => void;
 }
 
 export interface ClientToServerEvents {
-  create_room:  (data: { playerName: string; settings: GameSettings }) => void;
+  create_room:        (data: { playerName: string; settings: GameSettings }) => void;
+  create_singleplayer:(data: { playerName: string; difficulty: AIDifficulty; settings: GameSettings }) => void;
   join_room:    (data: { roomCode: string; playerName: string }) => void;
   set_ready:    () => void;
   draw_card:    () => void;
@@ -135,6 +144,7 @@ export interface ClientToServerEvents {
   // attacker confirms pre-target selection (red/green before counter window)
   pre_target_response: (data: { cardId: string }) => void;
   update_customization: (data: { customizations: Customizations }) => void;
+  chat_message: (data: { message: string }) => void;
 }
 
 export interface InterServerEvents { /* reserved */ }

@@ -6,24 +6,18 @@ interface Props {
 
 export function HomeScreen({ onPlay, onSettings, onRules }: Props) {
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', height: '100%', gap: '2.5rem',
-    }}>
-      <div style={{ textAlign: 'center' }}>
-        <h1 style={{
+    <div className="flex flex-col items-center justify-center h-full gap-10">
+      <div className="text-center">
+        <h1 className="text-accent m-0" style={{
           fontSize: '4rem', fontWeight: 900, letterSpacing: '0.15em',
-          color: 'var(--accent)', marginBottom: '0.3rem',
           textShadow: '0 0 40px rgba(99,102,241,0.5)',
         }}>
           LANDS
         </h1>
-        <p style={{ color: 'var(--muted)', fontSize: '1rem' }}>
-          A 2-player land card duel
-        </p>
+        <p className="text-muted text-base mt-1.5 m-0">A 2-player land card duel</p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', minWidth: 200 }}>
+      <div className="flex flex-col gap-3.5 min-w-[200px]">
         <button
           className="btn-primary"
           onClick={onPlay}

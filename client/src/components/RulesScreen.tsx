@@ -42,22 +42,19 @@ const CARD_COLORS = [
 
 export function RulesScreen({ onBack }: Props) {
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100%',
-      padding: '1.5rem 2rem', gap: '1.5rem', overflowY: 'auto',
-    }}>
+    <div className="flex flex-col h-full px-8 py-6 gap-6 overflow-y-auto">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+      <div className="flex items-center gap-4 shrink-0">
         <button className="btn-secondary" onClick={onBack} style={{ padding: '0.4rem 1rem' }}>
           ← Back
         </button>
-        <h2 style={{ color: 'var(--accent)', margin: 0 }}>How to Play</h2>
+        <h2 className="text-accent m-0">How to Play</h2>
       </div>
 
       {/* Overview */}
       <section>
-        <h3 style={sectionHead}>Overview</h3>
-        <p style={body}>
+        <h3 className="text-foreground mb-2.5 text-base mt-0">Overview</h3>
+        <p className="text-muted text-sm m-0" style={{ lineHeight: 1.6 }}>
           Lands is a 2-player card duel. Each player has a deck of <strong>25 cards</strong> — 5 copies
           of each of the 5 land types. Both players start with <strong>5 cards in hand</strong>. Players
           take turns playing one land at a time. The first player to meet a win condition wins the game.
@@ -66,9 +63,11 @@ export function RulesScreen({ onBack }: Props) {
 
       {/* Win conditions */}
       <section>
-        <h3 style={sectionHead}>Win Conditions</h3>
-        <p style={{ ...body, marginBottom: '0.5rem' }}>You win if <strong>either</strong> of the following is true at the end of your play:</p>
-        <ul style={{ ...body, paddingLeft: '1.4rem', margin: 0, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+        <h3 className="text-foreground mb-2.5 text-base mt-0">Win Conditions</h3>
+        <p className="text-muted text-sm mb-2 m-0" style={{ lineHeight: 1.6 }}>
+          You win if <strong>either</strong> of the following is true at the end of your play:
+        </p>
+        <ul className="text-muted text-sm m-0 flex flex-col gap-1.5" style={{ paddingLeft: '1.4rem', lineHeight: 1.6 }}>
           <li><strong>5 of a Kind</strong> — You have 5 or more lands of the same color in play.</li>
           <li><strong>Rainbow</strong> — You have at least 1 of each of the 5 land types in play.</li>
         </ul>
@@ -76,39 +75,35 @@ export function RulesScreen({ onBack }: Props) {
 
       {/* Turn structure */}
       <section>
-        <h3 style={sectionHead}>Turn Structure</h3>
-        <ol style={{ ...body, paddingLeft: '1.4rem', margin: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        <h3 className="text-foreground mb-2.5 text-base mt-0">Turn Structure</h3>
+        <ol className="text-muted text-sm m-0 flex flex-col gap-1.5" style={{ paddingLeft: '1.4rem', lineHeight: 1.6 }}>
           <li><strong>Draw</strong> — Draw 1 card from your deck. (If your deck is empty, your graveyard is shuffled back in.)</li>
           <li><strong>Play</strong> — Choose 1 card from your hand to play. This opens a counter window for your opponent.</li>
           <li><strong>Resolve</strong> — If not countered, the card lands on your field and its effect fires. The turn then passes.</li>
         </ol>
-        <p style={{ ...body, marginTop: '0.6rem', color: 'var(--muted)', fontSize: '0.85rem' }}>
+        <p className="text-muted mt-2.5 m-0" style={{ fontSize: '0.85rem', lineHeight: 1.6 }}>
           Note: The first player skips the Draw step on turn 1.
         </p>
       </section>
 
       {/* Countering */}
       <section>
-        <h3 style={sectionHead}>Countering</h3>
-        <p style={body}>
+        <h3 className="text-foreground mb-2.5 text-base mt-0">Countering</h3>
+        <p className="text-muted text-sm m-0" style={{ lineHeight: 1.6 }}>
           When a land is played, the <strong>opponent</strong> has a limited window to counter it.
           To counter you must discard from your hand:
         </p>
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 8, padding: '0.75rem 1rem', margin: '0.5rem 0',
-          fontSize: '0.9rem', color: 'var(--text)',
-        }}>
+        <div className="bg-surface border border-border rounded-lg my-2 text-sm text-foreground" style={{ padding: '0.75rem 1rem' }}>
           <strong style={{ color: '#2980b9' }}>1 Blue card</strong>
-          <span style={{ color: 'var(--muted)' }}> + </span>
+          <span className="text-muted"> + </span>
           <strong>1 card matching the color of the played land</strong>
         </div>
-        <p style={body}>
+        <p className="text-muted text-sm m-0" style={{ lineHeight: 1.6 }}>
           If countered, the played card goes to the <strong>attacker's graveyard</strong> with no effect.
           The attacker can then <strong>counter-counter</strong> by discarding <strong>2 Blue cards</strong>.
           This chain can continue back and forth — the last counter in the chain wins.
         </p>
-        <p style={{ ...body, color: 'var(--muted)', fontSize: '0.85rem' }}>
+        <p className="text-muted mt-2 m-0" style={{ fontSize: '0.85rem', lineHeight: 1.6 }}>
           If a time limit is set for the room, the counter window closes automatically when it expires
           (treated as passing).
         </p>
@@ -116,37 +111,33 @@ export function RulesScreen({ onBack }: Props) {
 
       {/* Card effects */}
       <section>
-        <h3 style={sectionHead}>Card Effects</h3>
-        <p style={{ ...body, marginBottom: '0.75rem' }}>
+        <h3 className="text-foreground mb-2.5 text-base mt-0">Card Effects</h3>
+        <p className="text-muted text-sm mb-3 m-0" style={{ lineHeight: 1.6 }}>
           Each land type has a unique effect that triggers when it resolves onto your field.
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        <div className="flex flex-col gap-2.5">
           {CARD_COLORS.map(({ color, border, label, effect, counter }) => (
-            <div key={label} style={{
-              display: 'flex', gap: '1rem', alignItems: 'flex-start',
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: 10, padding: '0.75rem 1rem',
-            }}>
+            <div key={label} className="flex gap-4 items-start bg-surface border border-border rounded-[10px]"
+              style={{ padding: '0.75rem 1rem' }}>
               <div style={{
                 width: 20, height: 20, borderRadius: 4, flexShrink: 0,
                 background: color, border: `2px solid ${border}`,
                 marginTop: 2,
               }} />
               <div>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)' }}>
+                <p className="m-0 font-bold text-sm text-foreground">
                   {label}
                   {counter && (
-                    <span style={{
-                      marginLeft: '0.5rem', fontSize: '0.7rem', fontWeight: 600,
+                    <span className="ml-2 text-[0.7rem] font-semibold rounded" style={{
                       color: '#2980b9', background: 'rgba(41,128,185,0.15)',
                       border: '1px solid rgba(41,128,185,0.3)',
-                      borderRadius: 4, padding: '1px 5px',
+                      padding: '1px 5px',
                     }}>
                       COUNTER
                     </span>
                   )}
                 </p>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: 'var(--muted)', lineHeight: 1.5 }}>
+                <p className="text-muted m-0 mt-1" style={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
                   {effect}
                 </p>
               </div>
@@ -157,8 +148,8 @@ export function RulesScreen({ onBack }: Props) {
 
       {/* Graveyard */}
       <section>
-        <h3 style={sectionHead}>Graveyard</h3>
-        <p style={body}>
+        <h3 className="text-foreground mb-2.5 text-base mt-0">Graveyard</h3>
+        <p className="text-muted text-sm m-0" style={{ lineHeight: 1.6 }}>
           Countered cards and cards discarded by Black's effect go to the graveyard. When a player's
           deck runs out, their graveyard is shuffled and becomes their new deck.
           Green's effect lets you retrieve a card from your <em>own</em> graveyard.
@@ -167,8 +158,8 @@ export function RulesScreen({ onBack }: Props) {
 
       {/* RPS */}
       <section>
-        <h3 style={sectionHead}>Going First</h3>
-        <p style={body}>
+        <h3 className="text-foreground mb-2.5 text-base mt-0">Going First</h3>
+        <p className="text-muted text-sm m-0" style={{ lineHeight: 1.6 }}>
           Before each game, both players play <strong>Rock Paper Scissors</strong> simultaneously.
           The winner chooses who takes the first turn.
         </p>
@@ -176,11 +167,3 @@ export function RulesScreen({ onBack }: Props) {
     </div>
   );
 }
-
-const sectionHead: React.CSSProperties = {
-  color: 'var(--text)', marginBottom: '0.6rem', fontSize: '1rem', marginTop: 0,
-};
-
-const body: React.CSSProperties = {
-  color: 'var(--muted)', fontSize: '0.9rem', lineHeight: 1.6, margin: 0,
-};

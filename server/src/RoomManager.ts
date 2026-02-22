@@ -1,5 +1,6 @@
 import { GameEngine } from './game/GameEngine';
-import { GameSettings, Customizations } from '../../shared/types';
+import { GameSettings, Customizations, AIDifficulty } from '../../shared/types';
+import { AIPlayer, AI_NAMES } from './ai/AIPlayer';
 
 interface PendingPlayer {
   id: string;
@@ -93,6 +94,44 @@ export class RoomManager {
     if (p0.customizations) room.engine.applyCustomization(p0.id, p0.customizations);
     if (p1.customizations) room.engine.applyCustomization(p1.id, p1.customizations);
     return room.engine;
+  }
+
+  /**
+   * Create a room for single-player vs AI.
+   * Immediately starts the game (no customization/RPS phase).
+   * Returns the room code, engine, and the AIPlayer (caller must activate it).
+   */
+  createSinglePlayerRoom(
+    humanId: string,
+    humanName: string,
+    difficulty: AIDifficulty,
+    settings: GameSettings,
+  ): { roomCode: string; engine: GameEngine; aiPlayer: AIPlayer } {
+    let code: string;
+    do { code = generateCode(); } while (this.rooms.has(code));
+
+    const aiPlayer = new AIPlayer(difficulty);
+    const aiName   = AI_NAMES[difficulty];
+
+    // Randomly decide whether human or AI goes first
+    const humanFirst = Math.random() < 0.5;
+    const p0 = humanFirst ? { id: humanId,            name: humanName } : { id: aiPlayer.playerId, name: aiName };
+    const p1 = humanFirst ? { id: aiPlayer.playerId, name: aiName   } : { id: humanId,            name: humanName };
+
+    const spSettings: GameSettings = { ...settings, isSinglePlayer: true };
+    const engine = new GameEngine(code, p0, p1, spSettings);
+
+    this.rooms.set(code, {
+      code,
+      players: [
+        { id: p0.id, name: p0.name, ready: true },
+        { id: p1.id, name: p1.name, ready: true },
+      ] as [PendingPlayer, PendingPlayer],
+      engine,
+      settings: spSettings,
+    });
+
+    return { roomCode: code, engine, aiPlayer };
   }
 
   removePlayer(playerId: string) {

@@ -3,6 +3,7 @@ export {};
 export interface AppSettings {
   defaultPort: number;
   upnpEnabled: boolean;
+  playerName?: string;
 }
 
 interface ElectronAPI {

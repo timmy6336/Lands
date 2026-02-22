@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { GameState, ClientToServerEvents } from '@lands/shared';
+import { ChatMessage, GameState, ClientToServerEvents } from '@lands/shared';
 import { Field } from './Field';
 import { Hand } from './Hand';
 import { Graveyard } from './Graveyard';
@@ -7,7 +7,10 @@ import { DeckDisplay } from './DeckDisplay';
 import { CounterPrompt } from './CounterPrompt';
 import { EffectPrompt } from './EffectPrompt';
 import { PreTargetPrompt } from './PreTargetPrompt';
+import { GameLog } from './GameLog';
+import { ChatPanel } from './ChatPanel';
 import { useSound } from '../hooks/useSound';
+import { useGameLog } from '../hooks/useGameLog';
 
 interface Props {
   gameState: GameState;
@@ -16,6 +19,9 @@ interface Props {
     event: K,
     ...args: Parameters<ClientToServerEvents[K]>
   ) => void;
+  chatMessages: ChatMessage[];
+  onSendChat: (message: string) => void;
+  playerName: string;
 }
 
 const PHASE_LABELS: Record<string, string> = {
@@ -31,9 +37,23 @@ const PHASE_LABELS: Record<string, string> = {
   effect_black_pick: 'Black land effect',
 };
 
-export function GameBoard({ gameState, myIndex, send }: Props) {
+export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, playerName }: Props) {
   const [surrenderConfirm, setSurrenderConfirm] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const { playDraw, playPlay, playCounter } = useSound();
+  const { entries: logEntries, addEntry: addLogEntry } = useGameLog(gameState);
+
+  // Mirror incoming chat messages into the game log
+  const prevChatLenRef = useRef(0);
+  useEffect(() => {
+    if (chatMessages.length > prevChatLenRef.current) {
+      chatMessages.slice(prevChatLenRef.current).forEach(m => {
+        addLogEntry(`${m.playerName}: ${m.message}`);
+      });
+      prevChatLenRef.current = chatMessages.length;
+    }
+  }, [chatMessages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sound triggers — detect state transitions
   const prevRef = useRef({
@@ -85,26 +105,21 @@ export function GameBoard({ gameState, myIndex, send }: Props) {
   });
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100vh',
-      padding: '0.75rem', gap: '0.4rem',
-    }}>
+    <div className="flex flex-col h-screen p-3 gap-1.5">
 
       {/* ── Opponent info bar ───────────────────────────────────────────────── */}
       <div style={activeBarStyle(!isMyTurn, '241,196,15')}>
-        <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <span className="font-semibold flex items-center gap-1.5">
           {!isMyTurn && (
-            <span style={{ color: '#f1c40f', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>
+            <span className="font-bold text-[0.8rem]" style={{ color: '#f1c40f', letterSpacing: '0.04em' }}>
               ▶ TURN
             </span>
           )}
           {opponent.name}
         </span>
-        <span style={{ color: 'var(--muted)' }}>
-          Hand: {opponent.handCount}
-        </span>
+        <span className="text-muted">Hand: {opponent.handCount}</span>
         {!opponent.isConnected && (
-          <span style={{ color: '#e74c3c', fontSize: '0.8rem' }}>⚠ Disconnected</span>
+          <span className="text-[0.8rem]" style={{ color: '#e74c3c' }}>⚠ Disconnected</span>
         )}
       </div>
 
@@ -117,7 +132,7 @@ export function GameBoard({ gameState, myIndex, send }: Props) {
       />
 
       {/* ── Opponent field + graveyard + deck ────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '0.5rem', flex: 1, minHeight: 0 }}>
+      <div className="flex gap-2 flex-1 min-h-0">
         <Field
           cards={opponent.field}
           customizations={opponent.customizations}
@@ -128,32 +143,22 @@ export function GameBoard({ gameState, myIndex, send }: Props) {
           customizations={opponent.customizations}
           label="Grave"
         />
-        <div style={{
-          background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
-          borderRadius: 10, padding: '0.5rem 0.4rem',
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', gap: '0.3rem',
-        }}>
+        <div className="border border-border rounded-[10px] px-1.5 py-2 flex flex-col items-center justify-center gap-1"
+          style={{ background: 'rgba(255,255,255,0.03)' }}>
           <DeckDisplay count={opponent.deckCount} />
-          <span style={{ fontSize: '0.6rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Deck
-          </span>
+          <span className="text-[0.6rem] text-muted uppercase" style={{ letterSpacing: '0.06em' }}>Deck</span>
         </div>
       </div>
 
       {/* ── Status bar ──────────────────────────────────────────────────────── */}
-      <div style={{
-        background: 'var(--surface2)', borderRadius: 8, padding: '0.4rem 1rem',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        fontSize: '0.9rem', flexShrink: 0,
-      }}>
-        <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>Turn {gameState.turnNumber}</span>
-        <span style={{ color: 'var(--muted)' }}>{phaseLabel}</span>
-        <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>&nbsp;</span>
+      <div className="bg-surface-2 rounded-lg px-4 py-1.5 flex justify-between items-center text-sm shrink-0">
+        <span className="text-muted text-[0.8rem]">Turn {gameState.turnNumber}</span>
+        <span className="text-muted">{phaseLabel}</span>
+        <span className="text-muted text-[0.8rem]">&nbsp;</span>
       </div>
 
       {/* ── My field + graveyard + deck ───────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '0.5rem', flex: 1, minHeight: 0 }}>
+      <div className="flex gap-2 flex-1 min-h-0">
         <Field
           cards={me.field}
           customizations={me.customizations}
@@ -164,16 +169,10 @@ export function GameBoard({ gameState, myIndex, send }: Props) {
           customizations={me.customizations}
           label="Grave"
         />
-        <div style={{
-          background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)',
-          borderRadius: 10, padding: '0.5rem 0.4rem',
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', gap: '0.3rem',
-        }}>
+        <div className="border border-border rounded-[10px] px-1.5 py-2 flex flex-col items-center justify-center gap-1"
+          style={{ background: 'rgba(255,255,255,0.03)' }}>
           <DeckDisplay count={me.deckCount} />
-          <span style={{ fontSize: '0.6rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Deck
-          </span>
+          <span className="text-[0.6rem] text-muted uppercase" style={{ letterSpacing: '0.06em' }}>Deck</span>
         </div>
       </div>
 
@@ -188,9 +187,9 @@ export function GameBoard({ gameState, myIndex, send }: Props) {
 
       {/* ── My info bar ──────────────────────────────────────────────────────── */}
       <div style={activeBarStyle(isMyTurn, '39,174,96')}>
-        <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <span className="font-semibold flex items-center gap-1.5">
           {isMyTurn && (
-            <span style={{ color: '#27ae60', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.04em' }}>
+            <span className="font-bold text-[0.8rem]" style={{ color: '#27ae60', letterSpacing: '0.04em' }}>
               ▶ YOUR TURN
             </span>
           )}
@@ -199,8 +198,8 @@ export function GameBoard({ gameState, myIndex, send }: Props) {
 
         {/* Surrender */}
         {surrenderConfirm ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Surrender?</span>
+          <div className="flex items-center gap-2">
+            <span className="text-muted text-[0.8rem]">Surrender?</span>
             <button
               className="btn-primary"
               onClick={() => { send('surrender'); setSurrenderConfirm(false); }}
@@ -269,17 +268,28 @@ export function GameBoard({ gameState, myIndex, send }: Props) {
 
       {/* Pending play indicator */}
       {gameState.pendingPlay && !showCounterWindow && !showCounterCounterWindow && !isPreTarget && (
-        <div style={{
-          position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
-          background: 'var(--surface2)', border: '1px solid var(--border)',
-          borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.85rem', color: 'var(--muted)',
-          pointerEvents: 'none', zIndex: 50,
-        }}>
+        <div className="fixed top-3 left-1/2 -translate-x-1/2 bg-surface-2 border border-border rounded-lg px-4 py-1.5 text-sm text-muted pointer-events-none z-50">
           {isMyTurn
             ? `Waiting for ${opponent.name} to respond…`
             : `${opponent.name} played a ${gameState.pendingPlay.color} land`}
         </div>
       )}
+
+      {/* Chat panel overlay */}
+      <ChatPanel
+        messages={chatMessages}
+        myName={playerName}
+        isOpen={chatOpen}
+        onToggle={() => setChatOpen(v => !v)}
+        onSend={onSendChat}
+      />
+
+      {/* Game log overlay */}
+      <GameLog
+        entries={logEntries}
+        isOpen={logOpen}
+        onToggle={() => setLogOpen(v => !v)}
+      />
     </div>
   );
 }

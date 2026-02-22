@@ -22,25 +22,21 @@ const COLOR_PREVIEW_BG: Record<Color, string> = {
 interface Props {
   onBack: () => void;
   onRefreshImages: () => Promise<void>;
+  playerName: string;
+  setPlayerName: (name: string) => void;
 }
 
-export function Settings({ onBack, onRefreshImages }: Props) {
+export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }: Props) {
   const isElectron = !!window.electronAPI;
   const { showCardTypeOnHover, setShowCardTypeOnHover, showCardEffectsOnHover, setShowCardEffectsOnHover } = useUISettings();
 
-  // Network settings
   const [defaultPort, setDefaultPort] = useState(3001);
   const [upnpEnabled, setUpnpEnabled] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
-  // Card image preview URLs (refreshed after upload/reset)
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({
-    white: '/cards/white.svg',
-    red:   '/cards/red.svg',
-    blue:  '/cards/blue.svg',
-    green: '/cards/green.svg',
-    black: '/cards/black.svg',
-    back:  '/cards/back.svg',
+    white: '/cards/white.svg', red: '/cards/red.svg', blue: '/cards/blue.svg',
+    green: '/cards/green.svg', black: '/cards/black.svg', back: '/cards/back.svg',
   });
   const [imageStatus, setImageStatus] = useState<Record<string, string>>({
     white: '', red: '', blue: '', green: '', black: '', back: '',
@@ -82,112 +78,99 @@ export function Settings({ onBack, onRefreshImages }: Props) {
     setTimeout(() => setImageStatus(prev => ({ ...prev, [color]: '' })), 2000);
   }
 
+  function saveName(name: string) {
+    const trimmed = name.trim() || 'Player';
+    setPlayerName(trimmed);
+    localStorage.setItem('playerName', trimmed);
+    if (window.electronAPI) {
+      window.electronAPI.saveSettings({ defaultPort, upnpEnabled, playerName: trimmed });
+    }
+  }
+
   async function saveNetworkSettings() {
     if (!window.electronAPI) return;
-    await window.electronAPI.saveSettings({ defaultPort, upnpEnabled });
+    await window.electronAPI.saveSettings({ defaultPort, upnpEnabled, playerName });
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 2000);
   }
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100%',
-      padding: '1.5rem 2rem', gap: '1.5rem', overflowY: 'auto',
-    }}>
+    <div className="flex flex-col h-full px-8 py-6 gap-6 overflow-y-auto">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <button className="btn-secondary" onClick={onBack} style={{ padding: '0.4rem 1rem' }}>
-          ← Back
-        </button>
-        <h2 style={{ color: 'var(--accent)', margin: 0 }}>Settings</h2>
+      <div className="flex items-center gap-4">
+        <button className="btn-secondary px-4 py-1.5" onClick={onBack}>← Back</button>
+        <h2 className="text-accent m-0">Settings</h2>
       </div>
+
+      {/* Player Name */}
+      <section>
+        <h3 className="text-foreground mb-3 text-base mt-0">Player</h3>
+        <div className="bg-surface border border-border rounded-[10px] px-5 py-4 max-w-[380px]">
+          <label className="flex justify-between items-center gap-4">
+            <span className="text-muted text-sm shrink-0">Display name</span>
+            <input
+              value={playerName}
+              onChange={e => setPlayerName(e.target.value)}
+              onBlur={e => saveName(e.target.value)}
+              placeholder="Player"
+              maxLength={20}
+              style={{ textAlign: 'right', fontSize: '0.9rem', padding: '0.3rem 0.5rem', minWidth: 0, flex: 1 }}
+            />
+          </label>
+        </div>
+      </section>
 
       {/* Card Images */}
       <section>
-        <h3 style={{ color: 'var(--text)', marginBottom: '0.75rem', fontSize: '1rem' }}>
-          Card Appearance
-        </h3>
+        <h3 className="text-foreground mb-3 text-base mt-0">Card Appearance</h3>
         {!isElectron && (
-          <p style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-            Card image upload is only available in the desktop app.
-          </p>
+          <p className="text-muted text-sm mb-3">Card image upload is only available in the desktop app.</p>
         )}
 
-        {/* Show card type on hover toggle */}
-        <label style={{
-          display: 'flex', alignItems: 'center', gap: '0.75rem',
-          marginBottom: '1rem', cursor: 'pointer', width: 'fit-content',
-        }}>
+        <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit">
           <input
             type="checkbox"
             checked={showCardTypeOnHover}
             onChange={e => setShowCardTypeOnHover(e.target.checked)}
             style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--accent)' }}
           />
-          <span style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-            Show card type on hover
-          </span>
+          <span className="text-muted text-sm">Show card type on hover</span>
         </label>
 
-        <label style={{
-          display: 'flex', alignItems: 'center', gap: '0.75rem',
-          marginBottom: '1rem', cursor: 'pointer', width: 'fit-content',
-        }}>
+        <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit">
           <input
             type="checkbox"
             checked={showCardEffectsOnHover}
             onChange={e => setShowCardEffectsOnHover(e.target.checked)}
             style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--accent)' }}
           />
-          <span style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-            Show card effect on hover
-          </span>
+          <span className="text-muted text-sm">Show card effect on hover</span>
         </label>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="flex flex-wrap gap-4">
           {ALL_COLORS.map(color => (
-            <div key={color} style={{
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: 10, padding: '0.75rem', display: 'flex',
-              flexDirection: 'column', gap: '0.5rem', alignItems: 'center',
-              minWidth: 120,
-            }}>
-              {/* Preview */}
+            <div key={color} className="bg-surface border border-border rounded-[10px] p-3 flex flex-col gap-2 items-center min-w-[120px]">
               <div style={{
                 width: 72, height: 100, borderRadius: 7, overflow: 'hidden',
                 border: '2px solid rgba(255,255,255,0.15)', position: 'relative',
                 background: COLOR_PREVIEW_BG[color], flexShrink: 0,
               }}>
                 <img
-                  src={previewUrls[color]}
-                  alt={color}
-                  key={previewUrls[color]}
+                  src={previewUrls[color]} alt={color} key={previewUrls[color]}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   style={{ width: '100%', height: '70%', objectFit: 'cover', display: 'block' }}
                 />
               </div>
-              <p style={{ fontSize: '0.72rem', color: 'var(--muted)', textAlign: 'center', margin: 0 }}>
-                {COLOR_LABELS[color]}
-              </p>
+              <p className="text-[0.72rem] text-muted text-center m-0">{COLOR_LABELS[color]}</p>
               {imageStatus[color] && (
-                <p style={{ fontSize: '0.7rem', color: '#4ade80', margin: 0 }}>{imageStatus[color]}</p>
+                <p className="text-[0.7rem] m-0" style={{ color: '#4ade80' }}>{imageStatus[color]}</p>
               )}
               {isElectron && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%' }}>
-                  <button
-                    className="btn-primary"
-                    onClick={() => handleUpload(color)}
-                    style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}
-                  >
-                    Upload
-                  </button>
-                  <button
-                    className="btn-secondary"
-                    onClick={() => handleReset(color)}
-                    style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}
-                  >
-                    Default
-                  </button>
+                <div className="flex flex-col gap-1 w-full">
+                  <button className="btn-primary" onClick={() => handleUpload(color)}
+                    style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Upload</button>
+                  <button className="btn-secondary" onClick={() => handleReset(color)}
+                    style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Default</button>
                 </div>
               )}
             </div>
@@ -197,51 +180,30 @@ export function Settings({ onBack, onRefreshImages }: Props) {
 
       {/* Card Back */}
       <section>
-        <h3 style={{ color: 'var(--text)', marginBottom: '0.75rem', fontSize: '1rem' }}>
-          Card Back
-        </h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 10, padding: '0.75rem', display: 'flex',
-            flexDirection: 'column', gap: '0.5rem', alignItems: 'center',
-            minWidth: 120,
-          }}>
+        <h3 className="text-foreground mb-3 text-base mt-0">Card Back</h3>
+        <div className="flex flex-wrap gap-4">
+          <div className="bg-surface border border-border rounded-[10px] p-3 flex flex-col gap-2 items-center min-w-[120px]">
             <div style={{
               width: 72, height: 100, borderRadius: 7, overflow: 'hidden',
               border: '2px solid rgba(255,255,255,0.15)', position: 'relative',
               background: '#12122a', flexShrink: 0,
             }}>
               <img
-                src={previewUrls['back']}
-                alt="card back"
-                key={previewUrls['back']}
+                src={previewUrls['back']} alt="card back" key={previewUrls['back']}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
             </div>
-            <p style={{ fontSize: '0.72rem', color: 'var(--muted)', textAlign: 'center', margin: 0 }}>
-              Card Back
-            </p>
+            <p className="text-[0.72rem] text-muted text-center m-0">Card Back</p>
             {imageStatus['back'] && (
-              <p style={{ fontSize: '0.7rem', color: '#4ade80', margin: 0 }}>{imageStatus['back']}</p>
+              <p className="text-[0.7rem] m-0" style={{ color: '#4ade80' }}>{imageStatus['back']}</p>
             )}
             {isElectron && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%' }}>
-                <button
-                  className="btn-primary"
-                  onClick={() => handleUpload('back')}
-                  style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}
-                >
-                  Upload
-                </button>
-                <button
-                  className="btn-secondary"
-                  onClick={() => handleReset('back')}
-                  style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}
-                >
-                  Default
-                </button>
+              <div className="flex flex-col gap-1 w-full">
+                <button className="btn-primary" onClick={() => handleUpload('back')}
+                  style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Upload</button>
+                <button className="btn-secondary" onClick={() => handleReset('back')}
+                  style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Default</button>
               </div>
             )}
           </div>
@@ -251,44 +213,30 @@ export function Settings({ onBack, onRefreshImages }: Props) {
       {/* Network Settings — Electron only */}
       {isElectron && (
         <section>
-          <h3 style={{ color: 'var(--text)', marginBottom: '0.75rem', fontSize: '1rem' }}>
-            Network
-          </h3>
-          <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: 10, padding: '1rem 1.25rem',
-            display: 'flex', flexDirection: 'column', gap: '0.85rem', maxWidth: 380,
-          }}>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Default hosting port</span>
+          <h3 className="text-foreground mb-3 text-base mt-0">Network</h3>
+          <div className="bg-surface border border-border rounded-[10px] px-5 py-4 flex flex-col gap-3 max-w-[380px]">
+            <label className="flex justify-between items-center gap-4">
+              <span className="text-muted text-sm">Default hosting port</span>
               <input
-                type="number"
-                min={1024}
-                max={65535}
-                value={defaultPort}
+                type="number" min={1024} max={65535} value={defaultPort}
                 onChange={e => setDefaultPort(Number(e.target.value))}
                 style={{ width: 80, textAlign: 'center', fontSize: '0.9rem', padding: '0.3rem 0.5rem' }}
               />
             </label>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}>
+            <label className="flex justify-between items-center gap-4 cursor-pointer">
               <div>
-                <span style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Auto port forward (UPnP)</span>
-                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.7 }}>
+                <span className="text-muted text-sm">Auto port forward (UPnP)</span>
+                <p className="m-0 text-xs text-muted" style={{ opacity: 0.7 }}>
                   Attempt UPnP when starting a host game
                 </p>
               </div>
               <input
-                type="checkbox"
-                checked={upnpEnabled}
+                type="checkbox" checked={upnpEnabled}
                 onChange={e => setUpnpEnabled(e.target.checked)}
                 style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--accent)' }}
               />
             </label>
-            <button
-              className="btn-primary"
-              onClick={saveNetworkSettings}
-              style={{ alignSelf: 'flex-start', fontSize: '0.9rem', padding: '0.4rem 1.25rem' }}
-            >
+            <button className="btn-primary self-start text-sm px-5 py-1.5" onClick={saveNetworkSettings}>
               {settingsSaved ? '✓ Saved' : 'Save'}
             </button>
           </div>

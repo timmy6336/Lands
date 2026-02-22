@@ -20,8 +20,8 @@ export function PreTargetPrompt({ gameState, myIndex, onTarget }: Props) {
   if (!isMyTurn) {
     return (
       <div className="overlay">
-        <div className="overlay-box" style={{ alignItems: 'center' }}>
-          <p style={{ color: 'var(--muted)', textAlign: 'center' }}>
+        <div className="overlay-box items-center">
+          <p className="text-muted text-center m-0">
             {isRed
               ? `${opponent.name} is choosing which land to destroy…`
               : `${opponent.name} is choosing which land to retrieve from graveyard…`}
@@ -38,15 +38,15 @@ export function PreTargetPrompt({ gameState, myIndex, onTarget }: Props) {
   return (
     <div className="overlay">
       <div className="overlay-box">
-        <h2 style={{ color: accentColor }}>
+        <h2 className="m-0" style={{ color: accentColor }}>
           {isRed ? 'Red Land — Choose Target' : 'Green Land — Choose Target'}
         </h2>
-        <p style={{ color: 'var(--muted)' }}>
+        <p className="text-muted text-sm m-0">
           {isRed
             ? 'Select an opponent land to destroy. Your opponent will see your target before deciding whether to counter.'
             : 'Select a land from your graveyard to retrieve. Your opponent will see your choice before deciding whether to counter.'}
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div className="flex flex-wrap gap-2">
           {cards.map(c => (
             <Card
               key={c.id}

@@ -29,63 +29,51 @@ export function GameOver({ gameState, myIndex, onPlayAgain, onRematch }: Props) 
   const funnyLine = FUNNY_DRAW_LINES[Math.floor(Math.random() * FUNNY_DRAW_LINES.length)];
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', height: '100%', gap: '1.5rem', textAlign: 'center',
-      padding: '2rem',
-    }}>
+    <div className="flex flex-col items-center justify-center h-full gap-6 text-center p-8">
       {isDraw ? (
         <>
-          <p style={{ fontSize: '5rem' }}>🤯</p>
-          <h1 style={{ color: 'var(--muted)' }}>DRAW???</h1>
-          <p style={{ color: 'var(--muted)', maxWidth: 400, lineHeight: 1.5 }}>{funnyLine}</p>
+          <p className="text-[5rem] m-0">🤯</p>
+          <h1 className="text-muted m-0">DRAW???</h1>
+          <p className="text-muted m-0" style={{ maxWidth: 400, lineHeight: 1.5 }}>{funnyLine}</p>
         </>
       ) : iWon ? (
         <>
-          <p style={{ fontSize: '5rem' }}>🏆</p>
-          <h1 style={{ color: '#f1c40f' }}>Victory!</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '1.1rem' }}>
-            You defeated <strong style={{ color: 'var(--text)' }}>{them.name}</strong>
+          <p className="text-[5rem] m-0">🏆</p>
+          <h1 className="m-0" style={{ color: '#f1c40f' }}>Victory!</h1>
+          <p className="text-muted text-[1.1rem] m-0">
+            You defeated <strong className="text-foreground">{them.name}</strong>
           </p>
         </>
       ) : (
         <>
-          <p style={{ fontSize: '5rem' }}>💀</p>
-          <h1 style={{ color: 'var(--accent)' }}>Defeat</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '1.1rem' }}>
-            <strong style={{ color: 'var(--text)' }}>{winner !== undefined && !isDraw ? players[winner].name : ''}</strong> won this time.
+          <p className="text-[5rem] m-0">💀</p>
+          <h1 className="text-accent m-0">Defeat</h1>
+          <p className="text-muted text-[1.1rem] m-0">
+            <strong className="text-foreground">{winner !== undefined && !isDraw ? players[winner].name : ''}</strong> won this time.
           </p>
         </>
       )}
 
       {winReason && (
-        <p style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 8, padding: '0.6rem 1.2rem',
-          color: 'var(--muted)', fontSize: '0.9rem',
-        }}>
+        <p className="bg-surface border border-border rounded-lg m-0 text-muted text-sm"
+          style={{ padding: '0.6rem 1.2rem' }}>
           {winReason}
         </p>
       )}
 
-      {/* Final board snapshot */}
-      <div style={{
-        display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center',
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 10, padding: '1rem 1.5rem',
-      }}>
+      <div className="flex gap-8 flex-wrap justify-center bg-surface border border-border rounded-[10px]"
+        style={{ padding: '1rem 1.5rem' }}>
         {[me, them].map((p, i) => (
           <div key={i}>
-            <p style={{ color: 'var(--muted)', fontSize: '0.8rem', marginBottom: 4 }}>{p.name}</p>
-            <p style={{ fontSize: '0.9rem' }}>
+            <p className="text-muted text-[0.8rem] mb-1 m-0">{p.name}</p>
+            <p className="text-sm m-0">
               {p.field.length} land{p.field.length !== 1 ? 's' : ''} in play
             </p>
           </div>
         ))}
       </div>
 
-      {/* Rematch */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}>
+      <div className="flex flex-col items-center gap-2.5">
         <button
           className="btn-primary"
           onClick={onRematch}
@@ -95,12 +83,12 @@ export function GameOver({ gameState, myIndex, onPlayAgain, onRematch }: Props) 
           {myVote ? '✓ Rematch Voted' : 'Rematch'}
         </button>
         {opponentVote && !myVote && (
-          <p style={{ color: '#4ade80', fontSize: '0.85rem', margin: 0 }}>
+          <p className="m-0 text-sm" style={{ color: '#4ade80' }}>
             {them.name} wants a rematch!
           </p>
         )}
         {myVote && !opponentVote && (
-          <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0 }}>
+          <p className="text-muted text-sm m-0">
             Waiting for {them.name}…
           </p>
         )}

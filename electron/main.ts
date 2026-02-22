@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -187,7 +187,7 @@ function settingsFilePath(): string {
   return path.join(app.getPath('userData'), 'settings.json');
 }
 
-const DEFAULT_SETTINGS = { defaultPort: 3001, upnpEnabled: false };
+const DEFAULT_SETTINGS = { defaultPort: 3001, upnpEnabled: false, playerName: 'Player' };
 
 ipcMain.handle('get-settings', async () => {
   try {
@@ -204,7 +204,16 @@ ipcMain.handle('save-settings', async (_event, s: unknown) => {
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
+Menu.setApplicationMenu(null);
 app.whenReady().then(createWindow);
+
+async function shutdownServer() {
+  if (landsServer) {
+    const s = landsServer;
+    landsServer = null;
+    await s.close().catch(() => {});
+  }
+}
 
 app.on('window-all-closed', async () => {
   // Clean up UPnP mapping
@@ -219,10 +228,20 @@ app.on('window-all-closed', async () => {
     } catch { /* ignore */ }
     upnpClient.destroy();
   }
-  // Stop embedded server
-  if (landsServer) await landsServer.close().catch(() => {});
+  await shutdownServer();
   if (process.platform !== 'darwin') app.quit();
 });
+
+// Belt-and-suspenders: close server before the process exits regardless of path
+app.on('before-quit', (event) => {
+  if (landsServer) {
+    event.preventDefault();
+    shutdownServer().finally(() => app.quit());
+  }
+});
+
+process.on('SIGTERM', () => app.quit());
+process.on('SIGINT',  () => app.quit());
 
 app.on('activate', () => {
   if (mainWindow === null) createWindow();

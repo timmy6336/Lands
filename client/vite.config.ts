@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@lands/shared': path.resolve(__dirname, '../shared/types.ts'),
+      '@lands/game':   path.resolve(__dirname, '../server/src/game'),
+      '@lands/ai':     path.resolve(__dirname, '../server/src/ai'),
     },
   },
   server: {

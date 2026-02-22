@@ -6,13 +6,12 @@ import { GameSettings } from '@lands/shared';
 interface HostProps {
   mode: 'host';
   playerName: string;
-  setPlayerName: (n: string) => void;
   connected: boolean;
   roomCode: string | null;
   error: string | null;
   defaultPort?: number;
   upnpEnabled?: boolean;
-  onStartServer: (name: string, port: number, settings: GameSettings) => void;
+  onStartServer: (port: number, settings: GameSettings) => void;
   onBack: () => void;
 }
 
@@ -21,9 +20,8 @@ interface HostProps {
 interface JoinProps {
   mode: 'join';
   playerName: string;
-  setPlayerName: (n: string) => void;
   error: string | null;
-  onConnect: (name: string, hostIp: string, port: number, roomCode: string) => void;
+  onConnect: (hostIp: string, port: number, roomCode: string) => void;
   onBack: () => void;
 }
 
@@ -37,7 +35,7 @@ export function Lobby(props: Props) {
 // ── HostLobby ─────────────────────────────────────────────────────────────────
 
 function HostLobby({
-  playerName, setPlayerName, connected, roomCode, error,
+  playerName, connected, roomCode, error,
   defaultPort = 3001, upnpEnabled = false,
   onStartServer, onBack,
 }: HostProps) {
@@ -50,20 +48,16 @@ function HostLobby({
   const [starting, setStarting] = useState(false);
   const port = parseInt(portStr, 10) || defaultPort;
 
-  // Load IPs after server starts
   useEffect(() => {
     if (!serverStarted || !window.electronAPI) return;
     window.electronAPI.getIPs().then(setIps);
   }, [serverStarted]);
 
   async function handleStart() {
-    if (!playerName.trim()) return;
     setStarting(true);
-    onStartServer(playerName.trim(), port, { counterTimeLimitSeconds: timerSec });
+    onStartServer(port, { counterTimeLimitSeconds: timerSec });
     setServerStarted(true);
     setStarting(false);
-
-    // Auto UPnP if enabled in settings
     if (upnpEnabled && window.electronAPI) {
       setUpnpLoading(true);
       const result = await window.electronAPI.attemptUPnP(port);
@@ -81,55 +75,32 @@ function HostLobby({
   }
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', height: '100%', gap: '1.5rem',
-    }}>
-      <div style={{ textAlign: 'center' }}>
-        <h2 style={{ color: 'var(--accent)', marginBottom: '0.3rem' }}>Host Game</h2>
-        <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-          Start a server and share the connection info with your opponent
-        </p>
+    <div className="flex flex-col items-center justify-center h-full gap-6">
+      <div className="text-center">
+        <h2 className="text-accent mb-1">Host Game</h2>
+        <p className="text-muted text-sm">Start a server and share the connection info with your opponent</p>
       </div>
 
       {error && (
-        <p style={{ color: '#e74c3c', background: '#2c1010', padding: '0.5rem 1rem', borderRadius: 6, fontSize: '0.9rem' }}>
+        <p className="text-sm px-4 py-2 rounded-md" style={{ color: '#e74c3c', background: '#2c1010' }}>
           {error}
         </p>
       )}
 
       {!serverStarted ? (
-        /* ── Setup form ── */
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 12, padding: '1.5rem', display: 'flex',
-          flexDirection: 'column', gap: '1rem', minWidth: 300,
-        }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Your name</span>
-            <input
-              value={playerName}
-              onChange={e => setPlayerName(e.target.value)}
-              placeholder="Enter your name"
-              maxLength={20}
-              autoFocus
-            />
+        <div className="bg-surface border border-border rounded-xl p-6 flex flex-col gap-4 min-w-[300px]">
+          <p className="text-muted text-sm m-0">
+            Playing as: <strong className="text-foreground">{playerName}</strong>
+          </p>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-muted text-sm">Port</span>
+            <input type="number" min={1024} max={65535} value={portStr}
+              onChange={e => setPortStr(e.target.value)} style={{ width: '100%' }} />
           </label>
 
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Port</span>
-            <input
-              type="number"
-              min={1024}
-              max={65535}
-              value={portStr}
-              onChange={e => setPortStr(e.target.value)}
-              style={{ width: '100%', fontSize: '0.95rem', padding: '0.4rem 0.6rem' }}
-            />
-          </label>
-
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Counter window timer</span>
+          <label className="flex flex-col gap-1">
+            <span className="text-muted text-sm">Counter window timer</span>
             <select
               value={timerSec === null ? 'infinite' : String(timerSec)}
               onChange={e => setTimerSec(e.target.value === 'infinite' ? null : Number(e.target.value))}
@@ -146,94 +117,61 @@ function HostLobby({
             </select>
           </label>
 
-          <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.25rem' }}>
-            <button
-              className="btn-primary"
-              disabled={!playerName.trim() || starting}
-              onClick={handleStart}
-            >
+          <div className="flex gap-2 mt-1">
+            <button className="btn-primary" disabled={starting} onClick={handleStart}>
               {starting ? 'Starting…' : '🖥 Start Hosting'}
             </button>
             <button className="btn-secondary" onClick={onBack}>Back</button>
           </div>
         </div>
       ) : (
-        /* ── Hosting info ── */
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 12, padding: '1.5rem 2rem', display: 'flex',
-          flexDirection: 'column', gap: '1rem', minWidth: 320,
-        }}>
-          {/* Room code */}
+        <div className="bg-surface border border-border rounded-xl px-8 py-6 flex flex-col gap-4 min-w-[320px]">
           {roomCode ? (
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ color: 'var(--muted)', fontSize: '0.8rem', marginBottom: 4 }}>ROOM CODE</p>
-              <p style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '0.35em', color: 'var(--accent)', margin: 0 }}>
+            <div className="text-center">
+              <p className="text-muted text-xs mb-1">ROOM CODE</p>
+              <p className="text-[2.5rem] font-black text-accent m-0" style={{ letterSpacing: '0.35em' }}>
                 {roomCode}
               </p>
             </div>
           ) : (
-            <p style={{ color: 'var(--muted)', textAlign: 'center' }}>
+            <p className="text-muted text-center">
               {connected ? 'Creating room…' : 'Connecting to server…'}
             </p>
           )}
 
-          {/* IP addresses */}
-          <div style={{
-            background: 'var(--surface2)', borderRadius: 8, padding: '0.75rem 1rem',
-            display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.88rem',
-          }}>
-            <p style={{ color: 'var(--muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>
-              Share with your opponent
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--muted)' }}>Local IP (LAN)</span>
-              <span style={{ fontWeight: 600 }}>{ips ? `${ips.local}:${port}` : '…'}</span>
+          <div className="bg-surface-2 rounded-lg px-4 py-3 flex flex-col gap-1.5 text-sm">
+            <p className="text-muted text-xs uppercase tracking-widest mb-1">Share with your opponent</p>
+            <div className="flex justify-between">
+              <span className="text-muted">Local IP (LAN)</span>
+              <span className="font-semibold">{ips ? `${ips.local}:${port}` : '…'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--muted)' }}>Public IP (internet)</span>
-              <span style={{ fontWeight: 600 }}>
-                {ips
-                  ? (ips.public ? `${ips.public}:${port}` : 'Unavailable')
-                  : '…'}
+            <div className="flex justify-between">
+              <span className="text-muted">Public IP (internet)</span>
+              <span className="font-semibold">
+                {ips ? (ips.public ? `${ips.public}:${port}` : 'Unavailable') : '…'}
               </span>
             </div>
           </div>
 
-          {/* UPnP */}
           {window.electronAPI && (
             <div>
               {upnpResult ? (
-                <p style={{
-                  fontSize: '0.8rem',
-                  color: upnpResult.success ? '#4ade80' : '#f87171',
-                  margin: 0,
-                }}>
+                <p className="text-xs m-0" style={{ color: upnpResult.success ? '#4ade80' : '#f87171' }}>
                   {upnpResult.message}
                 </p>
               ) : (
-                <button
-                  className="btn-secondary"
-                  onClick={handleUPnP}
-                  disabled={upnpLoading}
-                  style={{ fontSize: '0.82rem', padding: '0.4rem 0.9rem' }}
-                >
+                <button className="btn-secondary text-xs px-3.5 py-1.5" onClick={handleUPnP} disabled={upnpLoading}>
                   {upnpLoading ? 'Trying port forward…' : '🌐 Try Auto Port Forward'}
                 </button>
               )}
             </div>
           )}
 
-          {/* Status */}
-          <p style={{ color: 'var(--muted)', fontSize: '0.85rem', textAlign: 'center', margin: 0 }}>
-            {roomCode
-              ? '⏳ Waiting for opponent to connect…'
-              : 'Starting server…'}
+          <p className="text-muted text-sm text-center m-0">
+            {roomCode ? '⏳ Waiting for opponent to connect…' : 'Starting server…'}
           </p>
 
-          <button className="btn-secondary" onClick={onBack} style={{ fontSize: '0.85rem' }}>
-            ✕ Cancel
-          </button>
+          <button className="btn-secondary text-sm" onClick={onBack}>✕ Cancel</button>
         </div>
       )}
     </div>
@@ -242,71 +180,46 @@ function HostLobby({
 
 // ── JoinLobby ─────────────────────────────────────────────────────────────────
 
-function JoinLobby({ playerName, setPlayerName, error, onConnect, onBack }: JoinProps) {
+function JoinLobby({ playerName, error, onConnect, onBack }: JoinProps) {
   const [hostIp, setHostIp] = useState('');
   const [portStr, setPortStr] = useState('3001');
   const [roomCode, setRoomCode] = useState('');
 
   const port = parseInt(portStr, 10) || 3001;
-  const canConnect = !!playerName.trim() && !!hostIp.trim() && roomCode.length === 4;
+  const canConnect = !!hostIp.trim() && roomCode.length === 4;
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', height: '100%', gap: '1.5rem',
-    }}>
-      <div style={{ textAlign: 'center' }}>
-        <h2 style={{ color: 'var(--accent)', marginBottom: '0.3rem' }}>Join Game</h2>
-        <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
-          Enter the connection info from your opponent
-        </p>
+    <div className="flex flex-col items-center justify-center h-full gap-6">
+      <div className="text-center">
+        <h2 className="text-accent mb-1">Join Game</h2>
+        <p className="text-muted text-sm">Enter the connection info from your opponent</p>
       </div>
 
       {error && (
-        <p style={{ color: '#e74c3c', background: '#2c1010', padding: '0.5rem 1rem', borderRadius: 6, fontSize: '0.9rem' }}>
+        <p className="text-sm px-4 py-2 rounded-md" style={{ color: '#e74c3c', background: '#2c1010' }}>
           {error}
         </p>
       )}
 
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: 12, padding: '1.5rem', display: 'flex',
-        flexDirection: 'column', gap: '1rem', minWidth: 300,
-      }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Your name</span>
-          <input
-            value={playerName}
-            onChange={e => setPlayerName(e.target.value)}
-            placeholder="Enter your name"
-            maxLength={20}
-            autoFocus
-          />
+      <div className="bg-surface border border-border rounded-xl p-6 flex flex-col gap-4 min-w-[300px]">
+        <p className="text-muted text-sm m-0">
+          Playing as: <strong className="text-foreground">{playerName}</strong>
+        </p>
+
+        <label className="flex flex-col gap-1">
+          <span className="text-muted text-sm">Host IP address</span>
+          <input value={hostIp} onChange={e => setHostIp(e.target.value.trim())}
+            placeholder="192.168.1.5  or  1.2.3.4" />
         </label>
 
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Host IP address</span>
-          <input
-            value={hostIp}
-            onChange={e => setHostIp(e.target.value.trim())}
-            placeholder="192.168.1.5  or  1.2.3.4"
-          />
+        <label className="flex flex-col gap-1">
+          <span className="text-muted text-sm">Port</span>
+          <input type="number" min={1024} max={65535} value={portStr}
+            onChange={e => setPortStr(e.target.value)} style={{ width: '100%' }} />
         </label>
 
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Port</span>
-          <input
-            type="number"
-            min={1024}
-            max={65535}
-            value={portStr}
-            onChange={e => setPortStr(e.target.value)}
-            style={{ width: '100%' }}
-          />
-        </label>
-
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>Room code</span>
+        <label className="flex flex-col gap-1">
+          <span className="text-muted text-sm">Room code</span>
           <input
             value={roomCode}
             onChange={e => setRoomCode(e.target.value.toUpperCase())}
@@ -316,12 +229,9 @@ function JoinLobby({ playerName, setPlayerName, error, onConnect, onBack }: Join
           />
         </label>
 
-        <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.25rem' }}>
-          <button
-            className="btn-primary"
-            disabled={!canConnect}
-            onClick={() => onConnect(playerName.trim(), hostIp, port, roomCode)}
-          >
+        <div className="flex gap-2 mt-1">
+          <button className="btn-primary" disabled={!canConnect}
+            onClick={() => onConnect(hostIp, port, roomCode)}>
             🔗 Connect
           </button>
           <button className="btn-secondary" onClick={onBack}>Back</button>
