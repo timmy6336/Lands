@@ -138,6 +138,11 @@ function AppInner() {
     roomActionSent.current = false;
   }, [serverUrl]);
 
+  // Reset roomActionSent on server error so the user can retry (e.g. bad room code)
+  useEffect(() => {
+    if (error) roomActionSent.current = false;
+  }, [error]);
+
   function goHome() {
     // Tell the server to pull us out of the matchmaking queue if needed
     if (screen === 'matchmaking' && connected) {

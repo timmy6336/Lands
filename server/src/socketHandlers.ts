@@ -80,10 +80,9 @@ function tryPairMatchmaking(io: IO) {
 
   // Register socket data and join Socket.io rooms for both sockets
   for (const [sock, entry] of [[sock1, p1entry], [sock2, p2entry]] as const) {
-    sock.data.playerId      = entry.id;
-    sock.data.roomCode      = code;
-    sock.data.playerName    = entry.name;
-    sock.data.inMatchmaking = false;
+    sock.data.playerId   = entry.id;
+    sock.data.roomCode   = code;
+    sock.data.playerName = entry.name;
     if (!sock.rooms.has(entry.id)) sock.join(entry.id);
     sock.join(code);
   }
@@ -272,7 +271,9 @@ export function registerHandlers(io: IO, socket: Sock) {
       currentPlayerIndex: 0, phase: 'customizing', turnNumber: 0,
       counterChain: [], settings: room.settings,
     };
-    io.to(roomCode).emit('game_state', waitingState);
+    // Emit separately so each player gets the correct viewerIndex
+    io.to(host.id).emit('game_state', { ...waitingState, viewerIndex: 0 });
+    io.to(id).emit('game_state', { ...waitingState, viewerIndex: 1 });
   });
 
   socket.on('update_customization', ({ customizations }) => {
@@ -298,7 +299,9 @@ export function registerHandlers(io: IO, socket: Sock) {
           currentPlayerIndex: 0, phase: 'customizing', turnNumber: 0,
           counterChain: [], settings: room.settings,
         };
-        io.to(room.code).emit('game_state', waitingState);
+        // Emit separately so each player gets the correct viewerIndex
+        io.to(p0.id).emit('game_state', { ...waitingState, viewerIndex: 0 });
+        io.to(p1.id).emit('game_state', { ...waitingState, viewerIndex: 1 });
       }
     }
   });
@@ -448,9 +451,8 @@ export function registerHandlers(io: IO, socket: Sock) {
     // Defensive: remove if already in queue (e.g. double-tap)
     removeFromMatchmaking(id);
 
-    socket.data.playerId      = id;
-    socket.data.playerName    = playerName;
-    socket.data.inMatchmaking = true;
+    socket.data.playerId   = id;
+    socket.data.playerName = playerName;
     // Ensure the socket is joined to its own ID room for direct emits
     if (!socket.rooms.has(id)) socket.join(id);
 
@@ -465,12 +467,20 @@ export function registerHandlers(io: IO, socket: Sock) {
 
   socket.on('leave_matchmaking', () => {
     removeFromMatchmaking(id);
-    socket.data.inMatchmaking = false;
   });
 
   socket.on('disconnect', () => {
     removeFromMatchmaking(id);
+    // Snapshot the room code before removal so we can clean up associated state
+    const roomBeforeDisconnect = rooms.getRoomByPlayerId(id);
+    const roomCode = roomBeforeDisconnect?.code;
     rooms.removePlayer(id);
+    // If removePlayer deleted the room, clean up any lingering per-room state
+    if (roomCode && !rooms.getRoom(roomCode)) {
+      rematchVoteMap.delete(roomCode);
+      rpsPickMap.delete(roomCode);
+      rpsWinnerMap.delete(roomCode);
+    }
   });
 }
 
