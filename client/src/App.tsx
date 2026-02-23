@@ -171,6 +171,22 @@ function AppInner() {
   // ── In-game screens (take priority over nav screens) ─────────────────────
 
   if (gameState && phase !== 'waiting') {
+    // If the opponent disconnected during lobby or RPS (before the engine starts),
+    // the server emits an error and deletes the room — show a prompt to go home.
+    const isPreGame = phase === 'customizing' || phase === 'rps_pick' || phase === 'rps_choose';
+    if (isPreGame && error) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-6 text-center p-8">
+          <p className="text-[3rem] m-0">⚠️</p>
+          <h2 className="m-0" style={{ color: '#e74c3c' }}>Opponent Disconnected</h2>
+          <p className="text-muted m-0">{error}</p>
+          <button className="btn-primary" onClick={goHome} style={{ padding: '0.75rem 2rem' }}>
+            Return to Menu
+          </button>
+        </div>
+      );
+    }
+
     if (phase === 'rps_pick' || phase === 'rps_choose') {
       return (
         <CardImagesContext.Provider value={cardImageUrls}>

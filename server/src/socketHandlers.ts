@@ -474,6 +474,15 @@ export function registerHandlers(io: IO, socket: Sock) {
     // Snapshot the room code before removal so we can clean up associated state
     const roomBeforeDisconnect = rooms.getRoomByPlayerId(id);
     const roomCode = roomBeforeDisconnect?.code;
+
+    // If opponent disconnects during the lobby or RPS phase (no engine yet),
+    // the room will be deleted but the remaining player has no way to know.
+    // Emit an error so their client can show a "return to menu" prompt.
+    if (roomBeforeDisconnect && !roomBeforeDisconnect.engine && roomBeforeDisconnect.players.length === 2) {
+      const otherId = roomBeforeDisconnect.players.find(p => p.id !== id)?.id;
+      if (otherId) io.to(otherId).emit('error', 'Your opponent disconnected.');
+    }
+
     rooms.removePlayer(id);
     // If removePlayer deleted the room, clean up any lingering per-room state
     if (roomCode && !rooms.getRoom(roomCode)) {
