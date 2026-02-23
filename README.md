@@ -1,6 +1,6 @@
 # Lands
 
-A 2-player land card game with effects, counters, and an AI opponent. Playable locally (single-player vs AI) or over a local network (multiplayer).
+A 2-player land card game with effects, counters, and an AI opponent.  Playable locally (single-player vs AI) or online via the dedicated server (private rooms with room codes or automatic matchmaking).
 
 ---
 
@@ -89,6 +89,17 @@ Three difficulty levels:
 ---
 
 ## Version History
+
+### v0.3.3 — Current
+**Hosted Multiplayer Server — Private Rooms & Matchmaking**
+
+- **Dedicated server**: Multiplayer now routes through a hosted server instead of a peer-to-peer LAN setup.  See [DEPLOY.md](DEPLOY.md) for hosting instructions (Render / Railway free tier recommended).
+- **Matchmaking**: New matchmaking option pairs you with another player automatically.  A live queue-position counter shows your place while you wait.
+- **Private rooms — simplified**: Hosting generates a 4-character room code; joining only requires that code.  No more IP address, port, or UPnP steps.
+- **Multiplayer menu restructure**: Play → Single Player / Multiplayer → Private Room / Matchmaking → Host / Join.
+- **Server URL config**: Set `VITE_DEDICATED_SERVER_URL` in `client/.env.local` before building to bake your server address into the client (see `client/.env.example`).
+
+---
 
 ### v0.3.1 — Current
 **MTG Name Removal · Rematch RPS · Effect Result Popups**

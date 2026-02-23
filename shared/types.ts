@@ -191,11 +191,15 @@ export interface ReplayFile {
 
 /** Typed Socket.io events the server can push to connected clients. */
 export interface ServerToClientEvents {
-  game_state: (state: GameState) => void;
-  room_created: (data: { roomCode: string }) => void;
-  error: (msg: string) => void;
-  chat_message: (data: ChatMessage) => void;
-  replay_complete: (replay: ReplayFile) => void;
+  game_state:          (state: GameState) => void;
+  room_created:        (data: { roomCode: string }) => void;
+  error:               (msg: string) => void;
+  chat_message:        (data: ChatMessage) => void;
+  replay_complete:     (replay: ReplayFile) => void;
+  /** Sent while the player is waiting in the matchmaking queue. */
+  matchmaking_status:  (data: { position: number; estimatedWait?: number }) => void;
+  /** Sent to both players the moment a match is found. */
+  matchmaking_found:   (data: { roomCode: string }) => void;
 }
 
 /** Typed Socket.io events clients can send to the server. */
@@ -228,12 +232,16 @@ export interface ClientToServerEvents {
     [key: string]: unknown;
   }) => void;
   update_customization: (data: { customizations: Customizations }) => void;
-  chat_message: (data: { message: string }) => void;
+  chat_message:         (data: { message: string }) => void;
+  /** Join the matchmaking queue. */
+  join_matchmaking:     (data: { playerName: string }) => void;
+  /** Leave the matchmaking queue (e.g. user cancelled). */
+  leave_matchmaking:    () => void;
 }
 
 export interface InterServerEvents { /* reserved */ }
 export interface SocketData {
-  playerId: string;
-  roomCode: string;
+  playerId:   string;
+  roomCode:   string;
   playerName: string;
 }

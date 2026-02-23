@@ -26,6 +26,8 @@ import { CardImagesContext, useCardImagesProvider } from './hooks/useCardImages'
 import { UISettingsContext, useUISettingsProvider } from './hooks/useUISettings';
 import { HomeScreen } from './components/HomeScreen';
 import { PlayMenu } from './components/PlayMenu';
+import { MultiplayerMenu } from './components/MultiplayerMenu';
+import { MatchmakingScreen } from './components/MatchmakingScreen';
 import { SinglePlayerMenu } from './components/SinglePlayerMenu';
 import { Settings } from './components/Settings';
 import { Lobby } from './components/Lobby';
@@ -36,6 +38,7 @@ import { RpsScreen } from './components/RpsScreen';
 import { RulesScreen } from './components/RulesScreen';
 import { ReplayBrowser } from './components/ReplayBrowser';
 import { ReplayViewer } from './components/ReplayViewer';
+
 
 function PageTransition({ children, keyProp }: { children: React.ReactNode; keyProp: string }) {
   return (
@@ -54,10 +57,15 @@ function PageTransition({ children, keyProp }: { children: React.ReactNode; keyP
   );
 }
 
-type Screen = 'home' | 'play-menu' | 'single-player-menu' | 'single-player' | 'settings' | 'rules' | 'host' | 'join' | 'replays' | 'replay-viewer';
+type Screen =
+  | 'home' | 'play-menu' | 'single-player-menu' | 'single-player'
+  | 'settings' | 'rules'
+  | 'multiplayer-menu' | 'private-menu' | 'host' | 'join' | 'matchmaking'
+  | 'replays' | 'replay-viewer';
 
-// In browser dev mode (no Electron), connect directly to the Vite-proxied server.
-const BROWSER_SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3001';
+// URL of the shared dedicated server.  Set VITE_DEDICATED_SERVER_URL at build time.
+// Falls back to localhost for development / LAN testing.
+const DEDICATED_SERVER_URL = import.meta.env.VITE_DEDICATED_SERVER_URL ?? 'http://localhost:3001';
 
 export default function App() {
   const uiSettings = useUISettingsProvider();
@@ -78,11 +86,15 @@ function AppInner() {
   const [pendingSPRematch, setPendingSPRematch] = useState(false);
   const [replayToView, setReplayToView] = useState<ReplayFile | null>(null);
 
-  // Saved Electron settings (port, UPnP) — loaded once
-  const [defaultPort, setDefaultPort] = useState(3001);
-  const [upnpEnabled, setUpnpEnabled] = useState(false);
+  // Saved Electron settings — reserved for future use
+  // (Port / UPnP removed; multiplayer now uses the hosted dedicated server)
 
-  const { gameState: socketGameState, roomCode, error, connected, send: socketSend, chatMessages: socketChatMessages } = useSocket(serverUrl);
+  const [cardImageUrls, refreshCardImages] = useCardImagesProvider();
+
+  const { gameState: socketGameState, roomCode, error, connected, send: socketSend,
+    chatMessages: socketChatMessages,
+    matchmakingStatus, matchmakingFound,
+  } = useSocket(serverUrl);
   const { gameState: localGameState, send: localSend } = useLocalGame(localGameParams);
 
   // Route to local engine when in single-player mode, socket otherwise
@@ -102,22 +114,10 @@ function AppInner() {
     }
   }
 
-  const [cardImageUrls, refreshCardImages] = useCardImagesProvider();
-
   // Track whether we've already emitted create_room / join_room for this connection
   const roomActionSent = useRef(false);
 
-  // Load Electron settings on mount
-  useEffect(() => {
-    if (window.electronAPI) {
-      window.electronAPI.getSettings().then(s => {
-        setDefaultPort(s.defaultPort);
-        setUpnpEnabled(s.upnpEnabled);
-      });
-    }
-  }, []);
-
-  // Auto emit create_room / join_room once connected (multiplayer only)
+  // Auto emit create_room / join_room / join_matchmaking once connected (multiplayer only)
   useEffect(() => {
     if (!connected || roomActionSent.current) return;
 
@@ -127,6 +127,9 @@ function AppInner() {
     } else if (screen === 'join' && pendingJoin) {
       roomActionSent.current = true;
       send('join_room', { roomCode: pendingJoin.roomCode, playerName });
+    } else if (screen === 'matchmaking') {
+      roomActionSent.current = true;
+      send('join_matchmaking', { playerName });
     }
   }, [connected, screen, pendingJoin]);
 
@@ -135,7 +138,16 @@ function AppInner() {
     roomActionSent.current = false;
   }, [serverUrl]);
 
+  // Reset roomActionSent on server error so the user can retry (e.g. bad room code)
+  useEffect(() => {
+    if (error) roomActionSent.current = false;
+  }, [error]);
+
   function goHome() {
+    // Tell the server to pull us out of the matchmaking queue if needed
+    if (screen === 'matchmaking' && connected) {
+      socketSend('leave_matchmaking');
+    }
     setServerUrl(null);
     setPendingJoin(null);
     setLocalGameParams(null);
@@ -159,6 +171,22 @@ function AppInner() {
   // ── In-game screens (take priority over nav screens) ─────────────────────
 
   if (gameState && phase !== 'waiting') {
+    // If the opponent disconnected during lobby or RPS (before the engine starts),
+    // the server emits an error and deletes the room — show a prompt to go home.
+    const isPreGame = phase === 'customizing' || phase === 'rps_pick' || phase === 'rps_choose';
+    if (isPreGame && error) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-6 text-center p-8">
+          <p className="text-[3rem] m-0">⚠️</p>
+          <h2 className="m-0" style={{ color: '#e74c3c' }}>Opponent Disconnected</h2>
+          <p className="text-muted m-0">{error}</p>
+          <button className="btn-primary" onClick={goHome} style={{ padding: '0.75rem 2rem' }}>
+            Return to Menu
+          </button>
+        </div>
+      );
+    }
+
     if (phase === 'rps_pick' || phase === 'rps_choose') {
       return (
         <CardImagesContext.Provider value={cardImageUrls}>
@@ -275,9 +303,84 @@ function AppInner() {
       <PageTransition keyProp="play-menu">
         <PlayMenu
           onSinglePlayer={() => setScreen('single-player-menu')}
-          onHost={() => setScreen('host')}
-          onJoin={() => setScreen('join')}
+          onMultiplayer={() => setScreen('multiplayer-menu')}
           onBack={() => setScreen('home')}
+        />
+      </PageTransition>
+    );
+  }
+
+  if (screen === 'multiplayer-menu') {
+    return (
+      <PageTransition keyProp="multiplayer-menu">
+        <MultiplayerMenu
+          onPrivate={() => setScreen('private-menu')}
+          onMatchmaking={() => {
+            setServerUrl(DEDICATED_SERVER_URL);
+            setScreen('matchmaking');
+          }}
+          onBack={() => setScreen('play-menu')}
+        />
+      </PageTransition>
+    );
+  }
+
+  if (screen === 'private-menu') {
+    return (
+      <PageTransition keyProp="private-menu">
+        <div className="flex flex-col items-center justify-center h-full gap-8">
+          <div className="text-center">
+            <h2 className="text-accent mb-1 m-0">Private Room</h2>
+            <p className="text-muted text-sm m-0">Create a room or join one with a code</p>
+          </div>
+          <div className="flex flex-col gap-3.5 min-w-[280px]">
+            <button
+              className="btn-primary text-left"
+              onClick={() => setScreen('host')}
+              style={{ fontSize: '1.05rem', padding: '0.8rem 2rem' }}
+            >
+              🖥 Host a Game
+              <span className="block text-[0.75rem] font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                Get a room code to share with your friend
+              </span>
+            </button>
+            <button
+              className="btn-secondary text-left"
+              onClick={() => setScreen('join')}
+              style={{ fontSize: '1.05rem', padding: '0.8rem 2rem' }}
+            >
+              🔗 Join a Game
+              <span className="block text-[0.75rem] font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                Enter the code your friend gave you
+              </span>
+            </button>
+          </div>
+          <button
+            className="btn-secondary"
+            onClick={() => setScreen('multiplayer-menu')}
+            style={{ fontSize: '0.9rem', padding: '0.5rem 1.5rem' }}
+          >
+            ← Back
+          </button>
+        </div>
+      </PageTransition>
+    );
+  }
+
+  if (screen === 'matchmaking') {
+    return (
+      <PageTransition keyProp="matchmaking">
+        <MatchmakingScreen
+          playerName={playerName}
+          queuePosition={matchmakingStatus?.position ?? null}
+          found={matchmakingFound}
+          connected={connected}
+          onCancel={() => {
+            if (connected) socketSend('leave_matchmaking');
+            setServerUrl(null);
+            roomActionSent.current = false;
+            setScreen('multiplayer-menu');
+          }}
         />
       </PageTransition>
     );
@@ -315,19 +418,14 @@ function AppInner() {
           connected={connected}
           roomCode={roomCode}
           error={error}
-          defaultPort={defaultPort}
-          upnpEnabled={upnpEnabled}
-          onStartServer={async (port, settings) => {
+          onCreateRoom={(settings) => {
             setHostSettings(settings);
-            if (window.electronAPI) {
-              await window.electronAPI.startServer(port);
-            }
-            setServerUrl(`http://localhost:${port}`);
+            setServerUrl(DEDICATED_SERVER_URL);
           }}
           onBack={() => {
-            window.electronAPI?.stopServer();
             setServerUrl(null);
-            setScreen('play-menu');
+            roomActionSent.current = false;
+            setScreen('private-menu');
           }}
         />
       </PageTransition>
@@ -341,14 +439,15 @@ function AppInner() {
           mode="join"
           playerName={playerName}
           error={error}
-          onConnect={(hostIp, port, code) => {
+          onConnect={(code) => {
             setPendingJoin({ roomCode: code, settings: { counterTimeLimitSeconds: 15 } });
-            setServerUrl(`http://${hostIp}:${port}`);
+            setServerUrl(DEDICATED_SERVER_URL);
           }}
           onBack={() => {
             setServerUrl(null);
             setPendingJoin(null);
-            setScreen('play-menu');
+            roomActionSent.current = false;
+            setScreen('private-menu');
           }}
         />
       </PageTransition>
@@ -391,11 +490,6 @@ function AppInner() {
   }
 
   // ── Home screen (default) ─────────────────────────────────────────────────
-
-  // Non-Electron dev convenience: auto-connect to VITE_SERVER_URL if set
-  if (!window.electronAPI && !serverUrl && import.meta.env.VITE_SERVER_URL) {
-    if (serverUrl === null) setServerUrl(BROWSER_SERVER_URL);
-  }
 
   return (
     <PageTransition keyProp="home">

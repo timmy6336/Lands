@@ -34,12 +34,17 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
     return () => clearInterval(id);
   }, [deadline, isInfinite, onPass]);
 
+  // After the first counter, every subsequent counter in the chain costs 2 Blues.
+  // isCounterCounter covers the attacker's response (counter_response phase);
+  // chain.length >= 2 covers the defender's response when the chain has grown (counter_window phase).
+  const needsTwoBlues = isCounterCounter || gameState.counterChain.length >= 2;
+
   const blueCards = me.hand.filter(c => c.color === 'blue');
-  const matchingCards = isCounterCounter
+  const matchingCards = needsTwoBlues
     ? blueCards
     : me.hand.filter(c => c.color === pendingCard.color);
 
-  const canCounter = isCounterCounter
+  const canCounter = needsTwoBlues
     ? blueCards.length >= 2
     : pendingCard.color === 'blue'
       ? blueCards.length >= 2
@@ -49,7 +54,7 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
   function getAutoCards(): { blueId: string; matchingId: string } | null {
     const blue = blueCards[0];
     if (!blue) return null;
-    if (isCounterCounter) {
+    if (needsTwoBlues) {
       const second = blueCards.find(c => c.id !== blue.id);
       if (!second) return null;
       return { blueId: blue.id, matchingId: second.id };
@@ -82,14 +87,14 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
     <div className="overlay">
       <div className="overlay-box">
         <h2 className="text-accent m-0">
-          {isCounterCounter ? 'Counter the Counter?' : 'Counter Opportunity'}
+          {needsTwoBlues ? 'Counter the Counter?' : 'Counter Opportunity'}
         </h2>
 
         <div className="flex items-start gap-4">
           <Card card={pendingCard} customizations={gameState.players[1 - myIndex].customizations} />
           <div>
             <p className="text-muted text-sm m-0">
-              {isCounterCounter
+              {needsTwoBlues
                 ? 'Your land was countered. Spend 2 Blue cards to counter their counter.'
                 : `Opponent played a ${pendingCard.color} land. Spend 1 Blue + 1 ${pendingCard.color} to counter.`}
             </p>

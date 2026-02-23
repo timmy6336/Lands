@@ -1,7 +1,12 @@
-// Multiplayer lobby: starts the server (host) or connects to one (join), shows
-// the local + public IP addresses, and handles UPnP port forwarding.
-// Uses IPC via window.electronAPI to start the server and query network info.
-import { useEffect, useState } from 'react';
+// Multiplayer lobby screens (remote dedicated-server edition).
+//
+// HostLobby: user configures settings → "Create Room" connects to the
+//            dedicated server and receives a 4-char room code to share.
+//
+// JoinLobby: user enters a 4-char room code → "Connect" joins the room.
+//
+// The actual Socket.io connection is managed in App.tsx via serverUrl/useSocket.
+import { useState } from 'react';
 import { GameSettings } from '@lands/shared';
 
 // ── Host Lobby ────────────────────────────────────────────────────────────────
@@ -9,12 +14,13 @@ import { GameSettings } from '@lands/shared';
 interface HostProps {
   mode: 'host';
   playerName: string;
+  /** True once the socket connects to the dedicated server. */
   connected: boolean;
+  /** Room code from server, null while waiting for it. */
   roomCode: string | null;
   error: string | null;
-  defaultPort?: number;
-  upnpEnabled?: boolean;
-  onStartServer: (port: number, settings: GameSettings) => void;
+  /** Called once when the user clicks "Create Room"; sets serverUrl in App. */
+  onCreateRoom: (settings: GameSettings) => void;
   onBack: () => void;
 }
 
@@ -24,7 +30,8 @@ interface JoinProps {
   mode: 'join';
   playerName: string;
   error: string | null;
-  onConnect: (hostIp: string, port: number, roomCode: string) => void;
+  /** Called with the room code when user clicks "Connect"; sets serverUrl in App. */
+  onConnect: (roomCode: string) => void;
   onBack: () => void;
 }
 
@@ -37,51 +44,20 @@ export function Lobby(props: Props) {
 
 // ── HostLobby ─────────────────────────────────────────────────────────────────
 
-function HostLobby({
-  playerName, connected, roomCode, error,
-  defaultPort = 3001, upnpEnabled = false,
-  onStartServer, onBack,
-}: HostProps) {
-  const [portStr, setPortStr] = useState(String(defaultPort));
+function HostLobby({ playerName, connected, roomCode, error, onCreateRoom, onBack }: HostProps) {
   const [timerSec, setTimerSec] = useState<number | null>(15);
-  const [serverStarted, setServerStarted] = useState(false);
-  const [ips, setIps] = useState<{ local: string; public: string | null } | null>(null);
-  const [upnpResult, setUpnpResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [upnpLoading, setUpnpLoading] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const port = parseInt(portStr, 10) || defaultPort;
+  const [started, setStarted] = useState(false);
 
-  useEffect(() => {
-    if (!serverStarted || !window.electronAPI) return;
-    window.electronAPI.getIPs().then(setIps);
-  }, [serverStarted]);
-
-  async function handleStart() {
-    setStarting(true);
-    onStartServer(port, { counterTimeLimitSeconds: timerSec });
-    setServerStarted(true);
-    setStarting(false);
-    if (upnpEnabled && window.electronAPI) {
-      setUpnpLoading(true);
-      const result = await window.electronAPI.attemptUPnP(port);
-      setUpnpResult(result);
-      setUpnpLoading(false);
-    }
-  }
-
-  async function handleUPnP() {
-    if (!window.electronAPI) return;
-    setUpnpLoading(true);
-    const result = await window.electronAPI.attemptUPnP(port);
-    setUpnpResult(result);
-    setUpnpLoading(false);
+  function handleCreate() {
+    setStarted(true);
+    onCreateRoom({ counterTimeLimitSeconds: timerSec });
   }
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6">
       <div className="text-center">
         <h2 className="text-accent mb-1">Host Game</h2>
-        <p className="text-muted text-sm">Start a server and share the connection info with your opponent</p>
+        <p className="text-muted text-sm">Create a private room and share the code with your friend</p>
       </div>
 
       {error && (
@@ -90,17 +66,12 @@ function HostLobby({
         </p>
       )}
 
-      {!serverStarted ? (
+      {!started ? (
+        /* Settings form */
         <div className="bg-surface border border-border rounded-xl p-6 flex flex-col gap-4 min-w-[300px]">
           <p className="text-muted text-sm m-0">
             Playing as: <strong className="text-foreground">{playerName}</strong>
           </p>
-
-          <label className="flex flex-col gap-1">
-            <span className="text-muted text-sm">Port</span>
-            <input type="number" min={1024} max={65535} value={portStr}
-              onChange={e => setPortStr(e.target.value)} style={{ width: '100%' }} />
-          </label>
 
           <label className="flex flex-col gap-1">
             <span className="text-muted text-sm">Counter window timer</span>
@@ -121,59 +92,42 @@ function HostLobby({
           </label>
 
           <div className="flex gap-2 mt-1">
-            <button className="btn-primary" disabled={starting} onClick={handleStart}>
-              {starting ? 'Starting…' : '🖥 Start Hosting'}
+            <button className="btn-primary" onClick={handleCreate}>
+              🖥 Create Room
             </button>
             <button className="btn-secondary" onClick={onBack}>Back</button>
           </div>
         </div>
-      ) : (
-        <div className="bg-surface border border-border rounded-xl px-8 py-6 flex flex-col gap-4 min-w-[320px]">
-          {roomCode ? (
-            <div className="text-center">
-              <p className="text-muted text-xs mb-1">ROOM CODE</p>
-              <p className="text-[2.5rem] font-black text-accent m-0" style={{ letterSpacing: '0.35em' }}>
-                {roomCode}
-              </p>
-            </div>
-          ) : (
-            <p className="text-muted text-center">
-              {connected ? 'Creating room…' : 'Connecting to server…'}
-            </p>
-          )}
-
-          <div className="bg-surface-2 rounded-lg px-4 py-3 flex flex-col gap-1.5 text-sm">
-            <p className="text-muted text-xs uppercase tracking-widest mb-1">Share with your opponent</p>
-            <div className="flex justify-between">
-              <span className="text-muted">Local IP (LAN)</span>
-              <span className="font-semibold">{ips ? `${ips.local}:${port}` : '…'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted">Public IP (internet)</span>
-              <span className="font-semibold">
-                {ips ? (ips.public ? `${ips.public}:${port}` : 'Unavailable') : '…'}
-              </span>
-            </div>
-          </div>
-
-          {window.electronAPI && (
-            <div>
-              {upnpResult ? (
-                <p className="text-xs m-0" style={{ color: upnpResult.success ? '#4ade80' : '#f87171' }}>
-                  {upnpResult.message}
-                </p>
-              ) : (
-                <button className="btn-secondary text-xs px-3.5 py-1.5" onClick={handleUPnP} disabled={upnpLoading}>
-                  {upnpLoading ? 'Trying port forward…' : '🌐 Try Auto Port Forward'}
-                </button>
-              )}
-            </div>
-          )}
-
-          <p className="text-muted text-sm text-center m-0">
-            {roomCode ? '⏳ Waiting for opponent to connect…' : 'Starting server…'}
+      ) : roomCode ? (
+        /* Room ready */
+        <div className="bg-surface border border-border rounded-xl px-8 py-6 flex flex-col items-center gap-4 min-w-[300px]">
+          <p className="text-muted text-xs uppercase tracking-widest m-0">Share this code</p>
+          <p
+            className="text-[3rem] font-black text-accent m-0"
+            style={{ letterSpacing: '0.35em' }}
+          >
+            {roomCode}
           </p>
-
+          <p className="text-muted text-sm text-center m-0">
+            ⏳ Waiting for your opponent to enter this code…
+          </p>
+          <button className="btn-secondary text-sm mt-2" onClick={onBack}>✕ Cancel</button>
+        </div>
+      ) : (
+        /* Connecting */
+        <div className="bg-surface border border-border rounded-xl px-8 py-6 flex flex-col items-center gap-4 min-w-[300px]">
+          <div
+            className="animate-spin"
+            style={{
+              width: 32, height: 32,
+              border: '3px solid var(--border)',
+              borderTopColor: 'var(--accent)',
+              borderRadius: '50%',
+            }}
+          />
+          <p className="text-muted text-sm m-0">
+            {connected ? 'Creating room…' : 'Connecting to server…'}
+          </p>
           <button className="btn-secondary text-sm" onClick={onBack}>✕ Cancel</button>
         </div>
       )}
@@ -184,18 +138,15 @@ function HostLobby({
 // ── JoinLobby ─────────────────────────────────────────────────────────────────
 
 function JoinLobby({ playerName, error, onConnect, onBack }: JoinProps) {
-  const [hostIp, setHostIp] = useState('');
-  const [portStr, setPortStr] = useState('3001');
   const [roomCode, setRoomCode] = useState('');
 
-  const port = parseInt(portStr, 10) || 3001;
-  const canConnect = !!hostIp.trim() && roomCode.length === 4;
+  const canConnect = roomCode.trim().length === 4;
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6">
       <div className="text-center">
         <h2 className="text-accent mb-1">Join Game</h2>
-        <p className="text-muted text-sm">Enter the connection info from your opponent</p>
+        <p className="text-muted text-sm">Enter the room code your friend shared with you</p>
       </div>
 
       {error && (
@@ -210,31 +161,23 @@ function JoinLobby({ playerName, error, onConnect, onBack }: JoinProps) {
         </p>
 
         <label className="flex flex-col gap-1">
-          <span className="text-muted text-sm">Host IP address</span>
-          <input value={hostIp} onChange={e => setHostIp(e.target.value.trim())}
-            placeholder="192.168.1.5  or  1.2.3.4" />
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-muted text-sm">Port</span>
-          <input type="number" min={1024} max={65535} value={portStr}
-            onChange={e => setPortStr(e.target.value)} style={{ width: '100%' }} />
-        </label>
-
-        <label className="flex flex-col gap-1">
           <span className="text-muted text-sm">Room code</span>
           <input
             value={roomCode}
-            onChange={e => setRoomCode(e.target.value.toUpperCase())}
+            onChange={e => setRoomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
             placeholder="XXXX"
             maxLength={4}
-            style={{ letterSpacing: '0.25em', fontWeight: 700, fontSize: '1.1rem' }}
+            autoFocus
+            style={{ letterSpacing: '0.3em', fontWeight: 700, fontSize: '1.4rem', textAlign: 'center' }}
           />
         </label>
 
         <div className="flex gap-2 mt-1">
-          <button className="btn-primary" disabled={!canConnect}
-            onClick={() => onConnect(hostIp, port, roomCode)}>
+          <button
+            className="btn-primary"
+            disabled={!canConnect}
+            onClick={() => onConnect(roomCode.trim())}
+          >
             🔗 Connect
           </button>
           <button className="btn-secondary" onClick={onBack}>Back</button>
