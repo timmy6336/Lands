@@ -250,6 +250,74 @@ ipcMain.handle('delete-replay', async (_event, id: string) => {
   if (fs.existsSync(p)) fs.unlinkSync(p);
 });
 
+ipcMain.handle('export-replay', async (_event, id: string) => {
+  const src = path.join(replaysDir(), `${id}.json`);
+  if (!fs.existsSync(src)) return { success: false, message: 'Replay not found' };
+
+  // Build a human-readable default filename from the replay metadata
+  let defaultName = `replay-${id}.json`;
+  try {
+    const raw = JSON.parse(fs.readFileSync(src, 'utf-8')) as { date?: string; playerNames?: [string, string] };
+    if (raw.date && raw.playerNames) {
+      const d = new Date(raw.date);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const names = raw.playerNames.join('-vs-').replace(/[^a-zA-Z0-9-]/g, '_');
+      defaultName = `replay-${dateStr}-${names}.json`;
+    }
+  } catch { /* use default */ }
+
+  if (!mainWindow) return { success: false, message: 'No window' };
+  const result = await dialog.showSaveDialog(mainWindow, {
+    defaultPath: defaultName,
+    filters: [{ name: 'Lands Replay', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePath) return { success: false, message: 'Cancelled' };
+  fs.copyFileSync(src, result.filePath);
+  return { success: true };
+});
+
+ipcMain.handle('import-replay', async () => {
+  if (!mainWindow) return null;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [{ name: 'Lands Replay', extensions: ['json'] }],
+  });
+  if (result.canceled || !result.filePaths[0]) return null;
+
+  let replay: Record<string, unknown>;
+  try {
+    replay = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf-8')) as Record<string, unknown>;
+  } catch {
+    return { error: 'Could not parse the selected file as JSON.' };
+  }
+
+  // Basic structure validation
+  if (
+    typeof replay.id !== 'string' ||
+    !Array.isArray(replay.snapshots) ||
+    !Array.isArray(replay.playerNames) ||
+    typeof replay.date !== 'string'
+  ) {
+    return { error: 'File does not appear to be a valid Lands replay.' };
+  }
+
+  const dir = replaysDir();
+  fs.mkdirSync(dir, { recursive: true });
+
+  // Avoid ID collisions with existing replays
+  let id = replay.id as string;
+  if (fs.existsSync(path.join(dir, `${id}.json`))) {
+    id = `${id}-${Date.now()}`;
+    replay = { ...replay, id };
+  }
+
+  fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify(replay));
+
+  // Return metadata only (strip snapshots for the list)
+  const { snapshots: _snap, ...meta } = replay;
+  return meta;
+});
+
 // ── IPC: settings ─────────────────────────────────────────────────────────────
 
 function settingsFilePath(): string {

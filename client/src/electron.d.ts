@@ -55,6 +55,12 @@ interface ElectronAPI {
 
   /** Permanently delete a saved replay by ID. */
   deleteReplay(id: string): Promise<void>;
+
+  /** Export a saved replay to a user-chosen file path via a native save dialog. */
+  exportReplay(id: string): Promise<{ success: boolean; message?: string }>;
+
+  /** Open a native file picker, import the chosen JSON as a replay, and return its metadata (no snapshots). Returns null if cancelled, or an object with `error` string on validation failure. */
+  importReplay(): Promise<Record<string, unknown> | null>;
 }
 
 declare global {

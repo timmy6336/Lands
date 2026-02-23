@@ -17,6 +17,8 @@ export function ReplayBrowser({ onBack, onView }: Props) {
   const [metas, setMetas] = useState<ReplayMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (!window.electronAPI) { setLoading(false); return; }
@@ -43,13 +45,61 @@ export function ReplayBrowser({ onBack, onView }: Props) {
     setMetas(prev => prev.filter(m => m.id !== id));
   }
 
+  async function handleExport(id: string) {
+    if (!window.electronAPI) return;
+    setExportingId(id);
+    try {
+      await window.electronAPI.exportReplay(id);
+    } finally {
+      setExportingId(null);
+    }
+  }
+
+  async function handleImport() {
+    if (!window.electronAPI) return;
+    setImportStatus('Importing…');
+    try {
+      const result = await window.electronAPI.importReplay();
+      if (result === null) {
+        setImportStatus(null); // cancelled
+        return;
+      }
+      if ('error' in result && typeof result.error === 'string') {
+        setImportStatus('⚠ ' + result.error);
+        setTimeout(() => setImportStatus(null), 4000);
+        return;
+      }
+      // Prepend the new meta to the list
+      setMetas(prev => [result as ReplayMeta, ...prev]);
+      setImportStatus('✓ Imported');
+      setTimeout(() => setImportStatus(null), 2500);
+    } catch {
+      setImportStatus('⚠ Import failed');
+      setTimeout(() => setImportStatus(null), 3000);
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '2rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <button className="btn-secondary" onClick={onBack} style={{ padding: '0.5rem 1.2rem' }}>
           ← Back
         </button>
-        <h2 className="text-accent m-0" style={{ fontSize: '1.6rem', fontWeight: 700 }}>Replays</h2>
+        <h2 className="text-accent m-0" style={{ fontSize: '1.6rem', fontWeight: 700, flex: 1 }}>Replays</h2>
+        {window.electronAPI && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            {importStatus && (
+              <span className="text-muted" style={{ fontSize: '0.82rem' }}>{importStatus}</span>
+            )}
+            <button
+              className="btn-secondary"
+              onClick={handleImport}
+              style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }}
+            >
+              ↑ Import
+            </button>
+          </div>
+        )}
       </div>
 
       {!window.electronAPI && (
@@ -71,8 +121,10 @@ export function ReplayBrowser({ onBack, onView }: Props) {
               key={m.id}
               meta={m}
               isLoading={loadingId === m.id}
+              isExporting={exportingId === m.id}
               onView={() => handleView(m.id)}
               onDelete={() => handleDelete(m.id)}
+              onExport={() => handleExport(m.id)}
             />
           ))}
         </div>
@@ -82,12 +134,14 @@ export function ReplayBrowser({ onBack, onView }: Props) {
 }
 
 function ReplayRow({
-  meta, isLoading, onView, onDelete,
+  meta, isLoading, isExporting, onView, onDelete, onExport,
 }: {
   meta: ReplayMeta;
   isLoading: boolean;
+  isExporting: boolean;
   onView: () => void;
   onDelete: () => void;
+  onExport: () => void;
 }) {
   const date = new Date(meta.date);
   const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -127,6 +181,15 @@ function ReplayRow({
         style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
       >
         {isLoading ? '…' : 'Watch'}
+      </button>
+      <button
+        className="btn-secondary"
+        onClick={onExport}
+        disabled={isExporting}
+        style={{ padding: '0.45rem 0.8rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+        title="Export replay to file"
+      >
+        {isExporting ? '…' : '↓ Export'}
       </button>
       <button
         className="btn-secondary"

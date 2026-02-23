@@ -55,4 +55,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   deleteReplay: (id: string) =>
     ipcRenderer.invoke('delete-replay', id),
+
+  exportReplay: (id: string) =>
+    ipcRenderer.invoke('export-replay', id),
+
+  importReplay: () =>
+    ipcRenderer.invoke('import-replay'),
 });
