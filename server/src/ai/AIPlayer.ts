@@ -899,9 +899,11 @@ export class AIPlayer {
 
     // Hard AI: if we KNOW they hold the winning card (from a previous black reveal),
     // every play that advances their position is more urgent.
-    if (this.difficulty === 'hard' && this.knownHumanCards.size > 0) {
-      const knownList = [...this.knownHumanCards.values()];
-      if (knownList.some(c => isWinningCard(c, opponent.field))) threat += 22;
+    if (this.difficulty === 'hard') {
+      const holdsWinCard = [...this.knownHumanCards.entries()].some(([color, count]) =>
+        count > 0 && isWinningCard({ id: '', color }, opponent.field)
+      );
+      if (holdsWinCard) threat += 22;
     }
 
     // Penalty for depleting our blue reserves (blues are precious for later).
@@ -1136,7 +1138,7 @@ export class AIPlayer {
     // opponent already has in hand (destroying a field card is less effective when they
     // can just replay the same color next turn).
     const knownColors = this.difficulty === 'hard'
-      ? new Set([...this.knownHumanCards.values()].map(c => c.color))
+      ? new Set([...this.knownHumanCards.entries()].filter(([, n]) => n > 0).map(([color]) => color))
       : undefined;
     const target = random
       ? opponent.field[Math.floor(Math.random() * opponent.field.length)]
