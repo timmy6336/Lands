@@ -41,6 +41,74 @@ const rpsWinnerMap = new Map<string, 0 | 1>();                  // roomCode → 
 // Single-player AI instances: roomCode → AIPlayer
 const singlePlayerAIs = new Map<string, AIPlayer>();
 
+// ── Matchmaking queue ─────────────────────────────────────────────────────────
+/** Entry in the global matchmaking queue. */
+interface MatchmakingEntry { id: string; name: string; }
+const matchmakingQueue: MatchmakingEntry[] = [];
+
+/** Remove a player from the matchmaking queue by socket ID. */
+function removeFromMatchmaking(socketId: string) {
+  const idx = matchmakingQueue.findIndex(e => e.id === socketId);
+  if (idx >= 0) matchmakingQueue.splice(idx, 1);
+}
+
+/**
+ * Attempt to pair the first two players in the queue.
+ * If successful: creates a room, wires both sockets into it, emits matchmaking_found
+ * and game_state (customizing) to both.
+ */
+function tryPairMatchmaking(io: IO) {
+  if (matchmakingQueue.length < 2) return;
+
+  const p1entry = matchmakingQueue.shift()!;
+  const p2entry = matchmakingQueue.shift()!;
+
+  const sock1 = io.sockets.sockets.get(p1entry.id);
+  const sock2 = io.sockets.sockets.get(p2entry.id);
+
+  // If either disconnected while in queue, put the surviving one back and retry
+  if (!sock1 || !sock2) {
+    if (sock1) matchmakingQueue.unshift(p1entry);
+    if (sock2) matchmakingQueue.unshift(p2entry);
+    if (matchmakingQueue.length >= 2) tryPairMatchmaking(io);
+    return;
+  }
+
+  const settings = { counterTimeLimitSeconds: 15 };
+  const code = rooms.createRoom(p1entry.id, p1entry.name, settings);
+  const room = rooms.joinRoom(code, p2entry.id, p2entry.name)!;
+
+  // Register socket data and join Socket.io rooms for both sockets
+  for (const [sock, entry] of [[sock1, p1entry], [sock2, p2entry]] as const) {
+    sock.data.playerId      = entry.id;
+    sock.data.roomCode      = code;
+    sock.data.playerName    = entry.name;
+    sock.data.inMatchmaking = false;
+    if (!sock.rooms.has(entry.id)) sock.join(entry.id);
+    sock.join(code);
+  }
+
+  // Notify both players
+  io.to(p1entry.id).emit('matchmaking_found', { roomCode: code });
+  io.to(p2entry.id).emit('matchmaking_found', { roomCode: code });
+
+  // Emit customizing state so the game flow starts (same as join_room does)
+  const mp0 = room.players[0];
+  const mp1 = room.players[1]!; // safe: we just joined exactly 2 players above
+  const customizingState = {
+    gameId:             'pending',
+    roomCode:           code,
+    players:            [makePendingPlayer(mp0.id, mp0.name), makePendingPlayer(mp1.id, mp1.name)] as [PlayerState, PlayerState],
+    currentPlayerIndex: 0 as const,
+    phase:              'customizing' as const,
+    turnNumber:         0,
+    counterChain:       [],
+    settings,
+  };
+  io.to(p1entry.id).emit('game_state', { ...customizingState, viewerIndex: 0 });
+  io.to(p2entry.id).emit('game_state', { ...customizingState, viewerIndex: 1 });
+}
+
 // ── Replay helper ─────────────────────────────────────────────────────────────
 
 /** Assemble a ReplayFile from the engine’s snapshot history.  Called when phase === 'ended'. */
@@ -374,7 +442,34 @@ export function registerHandlers(io: IO, socket: Sock) {
     io.to(room.code).emit('chat_message', { playerName: socket.data.playerName, message: trimmed });
   });
 
+  // ── Matchmaking ──────────────────────────────────────────────────────────────
+
+  socket.on('join_matchmaking', ({ playerName }) => {
+    // Defensive: remove if already in queue (e.g. double-tap)
+    removeFromMatchmaking(id);
+
+    socket.data.playerId      = id;
+    socket.data.playerName    = playerName;
+    socket.data.inMatchmaking = true;
+    // Ensure the socket is joined to its own ID room for direct emits
+    if (!socket.rooms.has(id)) socket.join(id);
+
+    matchmakingQueue.push({ id, name: playerName });
+
+    // Tell the player their position
+    const pos = matchmakingQueue.findIndex(e => e.id === id);
+    socket.emit('matchmaking_status', { position: pos + 1 });
+
+    tryPairMatchmaking(io);
+  });
+
+  socket.on('leave_matchmaking', () => {
+    removeFromMatchmaking(id);
+    socket.data.inMatchmaking = false;
+  });
+
   socket.on('disconnect', () => {
+    removeFromMatchmaking(id);
     rooms.removePlayer(id);
   });
 }

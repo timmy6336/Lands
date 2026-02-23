@@ -17,6 +17,8 @@ export function useSocket(serverUrl: string | null) {
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [matchmakingStatus, setMatchmakingStatus] = useState<{ position: number } | null>(null);
+  const [matchmakingFound, setMatchmakingFound] = useState(false);
 
   useEffect(() => {
     if (!serverUrl) {
@@ -29,6 +31,8 @@ export function useSocket(serverUrl: string | null) {
       setError(null);
       setConnected(false);
       setChatMessages([]);
+      setMatchmakingStatus(null);
+      setMatchmakingFound(false);
       return;
     }
 
@@ -41,6 +45,8 @@ export function useSocket(serverUrl: string | null) {
     socket.on('room_created', ({ roomCode: code }) => setRoomCode(code));
     socket.on('error', (msg) => setError(msg));
     socket.on('chat_message', (msg) => setChatMessages(prev => [...prev, msg]));
+    socket.on('matchmaking_status', (data) => setMatchmakingStatus(data));
+    socket.on('matchmaking_found', () => { setMatchmakingFound(true); setMatchmakingStatus(null); });
     socket.on('replay_complete', (replay) => {
       window.electronAPI?.saveReplay(replay).catch(() => {});
     });
@@ -59,5 +65,5 @@ export function useSocket(serverUrl: string | null) {
     socketRef.current?.emit(event, ...args);
   }
 
-  return { gameState, roomCode, error, connected, send, chatMessages };
+  return { gameState, roomCode, error, connected, send, chatMessages, matchmakingStatus, matchmakingFound };
 }
