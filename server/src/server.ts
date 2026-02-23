@@ -8,11 +8,23 @@ import {
 } from '../../shared/types';
 import { registerHandlers } from './socketHandlers';
 
+// The handle returned by startServer — used by electron/main.ts to shut the server down
+// cleanly when the app quits or the user clicks "Stop Server".
 export interface LandsServer {
   close: () => Promise<void>;
   port: number;
 }
 
+/**
+ * Creates an Express HTTP server and attaches a Socket.io server to it.
+ *
+ * Flow:
+ *  1. Creates an Express app (CORS open — local network only, no auth).
+ *  2. Wraps it in a raw Node http.Server.
+ *  3. Attaches Socket.io so we get typed, bidirectional real-time events.
+ *  4. Calls registerHandlers for every new socket connection (see socketHandlers.ts).
+ *  5. Returns a { port, close() } handle so the caller can shut down cleanly.
+ */
 export function startServer(port: number): Promise<LandsServer> {
   return new Promise((resolve, reject) => {
     const app = express();

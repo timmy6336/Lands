@@ -1,3 +1,5 @@
+// Compact deck display showing a fan of face-down cards with a count badge.
+// Used inside the Field row in both GameBoard and ReplayViewer.
 import { useCardImages } from '../hooks/useCardImages';
 
 interface Props {

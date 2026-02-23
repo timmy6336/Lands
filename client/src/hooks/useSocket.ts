@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
-  ServerToClientEvents, ClientToServerEvents, GameState,
+  ServerToClientEvents, ClientToServerEvents, GameState, ChatMessage,
 } from '@lands/shared';
 
 type LandsSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -16,6 +16,9 @@ export function useSocket(serverUrl: string | null) {
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [matchmakingStatus, setMatchmakingStatus] = useState<{ position: number } | null>(null);
+  const [matchmakingFound, setMatchmakingFound] = useState(false);
 
   useEffect(() => {
     if (!serverUrl) {
@@ -27,6 +30,9 @@ export function useSocket(serverUrl: string | null) {
       setRoomCode(null);
       setError(null);
       setConnected(false);
+      setChatMessages([]);
+      setMatchmakingStatus(null);
+      setMatchmakingFound(false);
       return;
     }
 
@@ -38,6 +44,12 @@ export function useSocket(serverUrl: string | null) {
     socket.on('game_state', (state) => setGameState(state));
     socket.on('room_created', ({ roomCode: code }) => setRoomCode(code));
     socket.on('error', (msg) => setError(msg));
+    socket.on('chat_message', (msg) => setChatMessages(prev => [...prev, msg]));
+    socket.on('matchmaking_status', (data) => setMatchmakingStatus(data));
+    socket.on('matchmaking_found', () => { setMatchmakingFound(true); setMatchmakingStatus(null); });
+    socket.on('replay_complete', (replay) => {
+      window.electronAPI?.saveReplay(replay).catch(() => {});
+    });
 
     return () => {
       socket.disconnect();
@@ -53,5 +65,5 @@ export function useSocket(serverUrl: string | null) {
     socketRef.current?.emit(event, ...args);
   }
 
-  return { gameState, roomCode, error, connected, send };
+  return { gameState, roomCode, error, connected, send, chatMessages, matchmakingStatus, matchmakingFound };
 }

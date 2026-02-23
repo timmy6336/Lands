@@ -1,9 +1,13 @@
+// Renders a row of cards from a player’s hand.
+// When `hiddenCount` is set and `cards` is empty, shows that many face-down
+// HiddenCard placeholders (used for the opponent’s hand where content is secret).
+// Supports click-to-select for the playing_play phase via `selectableIds` + `onSelect`.
 import { Card as CardType, Customizations } from '@lands/shared';
 import { Card, HiddenCard } from './Card';
 
 interface Props {
   cards: CardType[];
-  hiddenCount?: number; // if hand is hidden, show this many face-down cards
+  hiddenCount?: number;
   customizations?: Customizations;
   label: string;
   selectableIds?: Set<string>;
@@ -15,19 +19,11 @@ export function Hand({ cards, hiddenCount, customizations, label, selectableIds,
   const isHidden = hiddenCount !== undefined && cards.length === 0;
 
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid var(--border)',
-      borderRadius: 10,
-      padding: '0.75rem 1rem',
-    }}>
-      <div style={{
-        fontSize: '0.75rem', color: 'var(--muted)', marginBottom: '0.6rem',
-        textTransform: 'uppercase', letterSpacing: '0.08em',
-      }}>
+    <div className="border border-border rounded-[10px] px-4 py-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+      <div className="text-xs text-muted mb-1.5 uppercase tracking-widest">
         {label} — {isHidden ? hiddenCount : cards.length} card{(isHidden ? hiddenCount! : cards.length) !== 1 ? 's' : ''}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', minHeight: 80 }}>
+      <div className="flex flex-wrap gap-2 min-h-[80px]">
         {isHidden
           ? Array.from({ length: hiddenCount! }).map((_, i) => <HiddenCard key={i} />)
           : cards.map(card => (

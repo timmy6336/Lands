@@ -1,4 +1,23 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+// ─────────────────────────────────────────────────────────────────────────────
+// electron/main.ts — Electron main process
+//
+// Responsible for:
+//   • Creating the BrowserWindow (the app shell)
+//   • Running the game server in-process (start-server / stop-server IPC)
+//   • Exposing OS utilities to the renderer via IPC handlers:
+//       get-ips         — local + public IP for the Lobby copy-paste
+//       attempt-upnp    — optional UPnP port mapping for online play
+//       open-image-dialog / save-card-image / get-card-image-urls / reset-card-image
+//                       — custom card art management
+//       save-replay / list-replays / load-replay / delete-replay
+//                       — replay file management in userData/replays/
+//       get-settings / save-settings
+//                       — persistent user preferences in userData/settings.json
+//
+// All IPC channels are invoked from the renderer via window.electronAPI.*
+// (see electron/preload.ts for the definitions).
+// ─────────────────────────────────────────────────────────────────────────────
+import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -14,6 +33,12 @@ let currentUpnpPort: number | null = null;
 
 // ── Window ───────────────────────────────────────────────────────────────────
 
+/**
+ * Create the main application window.
+ * In development, loads from the Vite dev server (http://localhost:5173) and
+ * opens DevTools.  In production, loads the built index.html from the bundled
+ * resources directory.
+ */
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -61,6 +86,10 @@ ipcMain.handle('stop-server', async () => {
 
 // ── IPC: IP lookup ────────────────────────────────────────────────────────────
 
+/**
+ * Find the first non-loopback IPv4 address on any network interface.
+ * Used in the Lobby to show the local IP address that other LAN players can use.
+ */
 function getLocalIP(): string {
   const ifaces = os.networkInterfaces();
   for (const list of Object.values(ifaces)) {
@@ -181,13 +210,53 @@ ipcMain.handle('reset-card-image', async (_event, color: string) => {
   }
 });
 
+// ── IPC: replays ──────────────────────────────────────────────────────────────
+
+function replaysDir(): string {
+  return path.join(app.getPath('userData'), 'replays');
+}
+
+ipcMain.handle('save-replay', async (_event, replay: unknown) => {
+  const dir = replaysDir();
+  fs.mkdirSync(dir, { recursive: true });
+  const r = replay as { id: string };
+  fs.writeFileSync(path.join(dir, `${r.id}.json`), JSON.stringify(replay));
+});
+
+ipcMain.handle('list-replays', async () => {
+  const dir = replaysDir();
+  if (!fs.existsSync(dir)) return [];
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+  const metas: unknown[] = [];
+  for (const f of files) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf-8')) as Record<string, unknown>;
+      const { snapshots: _snap, ...meta } = raw;
+      metas.push(meta);
+    } catch { /* skip corrupt files */ }
+  }
+  return (metas as Array<{ date: string }>).sort((a, b) => b.date.localeCompare(a.date));
+});
+
+ipcMain.handle('load-replay', async (_event, id: string) => {
+  const p = path.join(replaysDir(), `${id}.json`);
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf-8'));
+  } catch { return null; }
+});
+
+ipcMain.handle('delete-replay', async (_event, id: string) => {
+  const p = path.join(replaysDir(), `${id}.json`);
+  if (fs.existsSync(p)) fs.unlinkSync(p);
+});
+
 // ── IPC: settings ─────────────────────────────────────────────────────────────
 
 function settingsFilePath(): string {
   return path.join(app.getPath('userData'), 'settings.json');
 }
 
-const DEFAULT_SETTINGS = { defaultPort: 3001, upnpEnabled: false };
+const DEFAULT_SETTINGS = { defaultPort: 3001, upnpEnabled: false, playerName: 'Player' };
 
 ipcMain.handle('get-settings', async () => {
   try {
@@ -204,7 +273,16 @@ ipcMain.handle('save-settings', async (_event, s: unknown) => {
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
+Menu.setApplicationMenu(null);
 app.whenReady().then(createWindow);
+
+async function shutdownServer() {
+  if (landsServer) {
+    const s = landsServer;
+    landsServer = null;
+    await s.close().catch(() => {});
+  }
+}
 
 app.on('window-all-closed', async () => {
   // Clean up UPnP mapping
@@ -219,10 +297,20 @@ app.on('window-all-closed', async () => {
     } catch { /* ignore */ }
     upnpClient.destroy();
   }
-  // Stop embedded server
-  if (landsServer) await landsServer.close().catch(() => {});
+  await shutdownServer();
   if (process.platform !== 'darwin') app.quit();
 });
+
+// Belt-and-suspenders: close server before the process exits regardless of path
+app.on('before-quit', (event) => {
+  if (landsServer) {
+    event.preventDefault();
+    shutdownServer().finally(() => app.quit());
+  }
+});
+
+process.on('SIGTERM', () => app.quit());
+process.on('SIGINT',  () => app.quit());
 
 app.on('activate', () => {
   if (mainWindow === null) createWindow();

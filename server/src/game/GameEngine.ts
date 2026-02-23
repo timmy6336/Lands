@@ -1,3 +1,28 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// server/src/game/GameEngine.ts
+//
+// The authoritative game state machine.  It owns and mutates `state` directly,
+// then calls `emit()` whenever state changes.  Callers wire up `onStateChange`
+// to broadcast the new state to clients.
+//
+// Architecture:
+//   • Multiplayer  — one engine lives on the server per room.  socketHandlers.ts
+//                   calls public methods (playCard, counterResponse…) in response
+//                   to Socket.io events.  onStateChange broadcasts to both players.
+//   • Single-player — the engine runs inside the Electron renderer process
+//                   (no server round-trip).  useLocalGame.ts calls the same public
+//                   API and AIPlayer chains onto onStateChange to react to each
+//                   state change.
+//
+// Public API (called by socket handlers / useLocalGame):
+//   drawCard, playCard, counterResponse, counterCounterResponse, effectResponse,
+//   surrender, applyCustomization, playerDisconnected, playerReconnected
+//
+// Private resolution flow:
+//   playCard → counter_window phase  →  resolveCounterWindow
+//     → (countered)  endTurn
+//     → (resolved)   fireEffect → effect phase(s) → endTurn
+// ─────────────────────────────────────────────────────────────────────────────
 import { v4 as uuidv4 } from 'uuid';
 import {
   GameState, GamePhase, PlayerState, Card, Color,
@@ -9,8 +34,9 @@ import { checkWin } from './WinChecker';
 
 const STARTING_HAND = 5;
 
-// ── helpers ─────────────────────────────────────────────────────────────────
+// ── file-scope helpers ───────────────────────────────────────────────────────────────────
 
+/** Build the initial PlayerState for a player: generate a deck, deal 5 cards. */
 function makePlayer(id: string, name: string): PlayerState {
   const deck = buildDeck();
   const hand = deck.splice(0, STARTING_HAND);
@@ -24,6 +50,10 @@ function makePlayer(id: string, name: string): PlayerState {
   };
 }
 
+/**
+ * If a player's draw pile is empty, shuffle their graveyard back into the deck.
+ * Called before every drawOne() so draws never fail silently while cards exist.
+ */
 function ensureDeckHasCards(player: PlayerState): void {
   if (player.deck.length === 0 && player.graveyard.length > 0) {
     player.deck = shuffle([...player.graveyard]);
@@ -33,6 +63,7 @@ function ensureDeckHasCards(player: PlayerState): void {
   }
 }
 
+/** Take the top card of the player's deck, add it to their hand, update counts. Returns null if both deck and graveyard are empty. */
 function drawOne(player: PlayerState): Card | null {
   ensureDeckHasCards(player);
   const card = player.deck.shift();
@@ -43,6 +74,7 @@ function drawOne(player: PlayerState): Card | null {
   return card;
 }
 
+/** Find and remove a card from the player's hand by ID. Returns the removed card, or undefined if not found. */
 function removeFromHand(player: PlayerState, cardId: string): Card | undefined {
   const idx = player.hand.findIndex(c => c.id === cardId);
   if (idx === -1) return undefined;
@@ -51,22 +83,37 @@ function removeFromHand(player: PlayerState, cardId: string): Card | undefined {
   return card;
 }
 
+/** Move a card to the player's graveyard and update the graveyard count. */
 function discardToGraveyard(player: PlayerState, card: Card): void {
   player.graveyard.push(card);
   player.graveyardCount = player.graveyard.length;
 }
 
-// ── GameEngine class ─────────────────────────────────────────────────────────
-
+// ── GameEngine class ───────────────────────────────────────────────────────────────────
 export class GameEngine {
   state: GameState;
+
+  /** Full unsanitized snapshots captured at every state change — used for replays.
+   *  Contains both players' hands and decks in plaintext, so it must never be
+   *  sent directly to a client mid-game. */
+  replaySnapshots: GameState[] = [];
 
   /** Timers stored outside state (they don't need to be serialised to clients) */
   private counterTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Called whenever state changes — wired up by the socket handler */
+  /** Called whenever state changes — wired up by the socket handler (multiplayer)
+   *  or useLocalGame (single-player).  Not set in the constructor; callers must
+   *  attach their own handler immediately after creating the engine. */
   onStateChange: (state: GameState) => void = () => {};
 
+  /**
+   * Build the initial game state and emit it.
+   *
+   * Player 0 is treated as the first player who goes first (decided by RPS before
+   * this constructor is called).  The normal draw phase is skipped for turn 1 so
+   * player 0 doesn’t get a free extra card; they start with the same 5-card hand
+   * that was dealt in makePlayer().
+   */
   constructor(
     roomCode: string,
     p0: { id: string; name: string },
@@ -94,8 +141,9 @@ export class GameEngine {
     this.emit();
   }
 
-  // ── public API (called by socket handlers) ─────────────────────────────────
+  // ── public API (called by socket handlers or useLocalGame) ────────────────────────
 
+  /** Immediately end the game, giving the win to the other player. */
   surrender(playerId: string) {
     const s = this.state;
     if (s.phase === 'ended') return;
@@ -107,6 +155,7 @@ export class GameEngine {
     this.emit();
   }
 
+  /** Override the display names for a player's land types.  Can be called before or during a game. */
   applyCustomization(playerId: string, customizations: Customizations) {
     const player = this.getPlayerById(playerId);
     if (!player) return;
@@ -118,6 +167,11 @@ export class GameEngine {
     // "ready" is handled by RoomManager before the engine starts; ignore here
   }
 
+  /**
+   * Active player draws their card for the turn.
+   * Only valid when phase === 'playing_draw' and it’s this player’s turn.
+   * Advances phase to 'playing_play' so the player can then choose a card to play.
+   */
   drawCard(playerId: string) {
     const s = this.state;
     const pi = this.getPlayerIndex(playerId);
@@ -129,11 +183,25 @@ export class GameEngine {
     this.emit();
   }
 
+  /**
+   * Active player plays a card from their hand, starting the counter window.
+   *
+   * The card is removed from the player’s hand immediately and stored as
+   * `pendingPlay`.  It stays “in limbo” until resolveCounterWindow() decides
+   * whether it resolves to the field or goes to the graveyard.
+   *
+   * For Red/Green cards, the pre_target phase fires first (attacker picks a
+   * target before the counter window) so the target choice is committed but
+   * hidden from the defender.
+   */
   playCard(playerId: string, cardId: string) {
     const s = this.state;
     const pi = this.getPlayerIndex(playerId);
     if (pi !== s.currentPlayerIndex) return;
     if (s.phase !== 'playing_play') return;
+
+    // Clear the previous effect result so the popup doesn't linger
+    s.effectResult = undefined;
 
     const player = s.players[pi];
     const card = removeFromHand(player, cardId);
@@ -142,45 +210,20 @@ export class GameEngine {
     s.pendingPlay = card;
     s.counterChain = [{ playerId, type: 'play', card }];
 
-    // Red/Green with valid targets: enter pre-target phase before counter window
-    const defender = s.players[(1 - pi) as 0 | 1];
-    if (card.color === 'red' && defender.field.length > 0) {
-      s.phase = 'pre_target_red';
-      this.emit();
-      return;
-    }
-    if (card.color === 'green' && player.graveyard.length > 0) {
-      s.phase = 'pre_target_green';
-      this.emit();
-      return;
-    }
-
     s.phase = 'counter_window';
     this.startCounterTimer(() => this.resolveCounterWindow());
     this.emit();
   }
 
-  preTargetResponse(playerId: string, cardId: string) {
-    const s = this.state;
-    const pi = this.getPlayerIndex(playerId);
-    if (pi !== s.currentPlayerIndex) return;
-    if (s.phase !== 'pre_target_red' && s.phase !== 'pre_target_green') return;
-
-    // Validate that the targeted card exists in the right zone
-    if (s.phase === 'pre_target_red') {
-      const defender = s.players[(1 - pi) as 0 | 1];
-      if (!defender.field.some(c => c.id === cardId)) return;
-    } else {
-      const attacker = s.players[pi];
-      if (!attacker.graveyard.some(c => c.id === cardId)) return;
-    }
-
-    s.preTargetCardId = cardId;
-    s.phase = 'counter_window';
-    this.startCounterTimer(() => this.resolveCounterWindow());
-    this.emit();
-  }
-
+  /**
+   * Defender responds to the counter window.
+   *
+   * If `countering` is true, the provided cards are validated and removed from
+   * the defender’s hand into their graveyard.  A new counter_response window
+   * opens for the attacker to optionally counter-counter.
+   *
+   * If `countering` is false (Pass), resolveCounterWindow() runs immediately.
+   */
   counterResponse(playerId: string, countering: boolean, blueCardId?: string, matchingCardId?: string) {
     const s = this.state;
     if (s.phase !== 'counter_window') return;
@@ -212,6 +255,15 @@ export class GameEngine {
     }
   }
 
+  /**
+   * Attacker responds to the counter-counter window (phase === 'counter_response').
+   *
+   * If countering, two Blue cards are spent.  The counter chain grows and the
+   * defender gets another counter_window.  Otherwise the chain resolves as-is.
+   *
+   * The chain can theoretically go on forever; the parity of its length determines
+   * the outcome (see resolveCounterWindow).
+   */
   counterCounterResponse(playerId: string, countering: boolean, blueCard1Id?: string, blueCard2Id?: string) {
     const s = this.state;
     if (s.phase !== 'counter_response') return;
@@ -241,6 +293,10 @@ export class GameEngine {
     }
   }
 
+  /**
+   * Handle any “effect response” action from a player during an effect phase.
+   * Dispatches to the correct private resolver based on the current phase.
+   */
   effectResponse(playerId: string, data: { type: string; [key: string]: unknown }) {
     const s = this.state;
     const pi = this.getPlayerIndex(playerId);
@@ -292,8 +348,20 @@ export class GameEngine {
     this.emit();
   }
 
-  // ── Counter chain resolution ───────────────────────────────────────────────
+  // ── Counter chain resolution ────────────────────────────────────────────────
 
+  /**
+   * Resolve the counter chain when neither player counters further (or a timer fires).
+   *
+   * Parity rule:
+   *   Chain length = 1  (just the play)                       → card resolves
+   *   Chain length = 2  (play + counter)                      → card is negated
+   *   Chain length = 3  (play + counter + counter-counter)    → card resolves
+   *   …and so on (odd = resolves, even = negated)
+   *
+   * If the card is negated it goes to the attacker’s graveyard.
+   * If it resolves it lands on the field, win is checked, then fireEffect() fires.
+   */
   private resolveCounterWindow() {
     const s = this.state;
     // Top of chain determines fate of pendingPlay
@@ -349,10 +417,7 @@ export class GameEngine {
       }
 
       case 'red': {
-        if (s.preTargetCardId) {
-          // Target was pre-selected before counter — resolve immediately
-          this.resolveRedPick(s.preTargetCardId);
-        } else if (defender.field.length === 0) {
+        if (defender.field.length === 0) {
           // Fizzle — no targets
           this.endTurn();
         } else {
@@ -364,11 +429,8 @@ export class GameEngine {
       }
 
       case 'green': {
-        if (s.preTargetCardId) {
-          // Target was pre-selected before counter — resolve immediately
-          this.resolveGreenPick(s.preTargetCardId);
-        } else if (attacker.graveyard.length === 0) {
-          // Fizzle
+        if (attacker.graveyard.length === 0) {
+          // Fizzle — nothing to retrieve
           this.endTurn();
         } else {
           s.pendingEffect = { type: 'green_pick' };
@@ -406,6 +468,8 @@ export class GameEngine {
     }
   }
 
+  /** Red effect step 2: attacker picks a land on opponent’s field to destroy.
+   *  targetCardId may be undefined if the AI/client sends no choice (treated as no-op). */
   private resolveRedPick(targetCardId: string | undefined) {
     const s = this.state;
     const defender = s.players[(1 - s.currentPlayerIndex) as 0 | 1];
@@ -416,11 +480,13 @@ export class GameEngine {
       if (idx !== -1) {
         const [destroyed] = defender.field.splice(idx, 1);
         discardToGraveyard(defender, destroyed);
+        s.effectResult = { type: 'red', cardColor: destroyed.color, ownerName: defender.name, attackerIndex: s.currentPlayerIndex };
       }
     }
     this.endTurn();
   }
 
+  /** Green effect step 2: attacker picks a land from their graveyard to return to hand. */
   private resolveGreenPick(targetCardId: string | undefined) {
     const s = this.state;
     const attacker = s.players[s.currentPlayerIndex];
@@ -433,11 +499,13 @@ export class GameEngine {
         attacker.graveyardCount = attacker.graveyard.length;
         attacker.hand.push(card);
         attacker.handCount = attacker.hand.length;
+        s.effectResult = { type: 'green', cardColor: card.color, ownerName: attacker.name, attackerIndex: s.currentPlayerIndex };
       }
     }
     this.endTurn();
   }
 
+  /** Blue effect step 2: attacker decides whether the revealed top card stays on top or goes to the bottom. */
   private resolveBlueLook(keepOnTop: boolean) {
     const s = this.state;
     const attacker = s.players[s.currentPlayerIndex];
@@ -447,10 +515,16 @@ export class GameEngine {
       const top = attacker.deck.shift()!;
       attacker.deck.push(top);
     }
+    s.effectResult = { type: 'blue', keptOnTop: keepOnTop, attackerIndex: s.currentPlayerIndex };
     // deckCount doesn't change
     this.endTurn();
   }
 
+  /**
+   * Black effect step 1: defender submits their chosen cards to reveal.
+   * Validates the submitted IDs, forces reveal-all if hand is 3 or fewer,
+   * then advances to effect_black_pick for the attacker to choose.
+   */
   private resolveBlackShow(cardIds: string[]) {
     const s = this.state;
     const defender = s.players[(1 - s.currentPlayerIndex) as 0 | 1];
@@ -470,25 +544,33 @@ export class GameEngine {
     this.emit();
   }
 
+  /** Black effect step 2: attacker picks one of the revealed cards to discard from defender’s hand. */
   private resolveBlackPick(targetCardId: string) {
     const s = this.state;
     const defender = s.players[(1 - s.currentPlayerIndex) as 0 | 1];
     s.pendingEffect = undefined;
 
     const card = removeFromHand(defender, targetCardId);
-    if (card) discardToGraveyard(defender, card);
+    if (card) {
+      discardToGraveyard(defender, card);
+      s.effectResult = { type: 'black', cardColor: card.color, ownerName: defender.name, attackerIndex: s.currentPlayerIndex };
+    }
 
     this.endTurn();
   }
 
-  // ── Turn management ────────────────────────────────────────────────────────
+  // ── Turn management ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Called at the end of every resolved play (after all effects finish).
+   * Swaps the active player, increments the turn counter, auto-draws for the
+   * new active player, and sets phase to 'playing_play'.
+   */
   private endTurn() {
     const s = this.state;
     s.currentPlayerIndex = s.currentPlayerIndex === 0 ? 1 : 0;
     s.turnNumber++;
     s.pendingEffect = undefined;
-    s.preTargetCardId = undefined;
     // Auto-draw for the new active player
     drawOne(s.players[s.currentPlayerIndex]);
     s.phase = 'playing_play';
@@ -497,6 +579,11 @@ export class GameEngine {
 
   // ── Win / end ──────────────────────────────────────────────────────────────
 
+  /**
+   * Set the game phase to 'ended' and compose the win reason text shown in the UI.
+   * Re-inspects the field here so we can tell the player exactly which condition
+   * was met (5-of-a-kind shows the color; rainbow shows a fixed message).
+   */
   private declareWinner(index: 0 | 1) {
     const s = this.state;
     const field = s.players[index].field;
@@ -515,6 +602,12 @@ export class GameEngine {
 
   // ── Timer helpers ──────────────────────────────────────────────────────────
 
+  /**
+   * Start (or restart) the auto-resolve timer for the counter window.
+   * If counterTimeLimitSeconds is null the window is "infinite" and only closes
+   * when a player actively passes.  The deadline timestamp is stored in state
+   * so clients can display a countdown bar.
+   */
   private startCounterTimer(cb: () => void) {
     this.clearCounterTimer();
     const limit = this.state.settings.counterTimeLimitSeconds;
@@ -540,7 +633,16 @@ export class GameEngine {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
+  /**
+   * The single exit point for every state mutation.
+   * 1. Deep-clones the full state (both hands visible) and appends it to
+   *    replaySnapshots so every phase transition is captured for playback.
+   * 2. Fires onStateChange so the caller can broadcast to clients or update
+   *    React state.
+   */
   private emit() {
+    // Deep-clone for the replay — captures full state including both hands
+    this.replaySnapshots.push(JSON.parse(JSON.stringify(this.state)) as GameState);
     this.onStateChange(this.state);
   }
 

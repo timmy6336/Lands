@@ -1,6 +1,10 @@
+// Renders a player’s field (lands in play).
+// Cards are visually grouped by color into stacks, each showing a count badge.
+// When `selectableIds` is provided (Red/Green effect prompts), only those cards
+// are clickable; the rest are dimmed.
 import { useState } from 'react';
-import { Card as CardType, Color, Customizations, DEFAULT_CUSTOMIZATIONS } from '@lands/shared';
 import { Card } from './Card';
+import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
 
 interface Props {
   cards: CardType[];
@@ -27,24 +31,15 @@ export function Field({ cards, customizations, label, selectableIds, onSelect }:
   }
 
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      border: '1px solid var(--border)',
-      borderRadius: 10,
-      padding: '0.75rem 1rem',
-      minHeight: 120,
-      flex: 1,
-    }}>
-      <div style={{
-        fontSize: '0.75rem', color: 'var(--muted)', marginBottom: '0.6rem',
-        textTransform: 'uppercase', letterSpacing: '0.08em',
-      }}>
+    <div className="border border-border rounded-[10px] px-4 py-3 min-h-[120px] flex-1"
+      style={{ background: 'rgba(255,255,255,0.03)' }}>
+      <div className="text-xs text-muted mb-2.5 uppercase tracking-wider">
         {label} — {cards.length} land{cards.length !== 1 ? 's' : ''} in play
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', minHeight: 80, alignItems: 'flex-end', paddingBottom: '1.2rem' }}>
+      <div className="flex flex-wrap gap-4 min-h-[80px] items-end pb-5">
         {groups.size === 0
-          ? <p style={{ color: 'var(--muted)', fontSize: '0.85rem', alignSelf: 'center' }}>No lands yet</p>
+          ? <p className="text-muted text-sm self-center m-0">No lands yet</p>
           : [...groups.entries()].map(([color, stackCards]) => {
               const isSelectable = stackCards.some(c => selectableIds?.has(c.id));
               // For selection, return the last card in the stack (top of pile)
@@ -123,7 +118,7 @@ function ColorStack({ cards, topCard, customizations, isSelectable, onSelect }: 
       ))}
 
       {/* Top card — key triggers remount (and entrance animation) when topCard changes */}
-      <div key={topCard.id} style={{ position: 'absolute', top: 0, left: 0, animation: 'card-enter 0.3s ease' }}>
+      <div key={topCard.id} className="absolute top-0 left-0" style={{ animation: 'card-enter 0.3s ease' }}>
         <Card
           card={topCard}
           customizations={customizations}
@@ -134,24 +129,7 @@ function ColorStack({ cards, topCard, customizations, isSelectable, onSelect }: 
 
       {/* Count badge — only shown when stack has more than 1 */}
       {count > 1 && (
-        <div style={{
-          position: 'absolute',
-          top: -8,
-          right: -8,
-          background: 'var(--accent)',
-          color: '#fff',
-          borderRadius: '50%',
-          width: 24,
-          height: 24,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '0.75rem',
-          fontWeight: 700,
-          border: '2px solid var(--bg)',
-          zIndex: 10,
-          pointerEvents: 'none',
-        }}>
+        <div className="absolute -top-2 -right-2 bg-accent text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold border-2 border-bg z-10 pointer-events-none">
           {count}
         </div>
       )}

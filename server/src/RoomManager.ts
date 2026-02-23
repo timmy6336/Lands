@@ -1,6 +1,24 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// server/src/RoomManager.ts
+//
+// In-memory registry of all active game rooms.  There is one shared instance
+// per server process (see socketHandlers.ts: `const rooms = new RoomManager()`).
+//
+// Lifecycle of a multiplayer room:
+//   createRoom()  — host connects
+//   joinRoom()    — second player connects
+//   setReady()    — both players click Ready (RPS begins)
+//   startGame()   — called after RPS, creates the GameEngine
+//   removePlayer()/reconnectPlayer() — disconnect/reconnect handling
+//
+// Single-player rooms skip all of the above: createSinglePlayerRoom() does
+// everything in one call and returns a running GameEngine + AIPlayer.
+// ─────────────────────────────────────────────────────────────────────────────
 import { GameEngine } from './game/GameEngine';
-import { GameSettings, Customizations } from '../../shared/types';
+import { GameSettings, Customizations, AIDifficulty } from '../../shared/types';
+import { AIPlayer, AI_NAMES } from './ai/AIPlayer';
 
+/** A player slot before the GameEngine starts (no cards yet). */
 interface PendingPlayer {
   id: string;
   name: string;
@@ -8,6 +26,7 @@ interface PendingPlayer {
   ready: boolean;
 }
 
+/** A room before and during a game. `engine` is null until both players are ready and RPS resolves. */
 interface Room {
   code: string;
   players: [PendingPlayer] | [PendingPlayer, PendingPlayer];
@@ -15,6 +34,7 @@ interface Room {
   settings: GameSettings;
 }
 
+/** Generate a random 4-letter room code, avoiding I and O to prevent confusion. */
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I/O to avoid confusion
   let code = '';
@@ -22,9 +42,14 @@ function generateCode(): string {
   return code;
 }
 
+/**
+ * In-memory registry of all active rooms.
+ * Lives for the lifetime of the server process.
+ */
 export class RoomManager {
   private rooms = new Map<string, Room>();
 
+  /** Create a new room for the host player and return its 4-letter code. */
   createRoom(playerId: string, playerName: string, settings: GameSettings): string {
     let code: string;
     do { code = generateCode(); } while (this.rooms.has(code));
@@ -38,6 +63,7 @@ export class RoomManager {
     return code;
   }
 
+  /** Add the second player to an existing room. Returns the room, or null if not found/already full. */
   joinRoom(roomCode: string, playerId: string, playerName: string): Room | null {
     const room = this.rooms.get(roomCode);
     if (!room || room.players.length !== 1) return null;
@@ -46,10 +72,12 @@ export class RoomManager {
     return room;
   }
 
+  /** Look up a room by its code; returns null if not found. */
   getRoom(roomCode: string): Room | null {
     return this.rooms.get(roomCode) ?? null;
   }
 
+  /** Find which room a given player ID belongs to (walks all rooms). */
   getRoomByPlayerId(playerId: string): Room | null {
     for (const room of this.rooms.values()) {
       if (room.players.some(p => p.id === playerId)) return room;
@@ -57,6 +85,7 @@ export class RoomManager {
     return null;
   }
 
+  /** Persist a player's card display name overrides and forward them to the running engine if any. */
   setCustomization(playerId: string, customizations: Customizations) {
     const room = this.getRoomByPlayerId(playerId);
     if (!room) return;
@@ -95,6 +124,45 @@ export class RoomManager {
     return room.engine;
   }
 
+  /**
+   * Create a room for single-player vs AI.
+   * Immediately starts the game (no customization/RPS phase).
+   * Returns the room code, engine, and the AIPlayer (caller must activate it).
+   */
+  createSinglePlayerRoom(
+    humanId: string,
+    humanName: string,
+    difficulty: AIDifficulty,
+    settings: GameSettings,
+  ): { roomCode: string; engine: GameEngine; aiPlayer: AIPlayer } {
+    let code: string;
+    do { code = generateCode(); } while (this.rooms.has(code));
+
+    const aiPlayer = new AIPlayer(difficulty);
+    const aiName   = AI_NAMES[difficulty];
+
+    // Randomly decide whether human or AI goes first
+    const humanFirst = Math.random() < 0.5;
+    const p0 = humanFirst ? { id: humanId,            name: humanName } : { id: aiPlayer.playerId, name: aiName };
+    const p1 = humanFirst ? { id: aiPlayer.playerId, name: aiName   } : { id: humanId,            name: humanName };
+
+    const spSettings: GameSettings = { ...settings, isSinglePlayer: true };
+    const engine = new GameEngine(code, p0, p1, spSettings);
+
+    this.rooms.set(code, {
+      code,
+      players: [
+        { id: p0.id, name: p0.name, ready: true },
+        { id: p1.id, name: p1.name, ready: true },
+      ] as [PendingPlayer, PendingPlayer],
+      engine,
+      settings: spSettings,
+    });
+
+    return { roomCode: code, engine, aiPlayer };
+  }
+
+  /** Remove a player on disconnect.  If the game has started, tells the engine; otherwise deletes the whole room. */
   removePlayer(playerId: string) {
     const room = this.getRoomByPlayerId(playerId);
     if (!room) return;
@@ -107,6 +175,7 @@ export class RoomManager {
     }
   }
 
+  /** Reconnect a player who dropped and rejoined.  Returns the running engine so its state can be re-emitted. */
   reconnectPlayer(roomCode: string, playerId: string): GameEngine | null {
     const room = this.rooms.get(roomCode);
     if (!room?.engine) return null;
