@@ -423,6 +423,81 @@ export class AIPlayer {
     }
   }
 
+  // ── Counter preservation ─────────────────────────────────────────────────
+
+  /**
+   * Score adjustment (additive) that keeps the AI set up to counter the
+   * opponent's win card when they are 1 card away from winning.
+   *
+   * Decision tree:
+   *   1. Counter assembled (have blue + matching or 2 blues)
+   *      → Penalise any card that would break the assembled counter (-600).
+   *   2. Counter NOT assembled but we hold a partial piece (e.g. have blue but
+   *      no matching, or vice versa)
+   *      → Protect the piece we already have (-500 penalty on spending it).
+   *      → Boost Green if the missing piece is sitting in our graveyard (+700 blue, +650 match).
+   *      → Modest boost to White as a last-resort draw (+120).
+   *   3. Rainbow 1-away: softer rule — just don't spend our last blue (-400).
+   */
+  private counterPreservationAdjustment(card: Card, me: PlayerState, oppPaths: WinPath[]): number {
+    const nearest = oppPaths[0];
+    if (!nearest || nearest.cardsNeeded > 1) return 0;
+
+    // Rainbow: opponent could play any color — protect our only blue
+    if (nearest.type === 'rainbow') {
+      if (card.color === 'blue' && me.hand.filter(c => c.color === 'blue').length <= 1) {
+        return -400;
+      }
+      return 0;
+    }
+
+    if (nearest.type !== '5kind' || !nearest.color) return 0;
+
+    const winconColor = nearest.color;
+    const blues = me.hand.filter(c => c.color === 'blue').length;
+    const match = winconColor === 'blue'
+      ? blues
+      : me.hand.filter(c => c.color === winconColor).length;
+
+    const needBlue  = winconColor === 'blue' ? 2 : 1;
+    const needMatch = winconColor === 'blue' ? 0 : 1;
+    const hasCounter = blues >= needBlue && match >= needMatch;
+
+    if (hasCounter) {
+      // ── Protect the assembled counter ──────────────────────────────────────
+      // Playing a blue that drops us below the needed count breaks the counter.
+      if (card.color === 'blue' && blues - 1 < needBlue) return -600;
+      // Playing the matching-color card (non-blue wincon) breaks the counter.
+      if (card.color === winconColor && winconColor !== 'blue' && match - 1 < needMatch) return -600;
+      return 0;
+    }
+
+    // ── Counter not yet assembled ───────────────────────────────────────────
+    const missingBlue  = blues < needBlue;
+    const missingMatch = winconColor !== 'blue' && match < needMatch;
+
+    // Protect partial pieces we already hold:
+    //   Have blue(s) but no matching → don't spend the blue waiting for match.
+    if (!missingBlue && missingMatch && card.color === 'blue') return -500;
+    //   Have matching but no blue → don't spend the match waiting for blue.
+    if (missingBlue && !missingMatch && card.color === winconColor) return -500;
+    //   Blue wincon: have exactly 1 blue and need 2 → don't spend the one we have.
+    if (winconColor === 'blue' && blues === 1 && card.color === 'blue') return -500;
+
+    // Green: retrieve the missing piece from our graveyard — highest priority
+    if (card.color === 'green') {
+      const blueInGrave  = me.graveyard.some(c => c.color === 'blue');
+      const matchInGrave = winconColor !== 'blue' && me.graveyard.some(c => c.color === winconColor);
+      if (missingBlue  && blueInGrave)  return 700;
+      if (missingMatch && matchInGrave) return 650;
+    }
+
+    // White: draw as last resort — modest boost when we can't assemble the counter any other way
+    if (card.color === 'white' && (missingBlue || missingMatch)) return 120;
+
+    return 0;
+  }
+
   // ── Card selection ────────────────────────────────────────────────────────
 
   private doPlayCard(me: PlayerState, opponent: PlayerState, turn: number, random: boolean) {
@@ -462,7 +537,10 @@ export class AIPlayer {
     let bestScore = -Infinity;
 
     for (const card of me.hand) {
-      const score = this.scoreCard(card, me, opponent, myPaths, oppPaths, turn, deferWin, winCardColor);
+      let score = this.scoreCard(card, me, opponent, myPaths, oppPaths, turn, deferWin, winCardColor);
+      if (this.difficulty !== 'easy') {
+        score += this.counterPreservationAdjustment(card, me, oppPaths);
+      }
       if (score > bestScore) { bestScore = score; best = card; }
     }
     return best;
@@ -539,7 +617,7 @@ export class AIPlayer {
         let score: number;
         if (oppThreat <= 1) score = 95;
         else if (oppThreat <= 2) score = 78;
-        else if (opponent.field.length >= 3) score = 62;
+        else if (opponent.field.length >= 3) score = 62; 
         else score = 42;
 
         // Setup play: in deferral mode, red is high-value —
