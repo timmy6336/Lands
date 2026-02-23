@@ -78,19 +78,46 @@ Three difficulty levels:
 | Hard | Dreadroot | 700–1600ms | 5% |
 
 **Hard AI strategic behaviours:**
-- Tracks cards seen via Black effect reveals
-- Estimates counter risk using binomial probability of opponent's hand contents
+- Tracks card colors seen via Black effect reveals; decrements counts accurately as the opponent plays, counters, or discards, and increments when graveyard cards are retrieved via Green
+- Estimates counter risk using a **hypergeometric probability model** over the opponent's remaining card pool; Hard refines this with known-hand data, Medium/Easy use public counts only
+- **Counter preservation**: actively protects assembled counter capability when the opponent is 1 card away from winning — penalises breaking a prepared counter, avoids spending partial pieces, and prioritises Green to retrieve a missing counter card from the graveyard
 - Defers playing a winning card when counter risk is high and no CC defense is available
-- In deferral mode: prioritises Black (strip their counter), Red (disrupt), Green retrieval of Blue (build CC defense)
-- When holding a winning card, prioritises discarding opponent's Blue lands during Black effect
+- In deferral mode: prioritises Black (~900, strip their counter) > Green-retrieves-Blue (~850, build CC) > Red (~820, disrupt) while saving Blues
+- When holding a winning card, prioritises discarding opponent's Blue cards during Black effect
 - Considers duplicate win cards as bait to burn opponent's counter resources
-- Counter-counter more liberally when holding 3+ Blue cards (surplus)
+- Counter-counters more liberally when holding 3+ Blue cards (surplus)
+- **Counter chain awareness**: when a subsequent counter requires 2 Blues, uses the same importance-based decision as counter-counter rather than a simplified check
+- **Effective threat scoring**: treats win paths locked in the graveyard as one step further away (opponent needs a Green play first), preventing over-reaction to non-immediate threats
+- **Red/Green targeting**: scores Red targets by win-path threat level and singleton disruption value; Green retrieval prioritises the best win-path card, then Blues for counter capability
 
 ---
 
 ## Version History
 
-### v0.3.3 — Current
+### v0.5.0 — Current
+**UI Overhaul · Light/Dark Mode · Counter Chain Fix · Settings & Rules Refresh**
+
+- **Redesigned game board**: Complete two-column layout — game area on the left, always-visible 272px sidebar on the right with Log and Chat tabs. No more toggling panels open/closed mid-game.
+- **Animated status bar**: 52px bar at the top of the board shows the current phase, turn counter, and a color-coded CSS glow animation that changes based on whose turn it is and whether a counter window is open.
+- **Blinking turn indicators**: Player header bars show a pulsing dot (emerald on your turn, amber on opponent's turn) for at-a-glance turn awareness.
+- **Light / dark theme**: New theme toggle in Settings → Appearance. Switches between a dark slate palette and a muted slate-blue light palette. Persists across sessions.
+- **Player name moved to Play screen**: The "Your Name" input now appears above the Single Player / Multiplayer buttons on the Play screen, so you set your name where it's most relevant rather than buried in Settings.
+- **Counter chain validation fixed**: The server and AI now correctly enforce the two-tier counter cost:
+  - *First counter* — requires **1 Blue + 1 card matching the played land's color**. Previously the matching-color check was not enforced.
+  - *Counter-counter (and any further counters in the chain)* — requires **2 Blue cards**. Previously any second card was accepted, allowing illegal color combinations.
+- **Major AI overhaul (Hard / Medium)**:
+  - **Counter preservation**: The AI now actively protects counter and counter-counter capability when the opponent is one card away from winning. It penalises spending cards that would break an assembled counter (−600), avoids discarding partial pieces while waiting for the missing half (−500), and prioritises Green to retrieve a missing counter piece from the graveyard (+650–700).
+  - **Knowledge tracking**: The Hard AI tracks exactly which colors it has seen in the opponent's hand via Black effect reveals. It decrements those counts accurately as the opponent plays, fields, or discards cards, and increments them when a graveyard card is retrieved. This gives the Hard AI precise known-hand data rather than relying purely on probability.
+  - **Hypergeometric counter-risk model**: Counter risk is now estimated using a proper hypergeometric distribution — probability that the opponent's hand contains the needed Blue(s) and matching-color card given the visible pool of remaining cards. Hard AI refines this with known-hand data; Medium/Easy use public deck/field/graveyard counts only.
+  - **Counter chain decision logic**: When a subsequent counter is required (chain length > 1, always 2 Blues), the AI now applies the same importance-based decision tree as for counter-counter rather than a simplified random check — it will spend 2 Blues only when the pending card is on its win path or when it has a Blue surplus.
+  - **Effective cards-needed metric**: Win-path urgency now accounts for graveyard locks — if the opponent's remaining win cards are all in the graveyard, their path is treated as one step further away (they need a Green play first), preventing the AI from over-reacting to threats that are not yet immediate.
+  - **Red & Green target selection**: Red now scores targets by opponent win-path threat, singleton disruption value, and whether the AI has seen that color in the opponent's hand (Hard only). Green retrieval prioritises the best win-path card, then Blues for counter capability.
+- **Settings cleanup**: Removed the UPnP / port-forwarding network section (no longer relevant). Sections reorganised into three groups — Appearance, Cards, and Effect Notifications. The card art thumbnails (all 5 colors + card back) are now shown in a single unified grid.
+- **Rules page rewrite**: Fully reorganised with numbered turn steps, dedicated rule boxes for each win condition, and a clear two-entry countering section (First Counter vs Counter-Counter). Remaining MTG land type name references removed. Fixed the Blue card description which incorrectly said "see Countering below" — the Countering section appears above card effects.
+
+---
+
+### v0.3.3
 **Hosted Multiplayer Server — Private Rooms & Matchmaking**
 
 - **Dedicated server**: Multiplayer now routes through a hosted server instead of a peer-to-peer LAN setup.  See [DEPLOY.md](DEPLOY.md) for hosting instructions (Render / Railway free tier recommended).
@@ -101,7 +128,7 @@ Three difficulty levels:
 
 ---
 
-### v0.3.1 — Current
+### v0.3.1
 **MTG Name Removal · Rematch RPS · Effect Result Popups**
 
 - **Land names cleaned up**: Removed all MTG-derived land names (Plains, Mountain, Island, Forest, Swamp). Cards are now labelled by their color only (White, Red, Blue, Green, Black) throughout the UI, card art, and codebase.
