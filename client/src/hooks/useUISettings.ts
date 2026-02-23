@@ -22,6 +22,8 @@ interface UISettings {
   setShowEffectResultBlue: (v: boolean) => void;
   showEffectResultBlack: boolean;
   setShowEffectResultBlack: (v: boolean) => void;
+  theme: 'dark' | 'light';
+  setTheme: (v: 'dark' | 'light') => void;
 }
 
 export const UISettingsContext = createContext<UISettings>({
@@ -37,6 +39,8 @@ export const UISettingsContext = createContext<UISettings>({
   setShowEffectResultBlue: () => {},
   showEffectResultBlack: true,
   setShowEffectResultBlack: () => {},
+  theme: 'dark',
+  setTheme: () => {},
 });
 
 /** Read UI preferences from context. Use this in any component that needs a setting. */
@@ -68,6 +72,14 @@ export function useUISettingsProvider(): UISettings {
   const [showEffectResultBlack, setShowEffectResultBlackState] = useState(
     () => localStorage.getItem('showEffectResultBlack') !== 'false'
   );
+  const [theme, setThemeState] = useState<'dark' | 'light'>(
+    () => (localStorage.getItem('theme') as 'dark' | 'light') ?? 'dark'
+  );
+
+  function setTheme(v: 'dark' | 'light') {
+    localStorage.setItem('theme', v);
+    setThemeState(v);
+  }
 
   function setShowCardTypeOnHover(v: boolean) {
     localStorage.setItem('showCardTypeOnHover', String(v));
@@ -101,5 +113,6 @@ export function useUISettingsProvider(): UISettings {
     showEffectResultGreen, setShowEffectResultGreen,
     showEffectResultBlue, setShowEffectResultBlue,
     showEffectResultBlack, setShowEffectResultBlack,
+    theme, setTheme,
   };
 }

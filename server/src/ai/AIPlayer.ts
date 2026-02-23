@@ -723,12 +723,18 @@ export class AIPlayer {
     const pending = state.pendingPlay;
     if (!pending) { this.engine.counterResponse(this.playerId, false); return; }
 
-    const blues    = me.hand.filter(c => c.color === 'blue');
-    const matching = pending.color === 'blue'
-      ? blues
-      : me.hand.filter(c => c.color === pending.color);
+    // After the first counter in the chain, every subsequent defender counter
+    // costs 2 Blues regardless of the pending card's color.
+    const isSubsequentCounter = state.counterChain.length > 1;
 
-    const canCounter = pending.color === 'blue'
+    const blues    = me.hand.filter(c => c.color === 'blue');
+    const matching = isSubsequentCounter
+      ? blues                                           // 2 blues required
+      : pending.color === 'blue'
+        ? blues
+        : me.hand.filter(c => c.color === pending.color);
+
+    const canCounter = isSubsequentCounter || pending.color === 'blue'
       ? blues.length >= 2
       : blues.length >= 1 && matching.length >= 1;
 
@@ -747,7 +753,28 @@ export class AIPlayer {
       return;
     }
 
-    // Strategic decision
+    // Strategic decision: for subsequent counters the math is the same as a
+    // counter-counter — we're always spending 2 blues.
+    if (isSubsequentCounter) {
+      const myPaths = getWinPaths(this.engine.state.players[this.myIndex]);
+      const myField = this.engine.state.players[this.myIndex].field;
+      const best = myPaths[0];
+      const isImportant =
+        isWinningCard(pending, myField) ||
+        (best?.type === '5kind' && pending.color === best.color && best.cardsNeeded <= 2);
+      const hasBlueSurplus = blues.length >= 3;
+      const isModeratelyImportant = hasBlueSurplus && (
+        (best?.type === '5kind' && pending.color === best.color && best.cardsNeeded <= 3) ||
+        (best?.type === 'rainbow' && best.cardsNeeded <= 2)
+      );
+      if (isImportant || isModeratelyImportant) {
+        this.engine.counterResponse(this.playerId, true, blues[0].id, blues[1].id);
+      } else {
+        this.engine.counterResponse(this.playerId, false);
+      }
+      return;
+    }
+
     const dec = this.evaluateCounter(me, opponent, pending, blues, matching);
     if (dec.counter && dec.blueId && dec.matchingId) {
       this.engine.counterResponse(this.playerId, true, dec.blueId, dec.matchingId);

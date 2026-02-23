@@ -236,7 +236,18 @@ export class GameEngine {
       const defender = s.players[defenderIndex];
       const blueCard = removeFromHand(defender, blueCardId);
       const matchCard = removeFromHand(defender, matchingCardId);
-      if (!blueCard || !matchCard || blueCard.color !== 'blue') {
+
+      // After the first counter the chain already has entries beyond the original
+      // play, so every subsequent counter costs 2 Blues (not blue + matching).
+      const isSubsequentCounter = s.counterChain.length > 1;
+      const pendingColor = s.pendingPlay!.color;
+      const validCards =
+        blueCard && matchCard && blueCard.color === 'blue' &&
+        (isSubsequentCounter
+          ? matchCard.color === 'blue'                // 2 blues required for chain counters
+          : matchCard.color === pendingColor);         // blue + matching for first counter
+
+      if (!validCards) {
         // Invalid — treat as pass
         if (blueCard) defender.hand.push(blueCard);
         if (matchCard) defender.hand.push(matchCard);

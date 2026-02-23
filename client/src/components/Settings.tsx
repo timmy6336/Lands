@@ -1,7 +1,5 @@
-// Settings screen: manage server port, UPnP, player name, and custom card artwork.
-// Card image changes persist to Electron’s userData/cards/ directory.
+// Settings screen: theme, card hover options, effect notifications, custom card art.
 import { useEffect, useState } from 'react';
-import { AppSettings } from '../electron.d';
 import { ALL_COLORS, Color } from '@lands/shared';
 import { useUISettings } from '../hooks/useUISettings';
 
@@ -24,11 +22,9 @@ const COLOR_PREVIEW_BG: Record<Color, string> = {
 interface Props {
   onBack: () => void;
   onRefreshImages: () => Promise<void>;
-  playerName: string;
-  setPlayerName: (name: string) => void;
 }
 
-export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }: Props) {
+export function Settings({ onBack, onRefreshImages }: Props) {
   const isElectron = !!window.electronAPI;
   const {
     showCardTypeOnHover, setShowCardTypeOnHover,
@@ -37,11 +33,8 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
     showEffectResultGreen, setShowEffectResultGreen,
     showEffectResultBlue, setShowEffectResultBlue,
     showEffectResultBlack, setShowEffectResultBlack,
+    theme, setTheme,
   } = useUISettings();
-
-  const [defaultPort, setDefaultPort] = useState(3001);
-  const [upnpEnabled, setUpnpEnabled] = useState(false);
-  const [settingsSaved, setSettingsSaved] = useState(false);
 
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({
     white: '/cards/white.svg', red: '/cards/red.svg', blue: '/cards/blue.svg',
@@ -53,10 +46,6 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
 
   useEffect(() => {
     if (!isElectron) return;
-    window.electronAPI!.getSettings().then((s: AppSettings) => {
-      setDefaultPort(s.defaultPort ?? 3001);
-      setUpnpEnabled(s.upnpEnabled ?? false);
-    });
     refreshPreviews();
   }, []);
 
@@ -87,125 +76,103 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
     setTimeout(() => setImageStatus(prev => ({ ...prev, [color]: '' })), 2000);
   }
 
-  function saveName(name: string) {
-    const trimmed = name.trim() || 'Player';
-    setPlayerName(trimmed);
-    localStorage.setItem('playerName', trimmed);
-    if (window.electronAPI) {
-      window.electronAPI.saveSettings({ defaultPort, upnpEnabled, playerName: trimmed });
-    }
-  }
+  const SectionBox = ({ children }: { children: React.ReactNode }) => (
+    <div className="bg-surface border border-border rounded-[10px] px-5 py-4 flex flex-col gap-3 max-w-[480px]">
+      {children}
+    </div>
+  );
 
-  async function saveNetworkSettings() {
-    if (!window.electronAPI) return;
-    await window.electronAPI.saveSettings({ defaultPort, upnpEnabled, playerName });
-    setSettingsSaved(true);
-    setTimeout(() => setSettingsSaved(false), 2000);
-  }
+  const Toggle = ({ label, sub, checked, onChange }: { label: string; sub?: string; checked: boolean; onChange: (v: boolean) => void }) => (
+    <label className="flex items-center justify-between gap-4 cursor-pointer">
+      <div>
+        <span className="text-muted text-sm">{label}</span>
+        {sub && <p className="m-0 text-xs text-muted" style={{ opacity: 0.65 }}>{sub}</p>}
+      </div>
+      <input
+        type="checkbox" checked={checked}
+        onChange={e => onChange(e.target.checked)}
+        style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
+      />
+    </label>
+  );
 
   return (
-    <div className="flex flex-col h-full px-8 py-6 gap-6 overflow-y-auto">
+    <div className="flex flex-col h-full px-8 py-6 gap-7 overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 shrink-0">
         <button className="btn-secondary px-4 py-1.5" onClick={onBack}>← Back</button>
         <h2 className="text-accent m-0">Settings</h2>
       </div>
 
-      {/* Player Name */}
+      {/* ── Appearance ───────────────────────────────── */}
       <section>
-        <h3 className="text-foreground mb-3 text-base mt-0">Player</h3>
-        <div className="bg-surface border border-border rounded-[10px] px-5 py-4 max-w-[380px]">
-          <label className="flex justify-between items-center gap-4">
-            <span className="text-muted text-sm shrink-0">Display name</span>
-            <input
-              value={playerName}
-              onChange={e => setPlayerName(e.target.value)}
-              onBlur={e => saveName(e.target.value)}
-              placeholder="Player"
-              maxLength={20}
-              style={{ textAlign: 'right', fontSize: '0.9rem', padding: '0.3rem 0.5rem', minWidth: 0, flex: 1 }}
-            />
-          </label>
-        </div>
+        <h3 className="text-foreground mb-3 text-base mt-0">Appearance</h3>
+        <SectionBox>
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-muted text-sm">Theme</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['dark', 'light'] as const).map(t => (
+                <button key={t} onClick={() => setTheme(t)} style={{
+                  padding: '0.3rem 1rem', borderRadius: 7, fontSize: '0.8rem', fontWeight: 600,
+                  border: theme === t ? '1px solid var(--accent)' : '1px solid var(--border2)',
+                  background: theme === t ? 'rgba(99,102,241,0.18)' : 'var(--surface2)',
+                  color: theme === t ? 'var(--accent)' : 'var(--muted2)',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}>
+                  {t === 'dark' ? '🌙 Dark' : '☀️ Light'}
+                </button>
+              ))}
+            </div>
+          </div>
+        </SectionBox>
       </section>
 
-      {/* Card Images */}
+      {/* ── Cards ──────────────────────────────────── */}
       <section>
-        <h3 className="text-foreground mb-3 text-base mt-0">Card Appearance</h3>
-        {!isElectron && (
-          <p className="text-muted text-sm mb-3">Card image upload is only available in the desktop app.</p>
-        )}
-
-        <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit">
-          <input
-            type="checkbox"
+        <h3 className="text-foreground mb-3 text-base mt-0">Cards</h3>
+        <SectionBox>
+          <Toggle
+            label="Show card type on hover"
             checked={showCardTypeOnHover}
-            onChange={e => setShowCardTypeOnHover(e.target.checked)}
-            style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--accent)' }}
+            onChange={setShowCardTypeOnHover}
           />
-          <span className="text-muted text-sm">Show card type on hover</span>
-        </label>
-
-        <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit">
-          <input
-            type="checkbox"
+          <Toggle
+            label="Show card effect on hover"
             checked={showCardEffectsOnHover}
-            onChange={e => setShowCardEffectsOnHover(e.target.checked)}
-            style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--accent)' }}
+            onChange={setShowCardEffectsOnHover}
           />
-          <span className="text-muted text-sm">Show card effect on hover</span>
-        </label>
-      </section>
+        </SectionBox>
 
-      {/* Effect Notifications */}
-      <section>
-        <h3 className="text-foreground mb-1 text-base mt-0">Effect Notifications</h3>
-        <p className="text-muted text-sm mb-3 mt-0">Show a popup to the opponent after an effect resolves.</p>
-        <div className="bg-surface border border-border rounded-[10px] px-5 py-4 flex flex-col gap-3 max-w-[420px]">
-          {([
-            { key: 'red',   label: 'Red — land destroyed',                   val: showEffectResultRed,   set: setShowEffectResultRed   },
-            { key: 'green', label: 'Green — land retrieved from graveyard',   val: showEffectResultGreen, set: setShowEffectResultGreen },
-            { key: 'blue',  label: 'Blue — deck card kept on top / sent to bottom', val: showEffectResultBlue, set: setShowEffectResultBlue },
-            { key: 'black', label: 'Black — card discarded from hand',        val: showEffectResultBlack, set: setShowEffectResultBlack },
-          ] as const).map(({ key, label, val, set }) => (
-            <label key={key} className="flex items-center justify-between gap-4 cursor-pointer">
-              <span className="text-muted text-sm">{label}</span>
-              <input
-                type="checkbox"
-                checked={val}
-                onChange={e => set(e.target.checked)}
-                style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
-              />
-            </label>
-          ))}
-        </div>
-      </section>
-
-      {/* Card Images */}
-      <section>
-        <div className="flex flex-wrap gap-4">
-          {ALL_COLORS.map(color => (
-            <div key={color} className="bg-surface border border-border rounded-[10px] p-3 flex flex-col gap-2 items-center min-w-[120px]">
+        {/* Card art */}
+        {!isElectron && (
+          <p className="text-muted text-sm mt-3 mb-2">Card art upload is only available in the desktop app.</p>
+        )}
+        <div className="flex flex-wrap gap-3 mt-3">
+          {[...ALL_COLORS, 'back' as const].map(color => (
+            <div key={color} className="bg-surface border border-border rounded-[10px] p-3 flex flex-col gap-2 items-center" style={{ minWidth: 110 }}>
               <div style={{
-                width: 72, height: 100, borderRadius: 7, overflow: 'hidden',
-                border: '2px solid rgba(255,255,255,0.15)', position: 'relative',
-                background: COLOR_PREVIEW_BG[color], flexShrink: 0,
+                width: 68, height: 96, borderRadius: 7, overflow: 'hidden',
+                border: '2px solid rgba(255,255,255,0.12)',
+                background: color === 'back' ? '#12122a' : COLOR_PREVIEW_BG[color as Color],
+                flexShrink: 0,
               }}>
                 <img
                   src={previewUrls[color]} alt={color} key={previewUrls[color]}
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  style={{ width: '100%', height: '70%', objectFit: 'cover', display: 'block' }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  style={{ width: '100%', height: color === 'back' ? '100%' : '70%', objectFit: 'cover', display: 'block' }}
                 />
               </div>
-              <p className="text-[0.72rem] text-muted text-center m-0">{COLOR_LABELS[color]}</p>
+              <p className="text-[0.72rem] text-muted text-center m-0">
+                {color === 'back' ? 'Card Back' : COLOR_LABELS[color as Color]}
+              </p>
               {imageStatus[color] && (
                 <p className="text-[0.7rem] m-0" style={{ color: '#4ade80' }}>{imageStatus[color]}</p>
               )}
               {isElectron && (
                 <div className="flex flex-col gap-1 w-full">
-                  <button className="btn-primary" onClick={() => handleUpload(color)}
+                  <button className="btn-primary" onClick={() => handleUpload(color as Color | 'back')}
                     style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Upload</button>
-                  <button className="btn-secondary" onClick={() => handleReset(color)}
+                  <button className="btn-secondary" onClick={() => handleReset(color as Color | 'back')}
                     style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Default</button>
                 </div>
               )}
@@ -214,70 +181,17 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
         </div>
       </section>
 
-      {/* Card Back */}
+      {/* ── Effect Notifications ─────────────────────── */}
       <section>
-        <h3 className="text-foreground mb-3 text-base mt-0">Card Back</h3>
-        <div className="flex flex-wrap gap-4">
-          <div className="bg-surface border border-border rounded-[10px] p-3 flex flex-col gap-2 items-center min-w-[120px]">
-            <div style={{
-              width: 72, height: 100, borderRadius: 7, overflow: 'hidden',
-              border: '2px solid rgba(255,255,255,0.15)', position: 'relative',
-              background: '#12122a', flexShrink: 0,
-            }}>
-              <img
-                src={previewUrls['back']} alt="card back" key={previewUrls['back']}
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            </div>
-            <p className="text-[0.72rem] text-muted text-center m-0">Card Back</p>
-            {imageStatus['back'] && (
-              <p className="text-[0.7rem] m-0" style={{ color: '#4ade80' }}>{imageStatus['back']}</p>
-            )}
-            {isElectron && (
-              <div className="flex flex-col gap-1 w-full">
-                <button className="btn-primary" onClick={() => handleUpload('back')}
-                  style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Upload</button>
-                <button className="btn-secondary" onClick={() => handleReset('back')}
-                  style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Default</button>
-              </div>
-            )}
-          </div>
-        </div>
+        <h3 className="text-foreground mb-1 text-base mt-0">Effect Notifications</h3>
+        <p className="text-muted text-sm mb-3 mt-0">Show a popup to the opponent when an effect resolves.</p>
+        <SectionBox>
+          <Toggle label="Red — land destroyed"                        checked={showEffectResultRed}   onChange={setShowEffectResultRed}   />
+          <Toggle label="Green — land retrieved from graveyard"        checked={showEffectResultGreen} onChange={setShowEffectResultGreen} />
+          <Toggle label="Blue — deck card kept on top / sent to bottom" checked={showEffectResultBlue}  onChange={setShowEffectResultBlue}  />
+          <Toggle label="Black — card discarded from hand"             checked={showEffectResultBlack} onChange={setShowEffectResultBlack} />
+        </SectionBox>
       </section>
-
-      {/* Network Settings — Electron only */}
-      {isElectron && (
-        <section>
-          <h3 className="text-foreground mb-3 text-base mt-0">Network</h3>
-          <div className="bg-surface border border-border rounded-[10px] px-5 py-4 flex flex-col gap-3 max-w-[380px]">
-            <label className="flex justify-between items-center gap-4">
-              <span className="text-muted text-sm">Default hosting port</span>
-              <input
-                type="number" min={1024} max={65535} value={defaultPort}
-                onChange={e => setDefaultPort(Number(e.target.value))}
-                style={{ width: 80, textAlign: 'center', fontSize: '0.9rem', padding: '0.3rem 0.5rem' }}
-              />
-            </label>
-            <label className="flex justify-between items-center gap-4 cursor-pointer">
-              <div>
-                <span className="text-muted text-sm">Auto port forward (UPnP)</span>
-                <p className="m-0 text-xs text-muted" style={{ opacity: 0.7 }}>
-                  Attempt UPnP when starting a host game
-                </p>
-              </div>
-              <input
-                type="checkbox" checked={upnpEnabled}
-                onChange={e => setUpnpEnabled(e.target.checked)}
-                style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--accent)' }}
-              />
-            </label>
-            <button className="btn-primary self-start text-sm px-5 py-1.5" onClick={saveNetworkSettings}>
-              {settingsSaved ? '✓ Saved' : 'Save'}
-            </button>
-          </div>
-        </section>
-      )}
     </div>
   );
 }
