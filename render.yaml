@@ -1,0 +1,17 @@
+# render.yaml — drop this in the repo root, then import the repo in the Render dashboard.
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: lands-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000        # Render assigns this automatically via $PORT; this is a fallback
+    plan: free              # change to "starter" (~$7/mo) for always-on
+    # On the free plan the service spins down after 15 min of inactivity.
+    # The first connection after sleep will take ~30 s.
+    # Upgrade to "starter" or use a simple keep-alive ping (see README) to avoid this.

@@ -52,8 +52,9 @@ export const AI_NAMES: Record<AIDifficulty, string> = {
 
 interface WinPath {
   type: '5kind' | 'rainbow';
-  color?: Color;       // for 5kind: which color
-  cardsNeeded: number; // how many more cards on field to win
+  color?: Color;         // for 5kind: which color
+  cardsNeeded: number;   // how many more cards on field to win
+  neededInGrave: number; // of cardsNeeded, how many are currently in the graveyard (need green to access)
 }
 
 /**
@@ -65,6 +66,10 @@ function getWinPaths(player: PlayerState): WinPath[] {
   for (const c of player.field) {
     fieldCounts.set(c.color, (fieldCounts.get(c.color) ?? 0) + 1);
   }
+  const graveCounts = new Map<Color, number>();
+  for (const c of player.graveyard) {
+    graveCounts.set(c.color, (graveCounts.get(c.color) ?? 0) + 1);
+  }
 
   const paths: WinPath[] = [];
 
@@ -73,18 +78,33 @@ function getWinPaths(player: PlayerState): WinPath[] {
     const onField = fieldCounts.get(color) ?? 0;
     const inHand  = player.hand.filter(c => c.color === color).length;
     if (onField > 0 || inHand > 0) {
-      paths.push({ type: '5kind', color, cardsNeeded: Math.max(0, 5 - onField) });
+      const needed      = Math.max(0, 5 - onField);
+      // How many of the still-needed copies are stuck in the graveyard (require a green to access)
+      const neededInGrave = Math.min(graveCounts.get(color) ?? 0, needed);
+      paths.push({ type: '5kind', color, cardsNeeded: needed, neededInGrave });
     }
   }
 
   // Rainbow path (tracked whenever any card is on field)
   const colorsOnField = new Set(player.field.map(c => c.color));
   if (colorsOnField.size > 0) {
-    paths.push({ type: 'rainbow', cardsNeeded: Math.max(0, 5 - colorsOnField.size) });
+    paths.push({ type: 'rainbow', cardsNeeded: Math.max(0, 5 - colorsOnField.size), neededInGrave: 0 });
   }
 
   // Sort by fewest cards needed first (nearest win = first)
   return paths.sort((a, b) => a.cardsNeeded - b.cardsNeeded);
+}
+
+/**
+ * Effective plays needed to complete a win path, accounting for graveyard-blocked cards.
+ * If all remaining needed copies are in the graveyard, the player must first play a green
+ * to retrieve one — so the real cost is cardsNeeded + 1.
+ * Used when assessing opponent threat to avoid over-reacting to wins locked in the graveyard.
+ */
+function effectiveCardsNeeded(path: WinPath): number {
+  return (path.cardsNeeded > 0 && path.neededInGrave >= path.cardsNeeded)
+    ? path.cardsNeeded + 1
+    : path.cardsNeeded;
 }
 
 /** Would playing this card onto the given field immediately win? */
@@ -136,37 +156,60 @@ function hypergeomAtLeast(N: number, K: number, n: number, minK: number): number
 
 // ── Target selection helpers ──────────────────────────────────────────────────
 
-function chooseBestRedTarget(opponentField: Card[], opponentPaths: WinPath[]): Card | null {
+function chooseBestRedTarget(
+  opponentField: Card[],
+  opponentPaths: WinPath[],
+  /** Colors confirmed in the opponent's hand via black reveals (hard AI only). */
+  knownOpponentColors?: Set<Color>,
+): Card | null {
   if (opponentField.length === 0) return null;
 
-  // Priority 1: destroy a card that directly blocks their nearest win
-  const best = opponentPaths[0];
-  if (best && best.cardsNeeded <= 1) {
-    if (best.type === '5kind' && best.color) {
-      const t = opponentField.find(c => c.color === best.color);
-      if (t) return t;
-    }
-    if (best.type === 'rainbow') {
-      // Destroy a singleton color to break their rainbow
-      const counts = new Map<Color, number>();
-      for (const c of opponentField) counts.set(c.color, (counts.get(c.color) ?? 0) + 1);
-      const singleton = opponentField.find(c => (counts.get(c.color) ?? 0) === 1);
-      if (singleton) return singleton;
-    }
-  }
-
-  // Priority 2: if they're near a 5-kind, destroy that color
-  if (best?.type === '5kind' && best.color) {
-    const t = opponentField.find(c => c.color === best.color);
-    if (t) return t;
-  }
-
-  // Priority 3: destroy the color they have most of on field (maximum setback)
   const counts = new Map<Color, number>();
   for (const c of opponentField) counts.set(c.color, (counts.get(c.color) ?? 0) + 1);
-  return [...opponentField].sort((a, b) =>
-    (counts.get(b.color) ?? 0) - (counts.get(a.color) ?? 0)
-  )[0];
+
+  const scored = opponentField.map(card => {
+    const count       = counts.get(card.color) ?? 0;
+    const isSingleton = count === 1;
+    let score = 0;
+
+    for (const path of opponentPaths) {
+      // If all remaining needed copies are in the graveyard, this 5kind path requires
+      // a green play first — not an immediate top-deck threat.
+      const graveBlocked = path.cardsNeeded > 0 && path.neededInGrave >= path.cardsNeeded;
+
+      if (path.type === '5kind' && path.color === card.color) {
+        if (graveBlocked) continue; // stuck in grave, not urgent
+        if (path.cardsNeeded <= 1) score += 120;      // immediate win threat
+        else if (path.cardsNeeded <= 2) score += 50;
+        else score += 20;
+      }
+
+      if (path.type === 'rainbow' && isSingleton) {
+        // Destroying ANY singleton always disrupts rainbow — not just when they're 1 away.
+        // Two plays needed to rebuild (retrieve or redraw + replay), so it's always worthwhile.
+        score += path.cardsNeeded <= 1 ? 110 : 80;
+      }
+    }
+
+    // General singleton bonus: singletons are the most disruptive target regardless of path.
+    // A card on the field is a card whose effect can't be activated — but once destroyed it
+    // goes to their graveyard where they can retrieve and replay it. Still, singletons set
+    // them back the most because they need TWO plays to restore the disrupted win condition.
+    if (isSingleton) score += 25;
+
+    // Penalty for targeting red cards: a destroyed red goes to their graveyard; if they
+    // retrieve it with green they get the fire effect on our field — doubly harmful.
+    if (card.color === 'red') score -= 12;
+
+    // Hard AI: if we know they have another copy of this color in hand, destroying the
+    // field copy is less effective — they can just replay it next turn.
+    if (knownOpponentColors?.has(card.color)) score -= 20;
+
+    return { card, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0].card;
 }
 
 function chooseBestGreenTarget(graveyard: Card[], field: Card[], paths: WinPath[]): Card | null {
@@ -517,9 +560,10 @@ export class AIPlayer {
     const oppPaths = getWinPaths(opponent);
     const blueCount = me.hand.filter(c => c.color === 'blue').length;
 
-    // Determine if we should defer a winning card we're holding this turn
+    // Determine if we should defer a winning card we're holding this turn.
+    // Use effectiveCardsNeeded so a 5kind locked in the graveyard isn't treated as urgent.
     const winCards   = me.hand.filter(c => isWinningCard(c, me.field));
-    const oppUrgency = oppPaths[0]?.cardsNeeded ?? 999;
+    const oppUrgency = oppPaths.length > 0 ? effectiveCardsNeeded(oppPaths[0]) : 999;
     let deferWin = false;
     let winCardColor: Color | null = null;
 
@@ -569,7 +613,9 @@ export class AIPlayer {
     winCardColor: Color | null = null,
   ): number {
     const myBest    = myPaths[0];
-    const oppThreat = oppPaths[0]?.cardsNeeded ?? 999;
+    // Use effectiveCardsNeeded: if opponent's winning card is stuck in graveyard they need
+    // a green play first, so treat it as one step further away than it appears on paper.
+    const oppThreat = oppPaths.length > 0 ? effectiveCardsNeeded(oppPaths[0]) : 999;
     const isEarly   = turn < 8;
     const blueCount = me.hand.filter(c => c.color === 'blue').length;
 
@@ -627,13 +673,13 @@ export class AIPlayer {
       }
 
       case 'blue': {
-        // In deferral mode: protect blues for counter-counter when we eventually play the win card.
-        // Only spend one if we have clear surplus (3+ blues keeps 2 in reserve after playing)
-        if (deferWin) return blueCount >= 3 ? 40 : 5;
-
-        if (blueCount >= 3) return 52;
-        if (blueCount === 2 && me.hand.length >= 5 && isEarly) return 38;
-        return 14; // save it
+        // Blues are most valuable as counter / counter-counter cards — avoid fielding them
+        // unless there's a meaningful surplus, and be especially reluctant early.
+        if (deferWin) return blueCount >= 4 ? 30 : 5;
+        if (isEarly)  return blueCount >= 4 ? 28 : 8; // very reluctant to field blues early
+        if (blueCount >= 3) return 42;
+        if (blueCount === 2 && me.hand.length >= 6) return 28;
+        return 10; // save it
       }
 
       case 'green': {
@@ -787,12 +833,20 @@ export class AIPlayer {
         // Target unknown until after counter resolves — use field state to estimate threat
         const myBest = myPaths[0];
         if (myBest?.type === '5kind') {
-          const copies = me.field.filter(c => c.color === myBest.color).length;
+          const copies     = me.field.filter(c => c.color === myBest.color).length;
+          const isSingleton = copies === 1;
           if (copies > 0) {
-            threat = myBest.cardsNeeded <= 1 ? 80 : copies === 1 ? 62 : 45;
+            // Singleton is especially dangerous: one red wipes our only progress on that color
+            threat = myBest.cardsNeeded <= 1 ? 80 : isSingleton ? 68 : copies <= 2 ? 50 : 45;
           } else {
             threat = 40;
           }
+        } else if (myBest?.type === 'rainbow') {
+          // If we have any singleton colors, a red could knock us off the rainbow path entirely
+          const colorCounts = new Map<Color, number>();
+          for (const c of me.field) colorCounts.set(c.color, (colorCounts.get(c.color) ?? 0) + 1);
+          const hasSingleton = [...colorCounts.values()].some(v => v === 1);
+          threat = hasSingleton ? 70 : 48;
         } else {
           threat = 45;
         }
@@ -800,15 +854,23 @@ export class AIPlayer {
       }
 
       case 'green': {
-        // Target card unknown — estimate based on opponent's graveyard depth
+        // Target card unknown — estimate based on opponent's graveyard depth and their win path.
         const oppBest = oppPaths[0];
         if (oppBest?.type === '5kind' && oppBest.color) {
           const inGrave = opponent.graveyard.filter(c => c.color === oppBest.color).length;
           if (inGrave > 0) {
-            threat = oppBest.cardsNeeded <= 2 ? 68 : 45;
+            // If ALL remaining needed are in the graveyard, green is their ONLY path forward —
+            // countering it is critical.
+            const allStuck = oppBest.neededInGrave >= oppBest.cardsNeeded && oppBest.cardsNeeded > 0;
+            threat = allStuck ? 80 : (oppBest.cardsNeeded <= 2 ? 68 : 45);
           } else {
             threat = 38;
           }
+        } else if (oppBest?.type === 'rainbow') {
+          // Green could retrieve a color missing from their field
+          const fieldColors = new Set(opponent.field.map(c => c.color));
+          const retrievesNewColor = opponent.graveyard.some(c => !fieldColors.has(c.color));
+          threat = retrievesNewColor ? (oppBest.cardsNeeded <= 2 ? 65 : 45) : 32;
         } else {
           threat = 42;
         }
@@ -830,14 +892,26 @@ export class AIPlayer {
       }
     }
 
-    // If opponent is close to winning, be more aggressive about countering anything
-    const oppNeeded = oppPaths[0]?.cardsNeeded ?? 999;
+    // If opponent is close to winning, be more aggressive about countering anything.
+    // Use effectiveCardsNeeded so a win locked in graveyard doesn't trigger false urgency.
+    const oppNeeded = oppPaths.length > 0 ? effectiveCardsNeeded(oppPaths[0]) : 999;
     if (oppNeeded <= 2) threat += 18;
 
-    // Penalty for depleting our blue reserves (blues are precious for later)
-    const bluesAfter = blues.length - 1;
-    if (bluesAfter === 0) threat -= 32; // going blue-less is very costly
-    if (bluesAfter === 1) threat -= 12;
+    // Hard AI: if we KNOW they hold the winning card (from a previous black reveal),
+    // every play that advances their position is more urgent.
+    if (this.difficulty === 'hard' && this.knownHumanCards.size > 0) {
+      const knownList = [...this.knownHumanCards.values()];
+      if (knownList.some(c => isWinningCard(c, opponent.field))) threat += 22;
+    }
+
+    // Penalty for depleting our blue reserves (blues are precious for later).
+    // Greens in hand soften this penalty — a green can retrieve spent blues from our graveyard,
+    // making early countering less costly when we have recovery options.
+    const bluesAfter    = blues.length - 1;
+    const greenCount    = me.hand.filter(c => c.color === 'green').length;
+    const greenSoftener = Math.min(greenCount * 10, 24); // up to -24 reduction in penalty
+    if (bluesAfter === 0) threat -= Math.max(8,  32 - greenSoftener);
+    if (bluesAfter === 1) threat -= Math.max(2,  12 - Math.floor(greenSoftener * 0.5));
 
     // Also penalise if I'm close to winning and need to save cards for that play
     const myNeeded = myPaths[0]?.cardsNeeded ?? 999;
@@ -908,7 +982,7 @@ export class AIPlayer {
   }
 
   /** AI is the DEFENDER — must reveal 3 of its own cards (human played black). */
-  private doBlackShow(me: PlayerState, opponent: PlayerState, random: boolean) {
+  private doBlackShow(me: PlayerState, _opponent: PlayerState, random: boolean) {
     if (me.hand.length <= 3) {
       this.engine.effectResponse(this.playerId, {
         type: 'black_show',
@@ -928,8 +1002,8 @@ export class AIPlayer {
   }
 
   private pickCardsToReveal(me: PlayerState): Card[] {
-    const myPaths = getWinPaths(me);
-    const best    = myPaths[0];
+    const myPaths     = getWinPaths(me);
+    const best        = myPaths[0];
     const fieldColors = new Set(me.field.map(c => c.color));
 
     const scored = me.hand.map(card => {
@@ -946,7 +1020,42 @@ export class AIPlayer {
     });
 
     scored.sort((a, b) => a.score - b.score);
-    return scored.slice(0, 3).map(s => s.card);
+
+    // Take the 3 cheapest to reveal, and the rest stay hidden.
+    const reveal = scored.slice(0, 3);
+    const hidden = scored.slice(3);
+
+    // "Show both copies" deception: if we're forced to reveal an important card
+    // (win-path or blue, score >= 100), show any same-color duplicate from the hidden
+    // pile instead of a different card type.
+    //
+    // Why: once you reveal card X, the opponent assumes the unshown cards are different
+    // colors. Showing the duplicate of X instead keeps one other card's color secret.
+    //
+    // Example: hand = [red(win), red(win), blue, black], show 3.
+    //   Natural pick: black(38) + red(106) + red(106) — both reds already cheapest, blue hidden. ✓
+    //   Trickier case: hand = [red(win), red(win), green, green, blue], show 3.
+    //   Natural pick: green + green + red → swap one green for the 2nd red to hide blue.
+    const IMPORTANT_SCORE = 100;
+    if (hidden.length > 0) {
+      for (const revEntry of [...reveal]) {
+        if (revEntry.score < IMPORTANT_SCORE) continue; // not a card we're reluctant to show
+        // Already revealing an important card — look for a same-color duplicate in hidden
+        const dupIdx = hidden.findIndex(e => e.card.color === revEntry.card.color);
+        if (dupIdx < 0) continue; // no duplicate available
+        // Find the best swap: lowest-scored different-color card in reveal that isn't important
+        const swapIdx = reveal.findIndex(
+          e => e.card.color !== revEntry.card.color && e.score < IMPORTANT_SCORE,
+        );
+        if (swapIdx < 0) continue; // nothing to swap out
+        // Perform swap: duplicate important card takes the slot of the expendable card
+        const [dup] = hidden.splice(dupIdx, 1);
+        reveal[swapIdx] = dup;
+        break; // one swap is sufficient
+      }
+    }
+
+    return reveal.map(s => s.card);
   }
 
   /** AI is the ATTACKER — pick which revealed card to discard from opponent. */
@@ -974,8 +1083,8 @@ export class AIPlayer {
   }
 
   private pickCardToDiscard(shown: Card[], me: PlayerState, opponent: PlayerState): Card {
-    const oppPaths = getWinPaths(opponent);
-    const best     = oppPaths[0];
+    const oppPaths    = getWinPaths(opponent);
+    const best        = oppPaths[0];
     const fieldColors = new Set(opponent.field.map(c => c.color));
 
     // When we're holding the winning card, eliminating their counter capability
@@ -984,13 +1093,33 @@ export class AIPlayer {
 
     const scored = shown.map(card => {
       let score = 0;
-      // Discard what hurts them most:
       // Win-path color for 5-kind
       if (best?.type === '5kind' && card.color === best.color) score += 90;
       // Blue = counter capability; prioritize above win-path when we hold the win card
       if (card.color === 'blue') score += holdingWinCard ? 95 : 65;
       // Missing color for rainbow
       if (best?.type === 'rainbow' && !fieldColors.has(card.color)) score += 75;
+
+      // Green context: evaluate WHAT the green would retrieve from the opponent's graveyard.
+      // A green whose best retrieval advances their win path (or restores counters) is high
+      // priority to discard — don't just score it by color alone.
+      if (card.color === 'green' && opponent.graveyard.length > 0) {
+        const bestRetrieval = chooseBestGreenTarget(opponent.graveyard, opponent.field, oppPaths);
+        if (bestRetrieval) {
+          if (isWinningCard(bestRetrieval, opponent.field)) {
+            score += 100; // green would retrieve a game-winning card — must discard
+          } else if (best?.type === '5kind' && bestRetrieval.color === best.color && best.cardsNeeded <= 2) {
+            score += 70;  // retrieval directly advances their 5kind
+          } else if (best?.type === 'rainbow' && !fieldColors.has(bestRetrieval.color)) {
+            score += 70;  // retrieval provides a missing rainbow color
+          } else if (bestRetrieval.color === 'blue') {
+            score += 45;  // retrieval restores counter capability
+          } else {
+            score += 20;  // general utility
+          }
+        }
+      }
+
       return { card, score };
     });
 
@@ -1003,9 +1132,15 @@ export class AIPlayer {
       this.engine.effectResponse(this.playerId, { type: 'red_pick', targetCardId: undefined });
       return;
     }
+    // Hard AI passes known hand colors so chooseBestRedTarget can down-score colors the
+    // opponent already has in hand (destroying a field card is less effective when they
+    // can just replay the same color next turn).
+    const knownColors = this.difficulty === 'hard'
+      ? new Set([...this.knownHumanCards.values()].map(c => c.color))
+      : undefined;
     const target = random
       ? opponent.field[Math.floor(Math.random() * opponent.field.length)]
-      : (chooseBestRedTarget(opponent.field, getWinPaths(opponent)) ?? opponent.field[0]);
+      : (chooseBestRedTarget(opponent.field, getWinPaths(opponent), knownColors) ?? opponent.field[0]);
     this.engine.effectResponse(this.playerId, { type: 'red_pick', targetCardId: target.id });
   }
 
