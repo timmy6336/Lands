@@ -69,6 +69,11 @@ const DEDICATED_SERVER_URL = import.meta.env.VITE_DEDICATED_SERVER_URL ?? 'http:
 
 export default function App() {
   const uiSettings = useUISettingsProvider();
+  // Keep data-theme attribute on <html> in sync so CSS overrides apply
+  const { theme } = uiSettings;
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
   return (
     <UISettingsContext.Provider value={uiSettings}>
       <AppInner />
@@ -291,8 +296,6 @@ function AppInner() {
         <Settings
           onBack={() => setScreen('home')}
           onRefreshImages={refreshCardImages}
-          playerName={playerName}
-          setPlayerName={setPlayerName}
         />
       </PageTransition>
     );
@@ -305,6 +308,8 @@ function AppInner() {
           onSinglePlayer={() => setScreen('single-player-menu')}
           onMultiplayer={() => setScreen('multiplayer-menu')}
           onBack={() => setScreen('home')}
+          playerName={playerName}
+          setPlayerName={name => { setPlayerName(name); }}
         />
       </PageTransition>
     );
