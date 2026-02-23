@@ -117,23 +117,41 @@ function isWinningCard(card: Card, field: Card[]): boolean {
   return false;
 }
 
+/** Total copies of each color in a single 25-card deck. */
+const TOTAL_PER_COLOR = 5;
+
+// ── Hypergeometric probability helpers ───────────────────────────────────────
+
+/** Binomial coefficient C(n, k), computed iteratively to avoid overflow. */
+function comb(n: number, k: number): number {
+  if (k < 0 || k > n) return 0;
+  if (k === 0 || k === n) return 1;
+  k = Math.min(k, n - k);
+  let result = 1;
+  for (let i = 0; i < k; i++) result = result * (n - i) / (i + 1);
+  return result;
+}
+
 /**
- * Rough probability that a hand of N cards (balanced 5-color deck, 5 of each)
- * contains the cards needed to counter a card of `cardColor`.
+ * Hypergeometric PMF: P(X = k) when drawing `n` cards from a population of
+ * `N` total, `K` of which are "successes".
  */
-function handCountRisk(handCount: number, cardColor: Color): number {
-  if (handCount === 0) return 0;
-  // P(at least 1 blue in N draws) using binomial with p=0.2
-  const pBlue = 1 - Math.pow(0.8, handCount);
-  if (cardColor === 'blue') {
-    // Countering blue requires 2 blues — harder
-    const p0 = Math.pow(0.8, handCount);
-    const p1 = handCount * 0.2 * Math.pow(0.8, handCount - 1);
-    return Math.max(0, Math.min((1 - p0 - p1) * 0.90, 0.75));
-  }
-  const pMatch = 1 - Math.pow(0.8, handCount);
-  // Approximate: need blue AND matching (treat as roughly independent)
-  return Math.min(pBlue * pMatch * 0.85, 0.78);
+function hypergeomPMF(N: number, K: number, n: number, k: number): number {
+  if (k < 0 || k > Math.min(K, n) || N - K < n - k) return 0;
+  return (comb(K, k) * comb(N - K, n - k)) / comb(N, n);
+}
+
+/**
+ * P(X >= minK) for X ~ Hypergeometric(N, K, n).
+ * Returns 0 immediately when K <= 0, 1 when K >= N or n >= N.
+ */
+function hypergeomAtLeast(N: number, K: number, n: number, minK: number): number {
+  if (K <= 0 || n <= 0 || N <= 0) return 0;
+  if (minK <= 0) return 1;
+  if (K >= N)   return 1;
+  let pFewer = 0;
+  for (let k = 0; k < minK; k++) pFewer += hypergeomPMF(N, K, n, k);
+  return Math.max(0, Math.min(1, 1 - pFewer));
 }
 
 // ── Target selection helpers ──────────────────────────────────────────────────
@@ -227,10 +245,23 @@ export class AIPlayer {
   private actionVersion = 0;
 
   /**
-   * Cards we know are in the human's hand (from black effect reveals).
-   * cardId → Card. Hard difficulty only.
+   * How many cards of each color we know are in the human's hand (from black
+   * effect reveals and Green retrievals).  Color → count.  Hard difficulty only.
+   *
+   * Tracked by color rather than card ID so that when any card of a known
+   * color leaves the hand (e.g. the opponent plays an unknown red while we
+   * know about a different red), the count still decrements correctly.
    */
-  private knownHumanCards = new Map<string, Card>();
+  private knownHumanCards = new Map<Color, number>();
+
+  /**
+   * Snapshots of the opponent's field and graveyard from the previous state
+   * update.  Used by updateKnowledge to diff changes and keep knownHumanCards
+   * accurate as cards leave the opponent's hand.
+   * cardId → Card.
+   */
+  private prevOpponentField     = new Map<string, Card>();
+  private prevOpponentGraveyard = new Map<string, Card>();
 
   constructor(difficulty: AIDifficulty) {
     this.playerId = 'ai-' + uuidv4().slice(0, 8);
@@ -246,6 +277,8 @@ export class AIPlayer {
     this.engine = engine;
     this.actionVersion = 0;
     this.knownHumanCards.clear();
+    this.prevOpponentField.clear();
+    this.prevOpponentGraveyard.clear();
 
     const prev = engine.onStateChange;
     engine.onStateChange = (state) => {
@@ -300,16 +333,48 @@ export class AIPlayer {
     }, delay);
   }
 
-  private updateKnowledge(state: GameState, _myIndex: 0 | 1) {
-    if (this.difficulty === 'easy') return; // easy AI ignores revealed info
+  private updateKnowledge(state: GameState, myIndex: 0 | 1) {
+    if (this.difficulty !== 'hard') return;
 
-    // When we've just picked a card from black_pick, remember the remaining shown cards
-    // (they're still in the human's hand)
-    // We detect this by checking the shown cards in effect_black_pick phase
-    if (state.phase === 'effect_black_pick' && state.pendingEffect?.shownCards) {
-      // Store them so we can record the non-discarded ones after picking
-      // (actual recording happens in doBlackPick)
+    const opponent    = state.players[(1 - myIndex) as 0 | 1];
+    const curField    = new Map(opponent.field.map(c => [c.id, c]));
+    const curGrave    = new Map(opponent.graveyard.map(c => [c.id, c]));
+
+    // ── Cards that moved from hand → field (opponent played a card) ──────────
+    // Decrement the known count for that color by 1 (floor 0).  We do this
+    // regardless of whether this specific card was the one we "knew about"
+    // — if the opponent plays any red and we know ≥1 red is in their hand,
+    // one known red has been accounted for.
+    for (const [id, card] of curField) {
+      if (!this.prevOpponentField.has(id)) {
+        const n = this.knownHumanCards.get(card.color) ?? 0;
+        if (n > 0) this.knownHumanCards.set(card.color, n - 1);
+      }
     }
+
+    // ── Cards that moved from hand → graveyard (played & countered, used as
+    //    counter/CC cards, or discarded by their own black effect) ────────────
+    // Same color-count decrement logic as above.
+    for (const [id, card] of curGrave) {
+      if (!this.prevOpponentGraveyard.has(id)) {
+        const n = this.knownHumanCards.get(card.color) ?? 0;
+        if (n > 0) this.knownHumanCards.set(card.color, n - 1);
+      }
+    }
+
+    // ── Cards that left the graveyard without going to field ─────────────────
+    // The only way a card leaves the opponent's graveyard is via Green effect
+    // (retrieved to hand).  The graveyard is public, so we track this exactly.
+    for (const [id, card] of this.prevOpponentGraveyard) {
+      if (!curGrave.has(id) && !curField.has(id)) {
+        // Card is no longer on field or in graveyard — it must be in hand now.
+        this.knownHumanCards.set(card.color, (this.knownHumanCards.get(card.color) ?? 0) + 1);
+      }
+    }
+
+    // Save snapshots for the next diff.
+    this.prevOpponentField     = curField;
+    this.prevOpponentGraveyard = curGrave;
   }
 
   private act(state: GameState) {
@@ -338,31 +403,142 @@ export class AIPlayer {
    * Other difficulties fall back to a purely probabilistic model based on hand size.
    */
   private estimateCounterRisk(opponent: PlayerState, cardColor: Color): number {
-    if (this.difficulty === 'hard' && this.knownHumanCards.size > 0) {
-      const known = [...this.knownHumanCards.values()];
-      const knownBlues = known.filter(c => c.color === 'blue').length;
-      const knownMatch = cardColor === 'blue'
-        ? knownBlues
-        : known.filter(c => c.color === cardColor).length;
+    // ── Build the unknown card pool ─────────────────────────────────────────
+    // The pool is only the opponent's own 25-card deck (hand + deck remaining).
+    // Visible opponent cards (field + graveyard) are subtracted from their
+    // per-color total of 5 to get how many of each color could still be in
+    // their hand or deck.  Our own cards are irrelevant here.
+    const countOpponentVisible = (color: Color): number =>
+      opponent.field    .filter(c => c.color === color).length +
+      opponent.graveyard.filter(c => c.color === color).length;
 
-      const canCounterFromKnown = cardColor === 'blue'
+    const poolSize  = opponent.handCount + opponent.deckCount; // N
+    const poolBlues = Math.max(0, TOTAL_PER_COLOR - countOpponentVisible('blue'));   // K_blue
+    const poolMatch = Math.max(0, TOTAL_PER_COLOR - countOpponentVisible(cardColor)); // K_match
+    const handCount = opponent.handCount; // n (draws)
+
+    // ── Hard difficulty: refine with known-hand data from Black reveals ──────
+    if (this.difficulty === 'hard') {
+      const totalKnown  = [...this.knownHumanCards.values()].reduce((a, b) => a + b, 0);
+      const knownBlues  = this.knownHumanCards.get('blue') ?? 0;
+      const knownMatch  = cardColor === 'blue' ? knownBlues : (this.knownHumanCards.get(cardColor) ?? 0);
+
+      // Fast path: confirmed they already hold the counter cards.
+      const canCounterConfirmed = cardColor === 'blue'
         ? knownBlues >= 2
         : knownBlues >= 1 && knownMatch >= 1;
+      if (canCounterConfirmed) return 0.90;
 
-      if (canCounterFromKnown) return 0.90; // confirmed — they have the cards
+      // How many of each color remain available in the *unknown* portion of the pool
+      // (pool minus the cards we know are in their hand from black reveals).
+      const unknownHandCount = Math.max(0, handCount - totalKnown);
+      const unknownPoolSize  = Math.max(0, poolSize  - totalKnown);
+      const unknownPoolBlues = Math.max(0, poolBlues - knownBlues);
+      const unknownPoolMatch = Math.max(0, poolMatch - knownMatch);
 
-      const unknownCount = opponent.handCount - this.knownHumanCards.size;
-      if (unknownCount <= 0) return 0.06;  // full hand knowledge, no counter found
+      // How many more of each we still need from the unknown hand portion.
+      const bluesStillNeeded = cardColor === 'blue' ? Math.max(0, 2 - knownBlues) : Math.max(0, 1 - knownBlues);
+      const matchStillNeeded = cardColor === 'blue' ? 0 : Math.max(0, 1 - knownMatch);
 
-      // Unknown cards remain (were hidden from black reveal) — suspect the worst
-      // If opponent had 2+ unknown cards, they were likely protecting something
-      const unknownRisk = handCountRisk(unknownCount, cardColor);
-      return knownBlues === 0
-        ? Math.max(unknownRisk, 0.22)  // no evidence of blues, but unknowns could hide them
-        : unknownRisk * 0.70;           // partial knowledge, scale down somewhat
+      if (unknownPoolSize === 0 || unknownHandCount === 0) {
+        // Full hand knowledge and no counter found.
+        return 0.06;
+      }
+
+      if (cardColor === 'blue') {
+        return hypergeomAtLeast(unknownPoolSize, unknownPoolBlues, unknownHandCount, bluesStillNeeded);
+      } else {
+        const pBlue  = bluesStillNeeded  <= 0 ? 1.0 : hypergeomAtLeast(unknownPoolSize, unknownPoolBlues, unknownHandCount, bluesStillNeeded);
+        const pMatch = matchStillNeeded  <= 0 ? 1.0 : hypergeomAtLeast(unknownPoolSize, unknownPoolMatch, unknownHandCount, matchStillNeeded);
+        // Multiply as approximate independence (different colors, slight correlation factor).
+        return pBlue * pMatch * 0.92;
+      }
     }
 
-    return handCountRisk(opponent.handCount, cardColor);
+    // ── Medium / easy: use only public info (hypergeometric on full pool) ────
+    if (handCount === 0) return 0;
+    if (cardColor === 'blue') {
+      return hypergeomAtLeast(poolSize, poolBlues, handCount, 2);
+    } else {
+      const pBlue  = hypergeomAtLeast(poolSize, poolBlues, handCount, 1);
+      const pMatch = hypergeomAtLeast(poolSize, poolMatch, handCount, 1);
+      return pBlue * pMatch * 0.92;
+    }
+  }
+
+  // ── Counter preservation ─────────────────────────────────────────────────
+
+  /**
+   * Score adjustment (additive) that keeps the AI set up to counter the
+   * opponent's win card when they are 1 card away from winning.
+   *
+   * Decision tree:
+   *   1. Counter assembled (have blue + matching or 2 blues)
+   *      → Penalise any card that would break the assembled counter (-600).
+   *   2. Counter NOT assembled but we hold a partial piece (e.g. have blue but
+   *      no matching, or vice versa)
+   *      → Protect the piece we already have (-500 penalty on spending it).
+   *      → Boost Green if the missing piece is sitting in our graveyard (+700 blue, +650 match).
+   *      → Modest boost to White as a last-resort draw (+120).
+   *   3. Rainbow 1-away: softer rule — just don't spend our last blue (-400).
+   */
+  private counterPreservationAdjustment(card: Card, me: PlayerState, oppPaths: WinPath[]): number {
+    const nearest = oppPaths[0];
+    if (!nearest || nearest.cardsNeeded > 1) return 0;
+
+    // Rainbow: opponent could play any color — protect our only blue
+    if (nearest.type === 'rainbow') {
+      if (card.color === 'blue' && me.hand.filter(c => c.color === 'blue').length <= 1) {
+        return -400;
+      }
+      return 0;
+    }
+
+    if (nearest.type !== '5kind' || !nearest.color) return 0;
+
+    const winconColor = nearest.color;
+    const blues = me.hand.filter(c => c.color === 'blue').length;
+    const match = winconColor === 'blue'
+      ? blues
+      : me.hand.filter(c => c.color === winconColor).length;
+
+    const needBlue  = winconColor === 'blue' ? 2 : 1;
+    const needMatch = winconColor === 'blue' ? 0 : 1;
+    const hasCounter = blues >= needBlue && match >= needMatch;
+
+    if (hasCounter) {
+      // ── Protect the assembled counter ──────────────────────────────────────
+      // Playing a blue that drops us below the needed count breaks the counter.
+      if (card.color === 'blue' && blues - 1 < needBlue) return -600;
+      // Playing the matching-color card (non-blue wincon) breaks the counter.
+      if (card.color === winconColor && winconColor !== 'blue' && match - 1 < needMatch) return -600;
+      return 0;
+    }
+
+    // ── Counter not yet assembled ───────────────────────────────────────────
+    const missingBlue  = blues < needBlue;
+    const missingMatch = winconColor !== 'blue' && match < needMatch;
+
+    // Protect partial pieces we already hold:
+    //   Have blue(s) but no matching → don't spend the blue waiting for match.
+    if (!missingBlue && missingMatch && card.color === 'blue') return -500;
+    //   Have matching but no blue → don't spend the match waiting for blue.
+    if (missingBlue && !missingMatch && card.color === winconColor) return -500;
+    //   Blue wincon: have exactly 1 blue and need 2 → don't spend the one we have.
+    if (winconColor === 'blue' && blues === 1 && card.color === 'blue') return -500;
+
+    // Green: retrieve the missing piece from our graveyard — highest priority
+    if (card.color === 'green') {
+      const blueInGrave  = me.graveyard.some(c => c.color === 'blue');
+      const matchInGrave = winconColor !== 'blue' && me.graveyard.some(c => c.color === winconColor);
+      if (missingBlue  && blueInGrave)  return 700;
+      if (missingMatch && matchInGrave) return 650;
+    }
+
+    // White: draw as last resort — modest boost when we can't assemble the counter any other way
+    if (card.color === 'white' && (missingBlue || missingMatch)) return 120;
+
+    return 0;
   }
 
   // ── Card selection ────────────────────────────────────────────────────────
@@ -405,7 +581,10 @@ export class AIPlayer {
     let bestScore = -Infinity;
 
     for (const card of me.hand) {
-      const score = this.scoreCard(card, me, opponent, myPaths, oppPaths, turn, deferWin, winCardColor);
+      let score = this.scoreCard(card, me, opponent, myPaths, oppPaths, turn, deferWin, winCardColor);
+      if (this.difficulty !== 'easy') {
+        score += this.counterPreservationAdjustment(card, me, oppPaths);
+      }
       if (score > bestScore) { bestScore = score; best = card; }
     }
     return best;
@@ -484,7 +663,7 @@ export class AIPlayer {
         let score: number;
         if (oppThreat <= 1) score = 95;
         else if (oppThreat <= 2) score = 78;
-        else if (opponent.field.length >= 3) score = 62;
+        else if (opponent.field.length >= 3) score = 62; 
         else score = 42;
 
         // Setup play: in deferral mode, red is high-value —
@@ -720,9 +899,11 @@ export class AIPlayer {
 
     // Hard AI: if we KNOW they hold the winning card (from a previous black reveal),
     // every play that advances their position is more urgent.
-    if (this.difficulty === 'hard' && this.knownHumanCards.size > 0) {
-      const knownList = [...this.knownHumanCards.values()];
-      if (knownList.some(c => isWinningCard(c, opponent.field))) threat += 22;
+    if (this.difficulty === 'hard') {
+      const holdsWinCard = [...this.knownHumanCards.entries()].some(([color, count]) =>
+        count > 0 && isWinningCard({ id: '', color }, opponent.field)
+      );
+      if (holdsWinCard) threat += 22;
     }
 
     // Penalty for depleting our blue reserves (blues are precious for later).
@@ -894,7 +1075,9 @@ export class AIPlayer {
     // Hard difficulty: remember the other shown cards (still in opponent's hand)
     if (this.difficulty === 'hard') {
       for (const c of shown) {
-        if (c.id !== target.id) this.knownHumanCards.set(c.id, c);
+        if (c.id !== target.id) {
+          this.knownHumanCards.set(c.color, (this.knownHumanCards.get(c.color) ?? 0) + 1);
+        }
       }
     }
 
@@ -955,7 +1138,7 @@ export class AIPlayer {
     // opponent already has in hand (destroying a field card is less effective when they
     // can just replay the same color next turn).
     const knownColors = this.difficulty === 'hard'
-      ? new Set([...this.knownHumanCards.values()].map(c => c.color))
+      ? new Set([...this.knownHumanCards.entries()].filter(([, n]) => n > 0).map(([color]) => color))
       : undefined;
     const target = random
       ? opponent.field[Math.floor(Math.random() * opponent.field.length)]
