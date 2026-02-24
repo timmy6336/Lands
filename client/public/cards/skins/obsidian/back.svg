@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#050410"/><stop offset="50%" stop-color="#030208"/><stop offset="100%" stop-color="#010104"/>
+  </linearGradient>
+  <radialGradient id="cg" cx="50%" cy="50%" r="38%">
+    <stop offset="0%" stop-color="#6040b0" stop-opacity="0.4"/><stop offset="100%" stop-color="#030208" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="v" cx="50%" cy="50%" r="68%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#8060d0"/><stop offset="100%" stop-color="#201040"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#bg)" rx="10"/>
+<ellipse cx="100" cy="140" rx="70" ry="70" fill="url(#cg)"/>
+<!-- large central gem shape -->
+<polygon points="100,70 142,100 155,140 142,180 100,210 58,180 45,140 58,100"
+         fill="#080618" stroke="#6040b0" stroke-width="1" stroke-opacity="0.65"/>
+<polygon points="100,82 134,108 144,140 134,172 100,198 66,172 56,140 66,108"
+         fill="none" stroke="#9060d0" stroke-width="0.7" stroke-opacity="0.5"/>
+<!-- facet lines from centre -->
+<g stroke="#7050b8" stroke-width="0.8" stroke-opacity="0.4">
+  <line x1="100" y1="140" x2="100" y2="70"/><line x1="100" y1="140" x2="142" y2="100"/>
+  <line x1="100" y1="140" x2="155" y2="140"/><line x1="100" y1="140" x2="142" y2="180"/>
+  <line x1="100" y1="140" x2="100" y2="210"/><line x1="100" y1="140" x2="58" y2="180"/>
+  <line x1="100" y1="140" x2="45" y2="140"/><line x1="100" y1="140" x2="58" y2="100"/>
+</g>
+<circle cx="100" cy="140" r="8" fill="#0a0818" stroke="#a080e0" stroke-width="1.2"/>
+<circle cx="100" cy="140" r="4" fill="#6040b0" opacity="0.5"/>
+<g stroke="#4030808" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.7">
+  <path d="M14 14 L14 28 M14 14 L28 14"/><path d="M186 14 L186 28 M186 14 L172 14"/>
+  <path d="M14 266 L14 252 M14 266 L28 266"/><path d="M186 266 L186 252 M186 266 L172 266"/>
+</g>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+</svg>

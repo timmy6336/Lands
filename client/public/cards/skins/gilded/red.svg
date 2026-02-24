@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#1a0800"/><stop offset="60%" stop-color="#7a3000"/><stop offset="100%" stop-color="#cc6010"/>
+  </linearGradient>
+  <radialGradient id="glow" cx="50%" cy="100%" r="55%">
+    <stop offset="0%" stop-color="#ff9020" stop-opacity="0.85"/><stop offset="100%" stop-color="#cc4000" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="v" cx="50%" cy="50%" r="70%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(20,5,0,0.6)"/>
+  </radialGradient>
+  <linearGradient id="lava" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#ffb030"/><stop offset="100%" stop-color="#cc4000"/>
+  </linearGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#e06010"/><stop offset="100%" stop-color="#602000"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<path d="M0 198 L28 148 L55 172 L80 118 L100 78 L120 118 L145 172 L172 148 L200 198 L200 280 L0 280 Z" fill="#2a1000"/>
+<path d="M0 220 L25 182 L52 198 L82 148 L100 112 L118 148 L148 198 L175 182 L200 220 L200 280 L0 280 Z" fill="#3a1800"/>
+<path d="M96 118 Q98 148 93 175 Q100 195 107 175 Q102 148 104 118 Z" fill="url(#lava)" opacity="0.9"/>
+<path d="M93 160 Q78 168 65 178 Q58 188 65 195 Q78 188 91 178 Q94 170 93 164 Z" fill="url(#lava)" opacity="0.65"/>
+<path d="M107 160 Q122 168 135 178 Q142 188 135 195 Q122 188 109 178 Q106 170 107 164 Z" fill="url(#lava)" opacity="0.65"/>
+<ellipse cx="100" cy="250" rx="58" ry="12" fill="#cc4000" opacity="0.65"/>
+<ellipse cx="100" cy="250" rx="36" ry="7" fill="#ff7010" opacity="0.55"/>
+<rect x="0" y="256" width="200" height="24" fill="url(#glow)" opacity="0.65"/>
+<g fill="#ffaa30" opacity="0.8">
+  <circle cx="90" cy="88" r="1.3"/><circle cx="112" cy="76" r="1.5"/><circle cx="78" cy="68" r="1"/><circle cx="124" cy="65" r="1.3"/>
+  <circle cx="96" cy="60" r="0.9"/><circle cx="107" cy="56" r="1.2"/>
+</g>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#e06010" stroke-width="0.7" stroke-opacity="0.45"/>
+<g fill="#c04010" opacity="0.9"><polygon points="9,9 20,9 9,20"/><polygon points="191,9 180,9 191,20"/><polygon points="9,271 20,271 9,260"/><polygon points="191,271 180,271 191,260"/></g>
+<rect x="52" y="257" width="96" height="16" rx="4" fill="rgba(0,0,0,0.55)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#ffa060" letter-spacing="2.5">PEAKS</text>
+</svg>

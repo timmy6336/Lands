@@ -22,9 +22,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChatMessage, GameSettings, ReplayFile } from '@lands/shared';
 import { useSocket } from './hooks/useSocket';
 import { useLocalGame, LocalGameParams } from './hooks/useLocalGame';
+import { useAuth } from './hooks/useAuth';
 import { CardImagesContext, useCardImagesProvider } from './hooks/useCardImages';
 import { UISettingsContext, useUISettingsProvider } from './hooks/useUISettings';
 import { HomeScreen } from './components/HomeScreen';
+import { AuthScreen } from './components/AuthScreen';
+import { ProfileScreen } from './components/ProfileScreen';
+import { ShopScreen } from './components/ShopScreen';
 import { PlayMenu } from './components/PlayMenu';
 import { MultiplayerMenu } from './components/MultiplayerMenu';
 import { MatchmakingScreen } from './components/MatchmakingScreen';
@@ -58,7 +62,8 @@ function PageTransition({ children, keyProp }: { children: React.ReactNode; keyP
 }
 
 type Screen =
-  | 'home' | 'play-menu' | 'single-player-menu' | 'single-player'
+  | 'home' | 'auth' | 'profile' | 'shop'
+  | 'play-menu' | 'single-player-menu' | 'single-player'
   | 'settings' | 'rules'
   | 'multiplayer-menu' | 'private-menu' | 'host' | 'join' | 'matchmaking'
   | 'replays' | 'replay-viewer';
@@ -91,15 +96,25 @@ function AppInner() {
   const [pendingSPRematch, setPendingSPRematch] = useState(false);
   const [replayToView, setReplayToView] = useState<ReplayFile | null>(null);
 
-  // Saved Electron settings — reserved for future use
-  // (Port / UPnP removed; multiplayer now uses the hosted dedicated server)
+  const auth = useAuth();
 
-  const [cardImageUrls, refreshCardImages] = useCardImagesProvider();
+  // Refresh profile on mount if we have a stored token
+  useEffect(() => {
+    auth.refreshProfile(DEDICATED_SERVER_URL);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When the user logs in, sync their username as the default player name
+  useEffect(() => {
+    if (auth.profile) setPlayerName(auth.profile.username);
+  }, [auth.profile?.username]);
+
+  const [cardImageUrls, refreshCardImages] = useCardImagesProvider(auth.profile?.active_pack_id);
 
   const { gameState: socketGameState, roomCode, error, connected, send: socketSend,
     chatMessages: socketChatMessages,
     matchmakingStatus, matchmakingFound,
-  } = useSocket(serverUrl);
+  } = useSocket(serverUrl, auth.token);
   const { gameState: localGameState, send: localSend } = useLocalGame(localGameParams);
 
   // Route to local engine when in single-player mode, socket otherwise
@@ -494,7 +509,61 @@ function AppInner() {
     );
   }
 
-  // ── Home screen (default) ─────────────────────────────────────────────────
+  // ── Home screen (default) ─────────────────────────────────────────────
+
+  if (screen === 'auth') {
+    return (
+      <PageTransition keyProp="auth">
+        <AuthScreen
+          auth={auth}
+          serverUrl={DEDICATED_SERVER_URL}
+          onBack={() => setScreen('home')}
+        />
+      </PageTransition>
+    );
+  }
+
+  if (screen === 'profile') {
+    return (
+      <PageTransition keyProp="profile">
+        <ProfileScreen
+          auth={auth}
+          serverUrl={DEDICATED_SERVER_URL}
+          onBack={() => setScreen('home')}
+          onLogout={() => {
+            auth.logout();
+            setScreen('home');
+          }}
+          onShop={() => setScreen('shop')}
+          onProfileUpdated={(profile) => {
+            // Patch the profile in the auth state so active_pack_id updates immediately
+            if (auth.profile) {
+              Object.assign(auth.profile, profile);
+              refreshCardImages();
+            }
+          }}
+        />
+      </PageTransition>
+    );
+  }
+
+  if (screen === 'shop') {
+    return (
+      <PageTransition keyProp="shop">
+        <ShopScreen
+          auth={auth}
+          serverUrl={DEDICATED_SERVER_URL}
+          onBack={() => setScreen(auth.profile ? 'profile' : 'home')}
+          onProfileUpdated={(profile) => {
+            if (auth.profile) {
+              Object.assign(auth.profile, profile);
+              refreshCardImages();
+            }
+          }}
+        />
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition keyProp="home">
@@ -503,6 +572,9 @@ function AppInner() {
         onSettings={() => setScreen('settings')}
         onRules={() => setScreen('rules')}
         onReplays={() => setScreen('replays')}
+        onProfile={() => setScreen(auth.profile ? 'profile' : 'auth')}
+        onShop={() => setScreen('shop')}
+        username={auth.profile?.username ?? null}
       />
     </PageTransition>
   );

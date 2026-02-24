@@ -1,10 +1,13 @@
 // Main menu screen: entry point of the app.
-// Buttons navigate to Play, Settings, Rules, and Replays.
+// Buttons navigate to Play, Settings, Rules, Replays, Profile/Auth, and Shop.
 interface Props {
   onPlay: () => void;
   onSettings: () => void;
   onRules: () => void;
   onReplays: () => void;
+  onProfile: () => void;
+  onShop: () => void;
+  username: string | null;
 }
 
 const menuItems = [
@@ -14,14 +17,46 @@ const menuItems = [
   { label: '⚙  Settings', sub: 'Customize your experience', primary: false },
 ] as const;
 
-export function HomeScreen({ onPlay, onSettings, onRules, onReplays }: Props) {
+export function HomeScreen({ onPlay, onSettings, onRules, onReplays, onProfile, onShop, username }: Props) {
   const handlers = [onPlay, onRules, onReplays, onSettings];
 
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', height: '100%', gap: 48, padding: '2rem',
+      position: 'relative',
     }}>
+      {/* ── Top-right chips (Profile + Shop) ── */}
+      <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: 8 }}>
+        <button
+          onClick={onShop}
+          style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 20, padding: '0.35rem 0.85rem',
+            color: 'var(--muted)', fontSize: '0.82rem', fontWeight: 500,
+            cursor: 'pointer', transition: 'border-color 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+        >
+          🛍 Shop
+        </button>
+        <button
+          onClick={onProfile}
+          style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 20, padding: '0.35rem 0.85rem',
+            color: username ? 'var(--accent)' : 'var(--muted)',
+            fontSize: '0.82rem', fontWeight: username ? 600 : 400,
+            cursor: 'pointer', transition: 'border-color 0.15s',
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+        >
+          {username ? `🧙 ${username}` : '👤 Sign In'}
+        </button>
+      </div>
       {/* ── Title block ── */}
       <div style={{ textAlign: 'center', userSelect: 'none' }}>
         <div style={{ position: 'relative', display: 'inline-block' }}>

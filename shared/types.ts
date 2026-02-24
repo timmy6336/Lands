@@ -187,6 +187,36 @@ export interface ReplayFile {
   snapshots: GameState[];              // full unsanitized states (both hands visible)
 }
 
+// ── User profiles ───────────────────────────────────────────────────────────
+
+/** Public-facing user profile returned by REST endpoints. */
+export interface UserProfile {
+  id: string;
+  username: string;
+  elo: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  win_streak: number;
+  best_win_streak: number;
+  wins_five_kind: number;
+  wins_rainbow: number;
+  active_pack_id: string | null;
+  owned_pack_ids: string[];
+  created_at: string;
+  last_seen: string;
+}
+
+/** A purchasable or free cosmetic skin pack. */
+export interface SkinPack {
+  id: string;
+  name: string;
+  description: string;
+  price_cents: number;  // 0 = free
+  preview_url: string;
+  released_at: string;
+}
+
 // ── Socket event typings ────────────────────────────────────────────────────
 
 /** Typed Socket.io events the server can push to connected clients. */
@@ -244,4 +274,7 @@ export interface SocketData {
   playerId:   string;
   roomCode:   string;
   playerName: string;
+  /** Decoded from JWT handshake auth.token — undefined for guests. */
+  userId?:    string;
+  userName?:  string;
 }

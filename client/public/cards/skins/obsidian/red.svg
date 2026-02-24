@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#0a0000"/><stop offset="55%" stop-color="#200400"/><stop offset="100%" stop-color="#380600"/>
+  </linearGradient>
+  <radialGradient id="gc" cx="50%" cy="40%" r="35%">
+    <stop offset="0%" stop-color="#e04020" stop-opacity="0.38"/><stop offset="100%" stop-color="#0a0000" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="v" cx="50%" cy="50%" r="68%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#e04020"/><stop offset="100%" stop-color="#600808"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<ellipse cx="100" cy="112" rx="60" ry="60" fill="url(#gc)"/>
+<g fill="#060000" opacity="0.85">
+  <polygon points="0,280 0,218 18,248 36,210 52,240 68,212 85,248 100,220 115,248 132,212 148,240 164,210 180,248 200,218 200,280"/>
+  <polygon points="0,0 0,55 14,28 30,52 44,18 60,48 74,15 90,44 100,12 110,44 126,15 140,48 156,18 170,52 184,28 200,55 200,0"/>
+</g>
+
+<!-- crystal cluster -->
+<g fill="#200400" stroke="#e04020" stroke-width="0.8" stroke-opacity="0.5">
+  <polygon points="88,90 100,60 112,90 100,95"/>
+  <polygon points="72,110 88,74 100,95 80,118"/>
+  <polygon points="128,110 112,74 100,95 120,118"/>
+  <polygon points="88,90 100,95 104,128 84,122"/>
+  <polygon points="112,90 100,95 96,128 116,122"/>
+</g>
+<g fill="#ff6040" stroke="#e04020" stroke-width="0.6" stroke-opacity="0.6" opacity="0.55">
+  <polygon points="96,68 100,60 104,68 100,72"/>
+  <polygon points="78,105 82,92 88,90 82,110"/>
+  <polygon points="122,105 118,92 112,90 118,110"/>
+</g>
+<path d="M0 240 Q50 232 100 238 Q150 244 200 234 L200 280 L0 280 Z" fill="#200400" opacity="0.8"/>
+<g fill="#e04020" opacity="0.12">
+  <polygon points="92,248 100,234 108,248 100,252"/>
+  <polygon points="82,254 88,244 94,254 88,257"/>
+</g>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#e04020" stroke-width="0.7" stroke-opacity="0.45"/>
+<g fill="#800808" opacity="0.9"><polygon points="9,9 20,9 9,20"/><polygon points="191,9 180,9 191,20"/><polygon points="9,271 20,271 9,260"/><polygon points="191,271 180,271 191,260"/></g>
+<rect x="52" y="257" width="96" height="16" rx="4" fill="rgba(0,0,0,0.55)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#f06040" letter-spacing="2.5">PEAKS</text>
+</svg>

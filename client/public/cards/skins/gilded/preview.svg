@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="130" viewBox="0 0 200 130">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#2a1400"/><stop offset="100%" stop-color="#0e0800"/>
+  </linearGradient>
+  <radialGradient id="glow" cx="50%" cy="50%" r="55%">
+    <stop offset="0%" stop-color="#c08020" stop-opacity="0.4"/><stop offset="100%" stop-color="#0e0800" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<rect width="200" height="130" fill="url(#bg)" rx="8"/>
+<ellipse cx="100" cy="65" rx="85" ry="55" fill="url(#glow)"/>
+<!-- mini card previews -->
+<rect x="18" y="22" width="28" height="40" rx="4" fill="#7a4800"/><rect x="18" y="22" width="28" height="40" rx="4" fill="none" stroke="#c09020" stroke-width="1.2"/>
+<rect x="52" y="22" width="28" height="40" rx="4" fill="#4a1800"/><rect x="52" y="22" width="28" height="40" rx="4" fill="none" stroke="#c06010" stroke-width="1.2"/>
+<rect x="86" y="22" width="28" height="40" rx="4" fill="#3a1200"/><rect x="86" y="22" width="28" height="40" rx="4" fill="none" stroke="#e07820" stroke-width="1.2"/>
+<rect x="120" y="22" width="28" height="40" rx="4" fill="#2a1000"/><rect x="120" y="22" width="28" height="40" rx="4" fill="none" stroke="#d09020" stroke-width="1.2"/>
+<rect x="154" y="22" width="28" height="40" rx="4" fill="#1a0a00"/><rect x="154" y="22" width="28" height="40" rx="4" fill="none" stroke="#a06820" stroke-width="1.2"/>
+<!-- color swatches in cards -->
+<circle cx="32" cy="42" r="6" fill="#d4a030"/><circle cx="66" cy="42" r="6" fill="#cc4010"/><circle cx="100" cy="42" r="6" fill="#e07820"/><circle cx="134" cy="42" r="6" fill="#c06818"/><circle cx="168" cy="42" r="6" fill="#8a5010"/>
+<text x="100" y="92" font-size="13" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#e0a020" letter-spacing="3">GILDED</text>
+<text x="100" y="110" font-size="7.5" font-family="Georgia,serif" text-anchor="middle" fill="#8a6010" letter-spacing="1.5">WARM GOLD &amp; AMBER</text>
+</svg>

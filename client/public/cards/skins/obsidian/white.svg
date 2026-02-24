@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#0a0c14"/><stop offset="55%" stop-color="#141c28"/><stop offset="100%" stop-color="#1c2838"/>
+  </linearGradient>
+  <radialGradient id="gc" cx="50%" cy="40%" r="35%">
+    <stop offset="0%" stop-color="#c8d8f0" stop-opacity="0.35"/><stop offset="100%" stop-color="#0a0c14" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="v" cx="50%" cy="50%" r="68%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#c0cce0"/><stop offset="100%" stop-color="#4060a0"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<ellipse cx="100" cy="112" rx="60" ry="60" fill="url(#gc)"/>
+<!-- stalagmite/stalactite silhouettes -->
+<g fill="#060810" opacity="0.85">
+  <polygon points="0,280 0,210 15,240 30,200 45,235 60,208 75,245 90,215 100,245 110,215 125,245 140,208 155,235 170,200 185,240 200,210 200,280"/>
+  <polygon points="0,0 0,60 12,30 28,55 40,20 56,50 70,18 85,45 100,15 115,45 130,18 144,50 160,20 176,55 188,30 200,60 200,0"/>
+</g>
+
+<!-- crystal cluster -->
+<g fill="#101828" stroke="#c8d8f0" stroke-width="0.8" stroke-opacity="0.5">
+  <polygon points="88,90 100,60 112,90 100,95"/>
+  <polygon points="72,110 88,74 100,95 80,118"/>
+  <polygon points="128,110 112,74 100,95 120,118"/>
+  <polygon points="88,90 100,95 104,128 84,122"/>
+  <polygon points="112,90 100,95 96,128 116,122"/>
+</g>
+<g fill="#e8f0ff" stroke="#c8d8f0" stroke-width="0.6" stroke-opacity="0.6" opacity="0.55">
+  <polygon points="96,68 100,60 104,68 100,72"/>
+  <polygon points="78,105 82,92 88,90 82,110"/>
+  <polygon points="122,105 118,92 112,90 118,110"/>
+</g>
+<!-- floor reflection sheen -->
+<path d="M0 240 Q50 232 100 238 Q150 244 200 234 L200 280 L0 280 Z" fill="#141c2a" opacity="0.8"/>
+<g fill="#c0ccdc" opacity="0.15">
+  <polygon points="92,248 100,234 108,248 100,252"/>
+  <polygon points="82,254 88,244 94,254 88,257"/>
+  <polygon points="106,254 112,244 118,254 112,257"/>
+</g>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#c0cce0" stroke-width="0.7" stroke-opacity="0.45"/>
+<g fill="#6080b0" opacity="0.9"><polygon points="9,9 20,9 9,20"/><polygon points="191,9 180,9 191,20"/><polygon points="9,271 20,271 9,260"/><polygon points="191,271 180,271 191,260"/></g>
+<rect x="52" y="257" width="96" height="16" rx="4" fill="rgba(0,0,0,0.55)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#c8d8f0" letter-spacing="2.5">FIELDS</text>
+</svg>

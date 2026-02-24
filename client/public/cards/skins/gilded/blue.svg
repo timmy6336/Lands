@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#2a1400"/><stop offset="45%" stop-color="#b04000"/><stop offset="75%" stop-color="#e07820"/><stop offset="100%" stop-color="#c05010"/>
+  </linearGradient>
+  <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#cc5010"/><stop offset="100%" stop-color="#601800"/>
+  </linearGradient>
+  <radialGradient id="sg" cx="50%" cy="58%" r="30%">
+    <stop offset="0%" stop-color="#ff9020" stop-opacity="0.8"/><stop offset="100%" stop-color="#cc4000" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="v" cx="50%" cy="50%" r="68%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(40,10,0,0.55)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#e07830"/><stop offset="100%" stop-color="#803010"/>
+  </linearGradient>
+  <linearGradient id="ref" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#ff9020" stop-opacity="0.45"/><stop offset="100%" stop-color="#cc4000" stop-opacity="0"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<!-- sunset sun -->
+<ellipse cx="100" cy="162" rx="42" ry="42" fill="url(#sg)"/>
+<circle cx="100" cy="162" r="18" fill="#ffe060" opacity="0.95"/>
+<circle cx="100" cy="162" r="14" fill="#ffb830"/>
+<!-- horizon clouds -->
+<g fill="#e06820" opacity="0.6">
+  <ellipse cx="30" cy="135" rx="22" ry="8"/><ellipse cx="46" cy="130" rx="16" ry="9"/>
+  <ellipse cx="165" cy="140" rx="20" ry="7"/><ellipse cx="178" cy="136" rx="14" ry="8"/>
+</g>
+<path d="M0 172 Q50 164 100 168 Q150 172 200 165 L200 172 Z" fill="#601800"/>
+<rect x="0" y="172" width="200" height="108" fill="url(#sea)"/>
+<path d="M85 172 L115 172 L125 280 L75 280 Z" fill="url(#ref)" opacity="0.4"/>
+<g stroke="#cc5010" stroke-width="1" fill="none" opacity="0.5">
+  <path d="M5 182 Q28 178 52 182 Q76 186 100 182 Q124 178 148 182 Q172 186 196 182"/>
+  <path d="M0 196 Q25 192 50 196 Q75 200 100 196 Q125 192 150 196 Q175 200 200 196"/>
+  <path d="M5 212 Q30 207 58 212 Q86 217 114 212 Q142 207 170 212 Q186 215 200 212"/>
+</g>
+<g stroke="#e06820" stroke-width="1.2" fill="none" opacity="0.45">
+  <path d="M0 228 Q26 223 52 228 Q78 233 104 228 Q130 223 156 228 Q178 232 200 228"/>
+</g>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#e07830" stroke-width="0.7" stroke-opacity="0.45"/>
+<g fill="#b05820" opacity="0.9"><polygon points="9,9 20,9 9,20"/><polygon points="191,9 180,9 191,20"/><polygon points="9,271 20,271 9,260"/><polygon points="191,271 180,271 191,260"/></g>
+<rect x="62" y="257" width="76" height="16" rx="4" fill="rgba(0,0,0,0.55)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#ffb070" letter-spacing="2.5">SHORES</text>
+</svg>

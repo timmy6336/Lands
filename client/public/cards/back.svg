@@ -1,30 +1,64 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 112">
-  <!-- Card base -->
-  <rect width="80" height="112" rx="8" fill="#12122a"/>
-  <!-- Outer border -->
-  <rect x="3" y="3" width="74" height="106" rx="6" fill="none" stroke="#3535a0" stroke-width="1.5"/>
-  <!-- Inner border -->
-  <rect x="7" y="7" width="66" height="98" rx="4" fill="none" stroke="#2a2a7a" stroke-width="1"/>
-  <!-- Background diagonal pattern -->
-  <defs>
-    <pattern id="diag" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <line x1="0" y1="0" x2="0" y2="8" stroke="#1a1a44" stroke-width="2.5"/>
-    </pattern>
-    <clipPath id="inner"><rect x="7" y="7" width="66" height="98" rx="4"/></clipPath>
-  </defs>
-  <rect x="7" y="7" width="66" height="98" rx="4" fill="url(#diag)"/>
-  <!-- Outer diamond -->
-  <polygon points="40,26 62,56 40,86 18,56" fill="none" stroke="#4545c0" stroke-width="1.5" clip-path="url(#inner)"/>
-  <!-- Mid diamond -->
-  <polygon points="40,38 54,56 40,74 26,56" fill="#111140" stroke="#5555d0" stroke-width="1" clip-path="url(#inner)"/>
-  <!-- Inner diamond -->
-  <polygon points="40,47 48,56 40,65 32,56" fill="#2222aa" stroke="#7070e8" stroke-width="1"/>
-  <!-- Center gem -->
-  <circle cx="40" cy="56" r="5" fill="#5555ff" opacity="0.9"/>
-  <circle cx="40" cy="56" r="2.5" fill="#c0c0ff"/>
-  <!-- Corner ornaments -->
-  <polygon points="15,13 20,20 15,27 10,20" fill="none" stroke="#4545b0" stroke-width="1" opacity="0.8"/>
-  <polygon points="65,13 70,20 65,27 60,20" fill="none" stroke="#4545b0" stroke-width="1" opacity="0.8"/>
-  <polygon points="15,85 20,92 15,99 10,92" fill="none" stroke="#4545b0" stroke-width="1" opacity="0.8"/>
-  <polygon points="65,85 70,92 65,99 60,92" fill="none" stroke="#4545b0" stroke-width="1" opacity="0.8"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#0e0a24"/>
+    <stop offset="50%" stop-color="#0a0818"/>
+    <stop offset="100%" stop-color="#06040e"/>
+  </linearGradient>
+  <radialGradient id="cg" cx="50%" cy="50%" r="38%">
+    <stop offset="0%" stop-color="#6040c8" stop-opacity="0.55"/>
+    <stop offset="100%" stop-color="#0a0618" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="vig" cx="50%" cy="50%" r="68%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
+    <stop offset="100%" stop-color="rgba(0,0,0,0.55)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#8060e0"/>
+    <stop offset="50%" stop-color="#5038a8"/>
+    <stop offset="100%" stop-color="#281860"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#bg)" rx="10"/>
+<g fill="#a080e8" opacity="0.45">
+  <circle cx="18"  cy="22"  r="0.8"/> <circle cx="45"  cy="16"  r="0.6"/>
+  <circle cx="72"  cy="30"  r="0.9"/> <circle cx="130" cy="18"  r="0.7"/>
+  <circle cx="158" cy="28"  r="0.8"/> <circle cx="182" cy="14"  r="0.6"/>
+  <circle cx="190" cy="45"  r="0.8"/> <circle cx="12"  cy="58"  r="0.7"/>
+  <circle cx="24"  cy="240" r="0.7"/> <circle cx="178" cy="248" r="0.8"/>
+  <circle cx="192" cy="260" r="0.6"/> <circle cx="10"  cy="266" r="0.9"/>
+</g>
+<ellipse cx="100" cy="140" rx="70" ry="70" fill="url(#cg)"/>
+<circle cx="100" cy="140" r="60" fill="none" stroke="#5038a0" stroke-width="1.2" stroke-opacity="0.7"/>
+<circle cx="100" cy="140" r="55" fill="none" stroke="#6048b8" stroke-width="0.6" stroke-opacity="0.5"/>
+<polygon points="100,82 107,118 140,108 118,132 140,172 107,162 100,198 93,162 60,172 82,132 60,108 93,118"
+         fill="#5038a0" fill-opacity="0.18" stroke="#7858d0" stroke-width="1.2" stroke-opacity="0.75"/>
+<polygon points="100,96 104,120 126,114 112,130 126,160 104,154 100,178 96,154 74,160 88,130 74,114 96,120"
+         fill="none" stroke="#9070e0" stroke-width="0.8" stroke-opacity="0.5"/>
+<circle cx="100" cy="140" r="18" fill="#0e0820" stroke="#8860d8" stroke-width="1.4"/>
+<circle cx="100" cy="140" r="12" fill="none" stroke="#a080e8" stroke-width="0.7" stroke-opacity="0.7"/>
+<g stroke="#7858d0" stroke-width="1.2" stroke-linecap="round" opacity="0.65">
+  <line x1="100" y1="80"  x2="100" y2="87"/>
+  <line x1="160" y1="140" x2="153" y2="140"/>
+  <line x1="100" y1="200" x2="100" y2="193"/>
+  <line x1="40"  y1="140" x2="47"  y2="140"/>
+  <line x1="142" y1="98"  x2="137" y2="103"/>
+  <line x1="142" y1="182" x2="137" y2="177"/>
+  <line x1="58"  y1="182" x2="63"  y2="177"/>
+  <line x1="58"  y1="98"  x2="63"  y2="103"/>
+</g>
+<g stroke="#5038a0" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.75">
+  <path d="M14 14 L14 28 M14 14 L28 14"/>
+  <path d="M186 14 L186 28 M186 14 L172 14"/>
+  <path d="M14 266 L14 252 M14 266 L28 266"/>
+  <path d="M186 266 L186 252 M186 266 L172 266"/>
+</g>
+<rect x="18" y="18" width="164" height="244" rx="5" fill="none" stroke="#402888" stroke-width="0.8" stroke-opacity="0.4"/>
+<g fill="#6048b0" opacity="0.6">
+  <circle cx="26"  cy="26"  r="2"/> <circle cx="174" cy="26"  r="2"/>
+  <circle cx="26"  cy="254" r="2"/> <circle cx="174" cy="254" r="2"/>
+</g>
+<rect x="22" y="22" width="156" height="236" rx="4" fill="none" stroke="#302060" stroke-width="0.5" stroke-opacity="0.35"/>
+<rect width="200" height="280" fill="url(#vig)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
 </svg>

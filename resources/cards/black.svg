@@ -1,35 +1,97 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#2a2a2a"/>
-      <stop offset="50%" stop-color="#0d0d0d"/>
-      <stop offset="100%" stop-color="#000000"/>
-    </linearGradient>
-    <linearGradient id="vignette" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
-      <stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
-    </linearGradient>
-  </defs>
-  <rect width="200" height="280" fill="url(#bg)" rx="6"/>
-  <line x1="0" y1="20" x2="200" y2="20" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="42" x2="200" y2="42" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="64" x2="200" y2="64" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="86" x2="200" y2="86" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="108" x2="200" y2="108" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="130" x2="200" y2="130" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="152" x2="200" y2="152" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="174" x2="200" y2="174" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="196" x2="200" y2="196" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="218" x2="200" y2="218" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="240" x2="200" y2="240" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <line x1="0" y1="262" x2="200" y2="262" stroke="#887799" stroke-width="0.4" stroke-opacity="0.12"/>
-  <rect x="8" y="8" width="184" height="264" fill="none" stroke="#887799" stroke-width="1.5" stroke-opacity="0.4" rx="4"/>
-  <rect width="200" height="280" fill="url(#vignette)" rx="6"/>
-  <text x="100" y="130" font-size="110" font-family="Georgia, serif" font-weight="bold" text-anchor="middle" dominant-baseline="middle" opacity="0.14" fill="#887799">K</text>
-  <rect x="8" y="8" width="184" height="28" fill="#887799" fill-opacity="0.12" rx="3"/>
-  <text x="100" y="27" font-size="11" font-family="Georgia, serif" font-weight="bold" text-anchor="middle" fill="#887799" letter-spacing="3">BLACK</text>
-  <circle cx="20" cy="20" r="5" fill="#887799" fill-opacity="0.25"/>
-  <circle cx="180" cy="20" r="5" fill="#887799" fill-opacity="0.25"/>
-  <circle cx="20" cy="260" r="5" fill="#887799" fill-opacity="0.25"/>
-  <circle cx="180" cy="260" r="5" fill="#887799" fill-opacity="0.25"/>
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#04020a"/>
+    <stop offset="55%" stop-color="#0a0618"/>
+    <stop offset="100%" stop-color="#100820"/>
+  </linearGradient>
+  <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#0c0820"/>
+    <stop offset="100%" stop-color="#060410"/>
+  </linearGradient>
+  <radialGradient id="moon" cx="68%" cy="28%" r="22%">
+    <stop offset="0%" stop-color="#a090c8" stop-opacity="0.7"/>
+    <stop offset="60%" stop-color="#604880" stop-opacity="0.2"/>
+    <stop offset="100%" stop-color="#200820" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="wispa" cx="30%" cy="75%" r="18%">
+    <stop offset="0%" stop-color="#30c860" stop-opacity="0.4"/>
+    <stop offset="100%" stop-color="#008040" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="wispb" cx="72%" cy="80%" r="14%">
+    <stop offset="0%" stop-color="#2090a0" stop-opacity="0.35"/>
+    <stop offset="100%" stop-color="#005060" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="vig" cx="50%" cy="50%" r="68%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
+    <stop offset="100%" stop-color="rgba(0,0,0,0.65)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#6840a8"/>
+    <stop offset="50%" stop-color="#3c1870"/>
+    <stop offset="100%" stop-color="#180830"/>
+  </linearGradient>
+  <linearGradient id="mist" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#1a1030" stop-opacity="0.6"/>
+    <stop offset="100%" stop-color="#1a1030" stop-opacity="0"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#sky)" rx="10"/>
+<ellipse cx="136" cy="78" rx="34" ry="34" fill="url(#moon)"/>
+<circle cx="136" cy="78" r="16" fill="#c0b0e0" opacity="0.9"/>
+<circle cx="136" cy="78" r="14" fill="#b8a8d8"/>
+<circle cx="140" cy="75" r="12" fill="#0a0618"  opacity="0.65"/>
+<g fill="#06040e" opacity="0.85">
+  <rect x="22"  y="98"  width="4" height="120"/>
+  <line x1="24" y1="108" x2="12"  y2="96"  stroke="#06040e" stroke-width="2"/>
+  <line x1="24" y1="115" x2="36"  y2="104" stroke="#06040e" stroke-width="2"/>
+  <rect x="170" y="102" width="4" height="116"/>
+  <line x1="172" y1="112" x2="160" y2="100" stroke="#06040e" stroke-width="2"/>
+  <line x1="172" y1="120" x2="184" y2="108" stroke="#06040e" stroke-width="2"/>
+</g>
+<g fill="#8870c0" opacity="0.55">
+  <circle cx="20"  cy="24"  r="0.9"/> <circle cx="50"  cy="18"  r="0.7"/>
+  <circle cx="76"  cy="32"  r="1"/>   <circle cx="165" cy="20"  r="0.8"/>
+  <circle cx="188" cy="40"  r="0.9"/> <circle cx="15"  cy="55"  r="0.6"/>
+  <circle cx="192" cy="62"  r="0.7"/>
+</g>
+<path d="M0 170 Q50 162 100 168 Q150 174 200 165 L200 178 Q150 185 100 180 Q50 175 0 182 Z" fill="#180e30" opacity="0.6"/>
+<rect x="0" y="175" width="200" height="105" fill="url(#water)"/>
+<path d="M0 175 Q50 170 100 175 Q150 180 200 172 L200 178 Q150 184 100 180 Q50 176 0 182 Z" fill="#2a1850" opacity="0.4"/>
+<ellipse cx="60"  cy="210" rx="30" ry="18" fill="url(#wispa)"/>
+<ellipse cx="144" cy="222" rx="24" ry="14" fill="url(#wispb)"/>
+<g fill="#080510">
+  <rect x="10" y="40" width="8" height="230"/>
+  <line x1="14" y1="65"  x2="-2"  y2="48"  stroke="#080510" stroke-width="5"/>
+  <line x1="14" y1="80"  x2="32"  y2="62"  stroke="#080510" stroke-width="4"/>
+  <line x1="14" y1="100" x2="0"   y2="88"  stroke="#080510" stroke-width="3"/>
+  <line x1="14" y1="120" x2="30"  y2="106" stroke="#080510" stroke-width="3"/>
+  <line x1="32" y1="62"  x2="44"  y2="50"  stroke="#080510" stroke-width="2.5"/>
+  <rect x="178" y="44" width="8" height="226"/>
+  <line x1="182" y1="68"  x2="200" y2="52"  stroke="#080510" stroke-width="5"/>
+  <line x1="182" y1="84"  x2="164" y2="66"  stroke="#080510" stroke-width="4"/>
+  <line x1="182" y1="104" x2="196" y2="92"  stroke="#080510" stroke-width="3"/>
+  <line x1="182" y1="124" x2="168" y2="110" stroke="#080510" stroke-width="3"/>
+  <line x1="164" y1="66"  x2="152" y2="54"  stroke="#080510" stroke-width="2.5"/>
+  <rect x="97" y="130" width="6" height="150"/>
+  <line x1="100" y1="148" x2="86"  y2="136" stroke="#080510" stroke-width="3"/>
+  <line x1="100" y1="162" x2="114" y2="150" stroke="#080510" stroke-width="2.5"/>
+</g>
+<ellipse cx="60"  cy="214" rx="14" ry="4"   fill="none" stroke="#302050" stroke-width="0.8" opacity="0.4"/>
+<ellipse cx="60"  cy="214" rx="22" ry="6"   fill="none" stroke="#302050" stroke-width="0.6" opacity="0.25"/>
+<ellipse cx="144" cy="226" rx="12" ry="3.5" fill="none" stroke="#204050" stroke-width="0.8" opacity="0.4"/>
+<rect x="0" y="200" width="200" height="40" fill="url(#mist)"/>
+<circle cx="58"  cy="205" r="3"   fill="#40e878" opacity="0.7"/>
+<circle cx="62"  cy="208" r="1.5" fill="#80ffaa" opacity="0.8"/>
+<circle cx="142" cy="218" r="2.5" fill="#30b8c0" opacity="0.65"/>
+<circle cx="146" cy="222" r="1.2" fill="#60d8e0" opacity="0.75"/>
+<rect width="200" height="280" fill="url(#vig)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#6840a8" stroke-width="0.7" stroke-opacity="0.4"/>
+<g fill="#402080" opacity="0.85">
+  <polygon points="9,9 20,9 9,20"/>   <polygon points="191,9 180,9 191,20"/>
+  <polygon points="9,271 20,271 9,260"/> <polygon points="191,271 180,271 191,260"/>
+</g>
+<rect x="58" y="257" width="84" height="16" rx="4" fill="rgba(0,0,0,0.6)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#c090f8" letter-spacing="2.5">MARSH</text>
 </svg>

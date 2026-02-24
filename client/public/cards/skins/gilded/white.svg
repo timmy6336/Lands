@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#fff4c0"/><stop offset="60%" stop-color="#f0c040"/><stop offset="100%" stop-color="#b08010"/>
+  </linearGradient>
+  <radialGradient id="sun" cx="50%" cy="38%" r="26%">
+    <stop offset="0%" stop-color="#fff8e0"/><stop offset="100%" stop-color="#f0b020" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="v" cx="50%" cy="50%" r="70%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(60,30,0,0.5)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#ffd060"/><stop offset="100%" stop-color="#a06010"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<ellipse cx="100" cy="106" rx="50" ry="50" fill="url(#sun)"/>
+<circle cx="100" cy="106" r="15" fill="#fff8d0" opacity="0.95"/>
+<!-- rolling hills -->
+<path d="M0 200 Q50 178 100 188 Q150 198 200 180 L200 280 L0 280 Z" fill="#c8a030" opacity="0.6"/>
+<path d="M0 220 Q40 205 80 212 Q120 219 160 205 Q180 198 200 208 L200 280 L0 280 Z" fill="#b08020"/>
+<path d="M0 248 Q50 235 100 242 Q150 249 200 238 L200 280 L0 280 Z" fill="#906018"/>
+<!-- ancient columns -->
+<g fill="#e8c050" stroke="#b08020" stroke-width="0.8">
+  <rect x="55" y="155" width="12" height="60"/>
+  <rect x="52" y="152" width="18" height="6" rx="1"/>
+  <rect x="52" y="210" width="18" height="4" rx="1"/>
+  <rect x="75" y="168" width="10" height="47"/>
+  <rect x="73" y="165" width="14" height="5" rx="1"/>
+  <rect x="73" y="211" width="14" height="4" rx="1"/>
+  <rect x="118" y="160" width="10" height="55"/>
+  <rect x="116" y="157" width="14" height="5" rx="1"/>
+  <rect x="116" y="211" width="14" height="4" rx="1"/>
+  <rect x="132" y="150" width="12" height="65"/>
+  <rect x="130" y="147" width="16" height="6" rx="1"/>
+  <rect x="130" y="212" width="16" height="3" rx="1"/>
+</g>
+<!-- lintel -->
+<rect x="50" y="148" width="44" height="7" rx="2" fill="#d4aa40" stroke="#a07818" stroke-width="0.7"/>
+<rect x="114" y="145" width="32" height="7" rx="2" fill="#d4aa40" stroke="#a07818" stroke-width="0.7"/>
+<!-- clouds -->
+<g fill="#fff8e0" opacity="0.7">
+  <ellipse cx="30" cy="72" rx="18" ry="7"/><ellipse cx="44" cy="68" rx="14" ry="8"/><ellipse cx="18" cy="70" rx="11" ry="5"/>
+  <ellipse cx="168" cy="78" rx="16" ry="6"/><ellipse cx="180" cy="74" rx="12" ry="7"/>
+</g>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#ffd060" stroke-width="0.7" stroke-opacity="0.5"/>
+<g fill="#d4a830" opacity="0.9"><polygon points="9,9 20,9 9,20"/><polygon points="191,9 180,9 191,20"/><polygon points="9,271 20,271 9,260"/><polygon points="191,271 180,271 191,260"/></g>
+<rect x="52" y="257" width="96" height="16" rx="4" fill="rgba(0,0,0,0.5)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#ffd080" letter-spacing="2.5">FIELDS</text>
+</svg>

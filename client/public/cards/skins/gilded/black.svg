@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#0a0600"/><stop offset="55%" stop-color="#180e00"/><stop offset="100%" stop-color="#2a1800"/>
+  </linearGradient>
+  <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#241400"/><stop offset="100%" stop-color="#0e0800"/>
+  </linearGradient>
+  <radialGradient id="moon" cx="68%" cy="28%" r="22%">
+    <stop offset="0%" stop-color="#c08020" stop-opacity="0.75"/><stop offset="60%" stop-color="#805010" stop-opacity="0.2"/><stop offset="100%" stop-color="#2a1000" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="wispa" cx="30%" cy="75%" r="18%">
+    <stop offset="0%" stop-color="#e09020" stop-opacity="0.45"/><stop offset="100%" stop-color="#804000" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="v" cx="50%" cy="50%" r="68%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(10,4,0,0.7)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#a06820"/><stop offset="100%" stop-color="#401800"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<ellipse cx="136" cy="76" rx="32" ry="32" fill="url(#moon)"/>
+<circle cx="136" cy="76" r="15" fill="#d4a030" opacity="0.9"/>
+<circle cx="136" cy="76" r="13" fill="#c89020"/>
+<circle cx="140" cy="73" r="11" fill="#0a0600" opacity="0.6"/>
+<!-- dead trees bronze -->
+<g fill="#140c00">
+  <rect x="10" y="42" width="8" height="230"/><line x1="14" y1="65" x2="-2" y2="48" stroke="#2a1800" stroke-width="5"/><line x1="14" y1="80" x2="32" y2="62" stroke="#2a1800" stroke-width="4"/><line x1="14" y1="100" x2="0" y2="88" stroke="#2a1800" stroke-width="3"/>
+  <rect x="178" y="46" width="8" height="226"/><line x1="182" y1="68" x2="200" y2="52" stroke="#2a1800" stroke-width="5"/><line x1="182" y1="84" x2="164" y2="66" stroke="#2a1800" stroke-width="4"/><line x1="182" y1="104" x2="196" y2="92" stroke="#2a1800" stroke-width="3"/>
+  <rect x="97" y="130" width="6" height="150"/><line x1="100" y1="148" x2="86" y2="136" stroke="#2a1800" stroke-width="3"/><line x1="100" y1="162" x2="114" y2="150" stroke="#2a1800" stroke-width="2.5"/>
+</g>
+<!-- ruined arches -->
+<g fill="none" stroke="#4a2c00" stroke-width="2" stroke-linecap="round" opacity="0.7">
+  <path d="M40 215 L40 172 Q55 155 70 172 L70 215"/>
+  <path d="M130 218 L130 175 Q145 158 160 175 L160 218"/>
+</g>
+<path d="M0 172 Q50 164 100 168 Q150 174 200 165 L200 175 Q150 183 100 178 Q50 173 0 180 Z" fill="#1a0c00" opacity="0.7"/>
+<rect x="0" y="175" width="200" height="105" fill="url(#water)"/>
+<ellipse cx="60" cy="210" rx="28" ry="16" fill="url(#wispa)"/>
+<!-- wisp dots -->
+<circle cx="58" cy="204" r="3" fill="#e09020" opacity="0.75"/>
+<circle cx="62" cy="208" r="1.5" fill="#ffc040" opacity="0.8"/>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#a06820" stroke-width="0.7" stroke-opacity="0.4"/>
+<g fill="#6a3810" opacity="0.9"><polygon points="9,9 20,9 9,20"/><polygon points="191,9 180,9 191,20"/><polygon points="9,271 20,271 9,260"/><polygon points="191,271 180,271 191,260"/></g>
+<rect x="58" y="257" width="84" height="16" rx="4" fill="rgba(0,0,0,0.6)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#c08830" letter-spacing="2.5">MARSH</text>
+</svg>

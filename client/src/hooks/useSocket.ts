@@ -9,8 +9,10 @@ type LandsSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 /**
  * Manages the Socket.io connection to the game server.
  * Pass a non-null serverUrl to connect; null to disconnect and reset all state.
+ * Optionally pass an authToken to include in the socket handshake so the server
+ * can recognise the player and record ranked stats.
  */
-export function useSocket(serverUrl: string | null) {
+export function useSocket(serverUrl: string | null, authToken?: string | null) {
   const socketRef = useRef<LandsSocket | null>(null);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [roomCode, setRoomCode] = useState<string | null>(null);
@@ -36,7 +38,10 @@ export function useSocket(serverUrl: string | null) {
       return;
     }
 
-    const socket: LandsSocket = io(serverUrl, { autoConnect: true });
+    const socket: LandsSocket = io(serverUrl, {
+      autoConnect: true,
+      ...(authToken ? { auth: { token: authToken } } : {}),
+    });
     socketRef.current = socket;
 
     socket.on('connect', () => setConnected(true));
@@ -56,7 +61,7 @@ export function useSocket(serverUrl: string | null) {
       socketRef.current = null;
       setConnected(false);
     };
-  }, [serverUrl]);
+  }, [serverUrl, authToken]);
 
   function send<K extends keyof ClientToServerEvents>(
     event: K,

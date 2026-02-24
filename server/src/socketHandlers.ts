@@ -25,6 +25,7 @@ import {
 import { RoomManager } from './RoomManager';
 import { GameEngine } from './game/GameEngine';
 import { AIPlayer } from './ai/AIPlayer';
+import { recordGameResult } from './db';
 
 type IO = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type Sock = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -133,13 +134,29 @@ function buildReplay(engine: GameEngine, mode: ReplayFile['mode']): ReplayFile {
  * Must be called AFTER creating the engine and BEFORE the first emit
  * so the initial state reaches clients.
  */
-function wireEngine(io: IO, engine: GameEngine, p0id: string, p1id: string, mode: ReplayFile['mode']) {
+function wireEngine(
+  io: IO, engine: GameEngine,
+  p0id: string, p1id: string,
+  mode: ReplayFile['mode'],
+  p0userId?: string, p1userId?: string,
+) {
   engine.onStateChange = (state) => {
     broadcastState(io, state);
     if (state.phase === 'ended') {
       const replay = buildReplay(engine, mode);
       io.to(p0id).emit('replay_complete', replay);
       io.to(p1id).emit('replay_complete', replay);
+
+      // Record ELO + stats only for ranked multiplayer games with two logged-in players
+      if (mode === 'multiplayer' && p0userId && p1userId) {
+        recordGameResult({
+          p0id:        p0userId,
+          p1id:        p1userId,
+          winnerIndex: (state.winner === 'draw' ? null : state.winner) ?? null,
+          winReason:   state.winReason ?? null,
+          turnCount:   state.turnNumber,
+        }).catch(err => console.error('[db] recordGameResult failed:', err));
+      }
     }
   };
 }
@@ -354,7 +371,9 @@ export function registerHandlers(io: IO, socket: Sock) {
     const engine = rooms.startGame(code, firstPlayer);
     if (!engine) return;
     const [ep0, ep1] = room.players;
-    wireEngine(io, engine, ep0.id, ep1.id, 'multiplayer');
+    const sock0 = io.sockets.sockets.get(ep0.id);
+    const sock1 = io.sockets.sockets.get(ep1.id);
+    wireEngine(io, engine, ep0.id, ep1.id, 'multiplayer', sock0?.data.userId, sock1?.data.userId);
     broadcastState(io, engine.state);
   });
 
