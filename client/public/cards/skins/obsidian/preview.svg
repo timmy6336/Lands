@@ -1,25 +1,57 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="200" height="130" viewBox="0 0 200 130">
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="110" viewBox="0 0 400 110">
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0%" stop-color="#050410"/><stop offset="100%" stop-color="#010104"/>
+    <stop offset="0%" stop-color="#060414"/><stop offset="100%" stop-color="#010106"/>
   </linearGradient>
-  <radialGradient id="glow" cx="50%" cy="50%" r="55%">
-    <stop offset="0%" stop-color="#6040b0" stop-opacity="0.35"/><stop offset="100%" stop-color="#030208" stop-opacity="0"/>
+  <radialGradient id="glow" cx="50%" cy="45%" r="55%">
+    <stop offset="0%" stop-color="#6040b0" stop-opacity="0.4"/><stop offset="100%" stop-color="#010106" stop-opacity="0"/>
   </radialGradient>
 </defs>
-<rect width="200" height="130" fill="url(#bg)" rx="8"/>
-<ellipse cx="100" cy="65" rx="85" ry="55" fill="url(#glow)"/>
-<rect x="18" y="22" width="28" height="40" rx="4" fill="#101828"/><rect x="18" y="22" width="28" height="40" rx="4" fill="none" stroke="#c0d0e4" stroke-width="1.2"/>
-<rect x="52" y="22" width="28" height="40" rx="4" fill="#200400"/><rect x="52" y="22" width="28" height="40" rx="4" fill="none" stroke="#e04020" stroke-width="1.2"/>
-<rect x="86" y="22" width="28" height="40" rx="4" fill="#001828"/><rect x="86" y="22" width="28" height="40" rx="4" fill="none" stroke="#20c0d8" stroke-width="1.2"/>
-<rect x="120" y="22" width="28" height="40" rx="4" fill="#001800"/><rect x="120" y="22" width="28" height="40" rx="4" fill="none" stroke="#40d070" stroke-width="1.2"/>
-<rect x="154" y="22" width="28" height="40" rx="4" fill="#040008"/><rect x="154" y="22" width="28" height="40" rx="4" fill="none" stroke="#8040c0" stroke-width="1.2"/>
-<!-- tiny crystal in each card -->
-<polygon points="32,35 36,28 40,35 36,38" fill="#c0d0e4" opacity="0.6"/>
-<polygon points="66,35 70,28 74,35 70,38" fill="#e04020" opacity="0.6"/>
-<polygon points="100,35 104,28 108,35 104,38" fill="#20c0d8" opacity="0.6"/>
-<polygon points="134,35 138,28 142,35 138,38" fill="#40d070" opacity="0.6"/>
-<polygon points="168,35 172,28 176,35 172,38" fill="#8040c0" opacity="0.6"/>
-<text x="100" y="92" font-size="13" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#9070d8" letter-spacing="3">OBSIDIAN</text>
-<text x="100" y="110" font-size="7.5" font-family="Georgia,serif" text-anchor="middle" fill="#4030808" letter-spacing="1.5">DARK CRYSTAL GEOMETRY</text>
+<rect width="400" height="110" fill="url(#bg)"/>
+<ellipse cx="200" cy="50" rx="180" ry="55" fill="url(#glow)"/>
+<!-- subtle diagonal geometry lines -->
+<g stroke="#8060c0" stroke-width="0.4" opacity="0.18">
+  <line x1="0" y1="110" x2="110" y2="0"/><line x1="50" y1="110" x2="160" y2="0"/>
+  <line x1="100" y1="110" x2="210" y2="0"/><line x1="150" y1="110" x2="260" y2="0"/>
+  <line x1="200" y1="110" x2="310" y2="0"/><line x1="250" y1="110" x2="360" y2="0"/>
+  <line x1="300" y1="110" x2="410" y2="0"/>
+</g>
+<!-- white -->
+<rect x="61" y="12" width="38" height="57" rx="4" fill="#101828"/>
+<rect x="61" y="12" width="38" height="57" rx="4" fill="none" stroke="#c0d0e4" stroke-width="1.4"/>
+<polygon points="80,25 86,35 80,42 74,35" fill="#c0d0e4" opacity="0.65"/>
+<line x1="70" y1="50" x2="90" y2="50" stroke="#8090a8" stroke-width="0.9" opacity="0.6"/>
+<line x1="70" y1="54" x2="90" y2="54" stroke="#8090a8" stroke-width="0.9" opacity="0.4"/>
+<!-- red -->
+<rect x="109" y="12" width="38" height="57" rx="4" fill="#200400"/>
+<rect x="109" y="12" width="38" height="57" rx="4" fill="none" stroke="#e04020" stroke-width="1.4"/>
+<polygon points="128,25 134,35 128,42 122,35" fill="#e04020" opacity="0.65"/>
+<line x1="118" y1="50" x2="138" y2="50" stroke="#a02010" stroke-width="0.9" opacity="0.6"/>
+<line x1="118" y1="54" x2="138" y2="54" stroke="#a02010" stroke-width="0.9" opacity="0.4"/>
+<!-- blue -->
+<rect x="157" y="12" width="38" height="57" rx="4" fill="#001828"/>
+<rect x="157" y="12" width="38" height="57" rx="4" fill="none" stroke="#20c0d8" stroke-width="1.4"/>
+<polygon points="176,25 182,35 176,42 170,35" fill="#20c0d8" opacity="0.65"/>
+<line x1="166" y1="50" x2="186" y2="50" stroke="#108090" stroke-width="0.9" opacity="0.6"/>
+<line x1="166" y1="54" x2="186" y2="54" stroke="#108090" stroke-width="0.9" opacity="0.4"/>
+<!-- green -->
+<rect x="205" y="12" width="38" height="57" rx="4" fill="#001800"/>
+<rect x="205" y="12" width="38" height="57" rx="4" fill="none" stroke="#40d070" stroke-width="1.4"/>
+<polygon points="224,25 230,35 224,42 218,35" fill="#40d070" opacity="0.65"/>
+<line x1="214" y1="50" x2="234" y2="50" stroke="#208040" stroke-width="0.9" opacity="0.6"/>
+<line x1="214" y1="54" x2="234" y2="54" stroke="#208040" stroke-width="0.9" opacity="0.4"/>
+<!-- black -->
+<rect x="253" y="12" width="38" height="57" rx="4" fill="#040008"/>
+<rect x="253" y="12" width="38" height="57" rx="4" fill="none" stroke="#8040c0" stroke-width="1.4"/>
+<polygon points="272,25 278,35 272,42 266,35" fill="#8040c0" opacity="0.65"/>
+<line x1="262" y1="50" x2="282" y2="50" stroke="#502080" stroke-width="0.9" opacity="0.6"/>
+<line x1="262" y1="54" x2="282" y2="54" stroke="#502080" stroke-width="0.9" opacity="0.4"/>
+<!-- back -->
+<rect x="301" y="12" width="38" height="57" rx="4" fill="#080410"/>
+<rect x="301" y="12" width="38" height="57" rx="4" fill="none" stroke="#a080e0" stroke-width="1.4"/>
+<rect x="309" y="20" width="22" height="33" rx="2" fill="none" stroke="#a080e0" stroke-width="0.8" opacity="0.45"/>
+<polygon points="320,28 324,33 320,38 316,33" fill="#a080e0" opacity="0.4"/>
+<!-- text -->
+<text x="200" y="84" font-size="14" font-family="'Courier New',monospace" font-weight="bold" text-anchor="middle" fill="#c0d0e4" letter-spacing="4">OBSIDIAN</text>
+<text x="200" y="99" font-size="7.5" font-family="'Courier New',monospace" text-anchor="middle" fill="#7070a0" letter-spacing="2">DARK CRYSTALLINE GEOMETRY</text>
 </svg>

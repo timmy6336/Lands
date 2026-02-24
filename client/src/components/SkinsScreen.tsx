@@ -61,7 +61,7 @@ export function SkinsScreen({ auth, serverUrl, onBack, onShop, onProfileUpdated 
   const ownedPacks = ['default', ...(profile.owned_pack_ids ?? [])]
     .filter((v, i, a) => a.indexOf(v) === i);
 
-  const cardColors = ['white', 'red', 'blue', 'green', 'black'] as const;
+  const cardColors = ['white', 'red', 'blue', 'green', 'black', 'back'] as const;
 
   function cardUrl(packId: string, color: string) {
     return resolveUrl(packId === 'default'
@@ -149,19 +149,24 @@ export function SkinsScreen({ auth, serverUrl, onBack, onShop, onProfileUpdated 
               </div>
 
               {/* 5 card face previews */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 10, justifyContent: 'center' }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10, justifyContent: 'center' }}>
                 {cardColors.map(color => (
-                  <img
-                    key={color}
-                    src={cardUrl(packId, color)}
-                    alt={color}
-                    style={{
-                      width: 44, height: 62, borderRadius: 5,
-                      objectFit: 'cover', border: '1px solid var(--border)',
-                      background: 'var(--bg)',
-                    }}
-                    onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.15'; }}
-                  />
+                  <div key={color} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                    <img
+                      key={color}
+                      src={cardUrl(packId, color)}
+                      alt={color}
+                      style={{
+                        width: 50, height: 70, borderRadius: 6,
+                        objectFit: 'cover',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.22)',
+                      }}
+                      onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.2'; }}
+                    />
+                    <span style={{ fontSize: '0.58rem', color: 'var(--muted)', textTransform: 'capitalize' }}>{color}</span>
+                  </div>
                 ))}
               </div>
 

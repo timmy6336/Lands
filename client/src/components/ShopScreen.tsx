@@ -25,11 +25,14 @@ function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+const CARD_COLORS = ['white', 'red', 'blue', 'green', 'black', 'back'] as const;
+
 export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props) {
-  const [shop, setShop]       = useState<ShopData | null>(null);
-  const [loadErr, setLoadErr] = useState('');
-  const [busy, setBusy]       = useState<string | null>(null);
-  const [toast, setToast]     = useState('');
+  const [shop, setShop]         = useState<ShopData | null>(null);
+  const [loadErr, setLoadErr]   = useState('');
+  const [busy, setBusy]         = useState<string | null>(null);
+  const [toast, setToast]       = useState('');
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // In Electron the page loads from file:// so root-relative paths like
   // /cards/skins/gilded/preview.svg don't resolve — we need a file:// base.
   const [assetsBase, setAssetsBase] = useState('');
@@ -42,8 +45,21 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
 
   /** Resolve a root-relative asset path to a usable URL in both web and Electron. */
   function resolveUrl(assetPath: string): string {
-    if (!assetsBase) return assetPath;     // web: root-relative path works as-is
-    return assetsBase + assetPath;         // Electron: prepend file:///...client/dist
+    if (!assetsBase) return assetPath;
+    return assetsBase + assetPath;
+  }
+
+  function cardUrl(packId: string, color: string) {
+    return resolveUrl(`/cards/skins/${packId}/${color}.svg`);
+  }
+
+  function toggleExpand(packId: string) {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(packId)) next.delete(packId);
+      else next.add(packId);
+      return next;
+    });
   }
 
   // Merge server ownedIds with what we know from the auth profile
@@ -99,37 +115,25 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-
-  const containerStyle: React.CSSProperties = {
-    display: 'flex', flexDirection: 'column', height: '100%',
-    padding: '1.5rem 2rem', gap: 20,
-  };
-  const gridStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: 16, overflowY: 'auto', flex: 1,
-  };
-  const cardStyle: React.CSSProperties = {
-    background: 'var(--surface)', border: '1px solid var(--border)',
-    borderRadius: 12, overflow: 'hidden',
-    display: 'flex', flexDirection: 'column',
-    transition: 'border-color 0.15s, box-shadow 0.15s',
-  };
-
   // Only show non-default packs
   const visiblePacks = shop?.packs.filter(p => p.id !== 'default') ?? [];
 
   return (
-    <div style={containerStyle}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+
+      {/* ── Fixed header bar ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 16,
+        padding: '1.1rem 1.5rem 0.9rem',
+        borderBottom: '1px solid var(--border)',
+        flexShrink: 0,
+      }}>
         <button onClick={onBack} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.9rem' }}>
           ← Back
         </button>
         <div>
-          <h2 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.4rem' }}>Skin Shop</h2>
-          <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.8rem' }}>Cosmetic card packs — purely visual. Equip from your profile.</p>
+          <h2 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.3rem' }}>Skin Shop</h2>
+          <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.78rem' }}>Cosmetic card packs — purely visual. Equip from your profile.</p>
         </div>
         {!auth.profile && (
           <span style={{ marginLeft: 'auto', color: 'var(--muted2)', fontSize: '0.8rem' }}>
@@ -138,96 +142,136 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
         )}
       </div>
 
-      {/* Toast */}
+      {/* ── Toast ── */}
       {toast && (
         <div style={{
-          background: 'var(--surface)', border: '1px solid var(--accent)',
-          borderRadius: 8, padding: '0.6rem 1rem',
-          color: 'var(--accent)', fontSize: '0.9rem', textAlign: 'center',
+          background: 'var(--surface)', borderBottom: '1px solid var(--accent)',
+          padding: '0.55rem 1rem', color: 'var(--accent)', fontSize: '0.88rem',
+          textAlign: 'center', flexShrink: 0,
         }}>
           {toast}
         </div>
       )}
 
-      {/* Error */}
-      {loadErr && (
-        <div style={{ color: '#e74c3c', textAlign: 'center' }}>
-          {loadErr}
-          <button onClick={fetchShop} style={{ marginLeft: 8, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-            Retry
-          </button>
-        </div>
-      )}
+      {/* ── Scrollable pack grid (2 columns) ── */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, alignItems: 'start' }}>
 
-      {!shop && !loadErr && (
-        <p style={{ color: 'var(--muted)', textAlign: 'center', marginTop: '4rem' }}>Loading…</p>
-      )}
+        {/* Error */}
+        {loadErr && (
+          <div style={{ color: '#e74c3c', textAlign: 'center', paddingTop: '2rem' }}>
+            {loadErr}
+            <button onClick={fetchShop} style={{ marginLeft: 8, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+              Retry
+            </button>
+          </div>
+        )}
 
-      {shop && (
-        <div style={gridStyle}>
-          {visiblePacks.map(pack => {
-            const isOwned   = ownedIds.includes(pack.id);
-            const isLoading = busy === pack.id;
+        {!shop && !loadErr && (
+          <p style={{ color: 'var(--muted)', textAlign: 'center', marginTop: '4rem' }}>Loading…</p>
+        )}
 
-            return (
-              <div
-                key={pack.id}
-                style={{
-                  ...cardStyle,
-                  borderColor: isOwned ? 'rgba(99,102,241,0.55)' : 'var(--border)',
-                  boxShadow:   isOwned ? '0 0 12px rgba(99,102,241,0.15)' : 'none',
-                }}
-              >
-                {/* Preview */}
-                <div style={{ height: 120, background: 'var(--bg)', overflow: 'hidden', position: 'relative' }}>
-                  <img
-                    src={resolveUrl(pack.preview_url)}
-                    alt={pack.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.15'; }}
-                  />
-                  {isOwned && (
-                    <span style={{
-                      position: 'absolute', top: 8, right: 8,
-                      background: 'rgba(99,102,241,0.85)', color: '#fff',
-                      borderRadius: 8, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700,
-                    }}>
-                      OWNED
-                    </span>
+        {shop && visiblePacks.map(pack => {
+          const isOwned    = ownedIds.includes(pack.id);
+          const isLoading  = busy === pack.id;
+          const isExpanded = expanded.has(pack.id);
+
+          return (
+            <div
+              key={pack.id}
+              style={{
+                background: 'var(--surface)',
+                border: isOwned ? '1px solid rgba(99,102,241,0.55)' : '1px solid var(--border)',
+                borderRadius: 12, overflow: 'hidden',
+                boxShadow: isOwned ? '0 0 12px rgba(99,102,241,0.12)' : 'none',
+                display: 'flex', flexDirection: 'column',
+                transition: 'border-color 0.15s, box-shadow 0.15s',
+              }}
+            >
+              {/* ── Preview image ── */}
+              <div style={{ height: 110, position: 'relative', overflow: 'hidden', background: 'var(--bg)', flexShrink: 0 }}>
+                <img
+                  src={resolveUrl(pack.preview_url)}
+                  alt={pack.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block' }}
+                  onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.15'; }}
+                />
+                {isOwned && (
+                  <span style={{
+                    position: 'absolute', top: 6, right: 6,
+                    background: 'rgba(99,102,241,0.88)', color: '#fff',
+                    borderRadius: 6, padding: '1px 7px', fontSize: '0.62rem', fontWeight: 700,
+                  }}>
+                    OWNED
+                  </span>
+                )}
+              </div>
+
+              {/* ── Info ── */}
+              <div style={{ padding: '0.7rem 0.85rem', display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--foreground)' }}>{pack.name}</span>
+                <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.74rem', lineHeight: 1.4 }}>{pack.description}</p>
+
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 'auto', paddingTop: 4 }}>
+                  {isOwned ? (
+                    <span style={{ color: 'var(--accent)', fontSize: '0.78rem', fontWeight: 600 }}>✓ Owned</span>
+                  ) : (
+                    <button
+                      onClick={() => handleBuy(pack)}
+                      disabled={isLoading || !auth.token}
+                      className="btn-primary"
+                      style={{ padding: '0.28rem 0.75rem', fontSize: '0.78rem' }}
+                      title={!auth.token ? 'Sign in to unlock packs' : undefined}
+                    >
+                      {isLoading ? '…' : `Unlock — ${formatPrice(pack.price_cents)}`}
+                    </button>
                   )}
-                </div>
 
-                {/* Info */}
-                <div style={{ padding: '0.85rem 1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--foreground)' }}>{pack.name}</span>
-                  <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.8rem', lineHeight: 1.4 }}>{pack.description}</p>
-
-                  <div style={{ marginTop: 'auto' }}>
-                    {isOwned ? (
-                      <div style={{
-                        textAlign: 'center', padding: '0.5rem',
-                        color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 600,
-                      }}>
-                        ✓ Owned — equip from your profile
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleBuy(pack)}
-                        disabled={isLoading || !auth.token}
-                        className="btn-primary"
-                        style={{ width: '100%', padding: '0.5rem', fontSize: '0.85rem' }}
-                        title={!auth.token ? 'Sign in to unlock packs' : undefined}
-                      >
-                        {isLoading ? '…' : `Unlock — ${formatPrice(pack.price_cents)}`}
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    onClick={() => toggleExpand(pack.id)}
+                    style={{
+                      marginLeft: 'auto', background: 'none', border: '1px solid var(--border)',
+                      borderRadius: 6, padding: '0.22rem 0.55rem',
+                      color: 'var(--muted)', fontSize: '0.74rem', cursor: 'pointer',
+                    }}
+                  >
+                    Cards {isExpanded ? '▲' : '▼'}
+                  </button>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+
+              {/* ── Expandable card strip ── */}
+              {isExpanded && (
+                <div style={{
+                  borderTop: '1px solid var(--border)',
+                  padding: '0.7rem 0.85rem',
+                  display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center',
+                  background: 'var(--bg)',
+                }}>
+                  {CARD_COLORS.map(color => (
+                    <div key={color} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                      <img
+                        src={cardUrl(pack.id, color)}
+                        alt={color}
+                        style={{
+                          width: 44, height: 62, borderRadius: 5,
+                          objectFit: 'cover',
+                          border: '1px solid var(--border)',
+                          background: 'transparent',
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.18)',
+                        }}
+                        onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.2'; }}
+                      />
+                      <span style={{ fontSize: '0.58rem', color: 'var(--muted)', textTransform: 'capitalize' }}>{color}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      </div>
     </div>
   );
 }
