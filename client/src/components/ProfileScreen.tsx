@@ -1,7 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // client/src/components/ProfileScreen.tsx — player stats & ELO display
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState } from 'react';
 import { UserProfile } from '@lands/shared';
 import { AuthState } from '../hooks/useAuth';
 
@@ -10,6 +9,7 @@ interface Props {
   serverUrl: string;
   onBack: () => void;
   onLogout: () => void;
+  onSkins: () => void;
   onShop: () => void;
   onProfileUpdated: (profile: UserProfile) => void;
 }
@@ -27,30 +27,8 @@ function StatBox({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-export function ProfileScreen({ auth, serverUrl, onBack, onLogout, onShop, onProfileUpdated }: Props) {
+export function ProfileScreen({ auth, serverUrl: _serverUrl, onBack, onLogout, onSkins, onShop, onProfileUpdated: _onProfileUpdated }: Props) {
   const { profile } = auth;
-  const [equipBusy, setEquipBusy] = useState<string | null>(null);
-  const [equipMsg, setEquipMsg]   = useState('');
-
-  async function handleEquip(packId: string) {
-    if (!auth.token) return;
-    setEquipBusy(packId);
-    try {
-      const res  = await fetch(`${serverUrl}/profile/equip-pack`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
-        body: JSON.stringify({ packId }),
-      });
-      const data = await res.json() as { profile?: UserProfile; error?: string };
-      if (res.ok && data.profile) {
-        onProfileUpdated(data.profile);
-        setEquipMsg('Skin updated!');
-        setTimeout(() => setEquipMsg(''), 2000);
-      }
-    } catch { /* ignore */ } finally {
-      setEquipBusy(null);
-    }
- }
 
   const totalGames = profile ? profile.wins + profile.losses + profile.draws : 0;
   const winRate = totalGames > 0 ? Math.round((profile!.wins / totalGames) * 100) : 0;
@@ -163,42 +141,34 @@ export function ProfileScreen({ auth, serverUrl, onBack, onLogout, onShop, onPro
         Member since {new Date(profile.created_at).toLocaleDateString()}
       </p>
 
-      {/* Skin Packs */}
+      {/* ── Card Skins nav ───────────────────────────────────────────────── */}
       <div style={{ width: '100%', maxWidth: 360 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ color: 'var(--muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Card Skin</span>
-          <button
-            onClick={onShop}
-            style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.8rem', cursor: 'pointer', padding: 0 }}
-          >
-            Browse Shop →
-          </button>
-        </div>
-        {equipMsg && <p style={{ margin: '0 0 8px', color: 'var(--accent)', fontSize: '0.82rem' }}>{equipMsg}</p>}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {/* Always show Classic */}
-          {['default', ...(profile.owned_pack_ids ?? [])].filter((v, i, a) => a.indexOf(v) === i).map(packId => {
-            const isActive = (profile.active_pack_id ?? 'default') === packId;
-            return (
-              <button
-                key={packId}
-                onClick={() => handleEquip(packId)}
-                disabled={isActive || equipBusy === packId}
-                style={{
-                  padding: '0.35rem 0.9rem', borderRadius: 20, fontSize: '0.82rem',
-                  border: isActive ? '1px solid rgba(99,102,241,0.7)' : '1px solid var(--border)',
-                  background: isActive ? 'rgba(99,102,241,0.15)' : 'var(--bg)',
-                  color: isActive ? 'var(--accent)' : 'var(--muted)',
-                  cursor: isActive ? 'default' : 'pointer',
-                  fontWeight: isActive ? 700 : 400,
-                  opacity: equipBusy && equipBusy !== packId ? 0.5 : 1,
-                }}
-              >
-                {equipBusy === packId ? '…' : packId === 'default' ? '✦ Classic' : packId}
-              </button>
-            );
-          })}
-        </div>
+        <button
+          onClick={onSkins}
+          className="btn-secondary"
+          style={{
+            width: '100%', padding: '0.75rem 1rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            fontSize: '0.95rem',
+          }}
+        >
+          <span>🎨 Card Skins</span>
+          <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+            {(() => { const active = profile.active_pack_id ?? 'default'; return active === 'default' ? 'Classic' : active.charAt(0).toUpperCase() + active.slice(1); })()} →
+          </span>
+        </button>
+        <button
+          onClick={onShop}
+          style={{
+            marginTop: 6, width: '100%', background: 'none',
+            border: '1px solid var(--border)', borderRadius: 8,
+            color: 'var(--muted)', padding: '0.55rem 1rem', fontSize: '0.82rem',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}
+        >
+          <span>🛒 Pack Shop</span>
+          <span style={{ fontSize: '0.75rem' }}>Browse →</span>
+        </button>
       </div>
 
       {/* Actions */}

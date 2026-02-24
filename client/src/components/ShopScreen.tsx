@@ -1,5 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // client/src/components/ShopScreen.tsx — skin pack shop
+// The default/Classic pack is never shown here; it is always available for free
+// in the player's profile.  Only purchasable packs appear.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState } from 'react';
 import { SkinPack, UserProfile } from '@lands/shared';
@@ -9,7 +11,7 @@ interface Props {
   auth: AuthState;
   serverUrl: string;
   onBack: () => void;
-  /** Called after a successful purchase or equip so the parent can re-render. */
+  /** Called after a successful purchase so the parent can re-render. */
   onProfileUpdated: (profile: UserProfile) => void;
 }
 
@@ -24,13 +26,13 @@ function formatPrice(cents: number): string {
 }
 
 export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props) {
-  const [shop, setShop]           = useState<ShopData | null>(null);
-  const [loadErr, setLoadErr]     = useState('');
-  const [busy, setBusy]           = useState<string | null>(null); // packId currently processing
-  const [toast, setToast]         = useState('');
+  const [shop, setShop]       = useState<ShopData | null>(null);
+  const [loadErr, setLoadErr] = useState('');
+  const [busy, setBusy]       = useState<string | null>(null);
+  const [toast, setToast]     = useState('');
 
-  const activePack = auth.profile?.active_pack_id ?? null;
-  const ownedIds   = shop?.ownedIds ?? auth.profile?.owned_pack_ids ?? [];
+  // Merge server ownedIds with what we know from the auth profile
+  const ownedIds = shop?.ownedIds ?? auth.profile?.owned_pack_ids ?? [];
 
   function showToast(msg: string) {
     setToast(msg);
@@ -53,7 +55,7 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
   useEffect(() => { fetchShop(); }, []);
 
   async function handleBuy(pack: SkinPack) {
-    if (!auth.token) { showToast('Sign in to purchase packs'); return; }
+    if (!auth.token) { showToast('Sign in to unlock packs'); return; }
     setBusy(pack.id);
     try {
       const res  = await fetch(`${serverUrl}/shop/checkout`, {
@@ -67,19 +69,13 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
       if (!res.ok) { showToast(data.error ?? 'Checkout failed'); return; }
 
       if (data.checkoutUrl) {
-        // Redirect to Stripe Checkout
         window.open(data.checkoutUrl, '_blank');
         showToast('Redirecting to payment page…');
       } else if (data.granted) {
-        // Immediately granted (free pack or dev mode)
         setShop(prev => prev ? { ...prev, ownedIds: [...prev.ownedIds, pack.id] } : prev);
-        showToast(data._devMode ? `🎁 Dev mode: "${pack.name}" granted!` : `"${pack.name}" unlocked!`);
-        // Auto-equip if they have nothing equippted
-        if (!activePack || activePack === 'default') {
-          await handleEquip(pack.id);
-        } else {
-          await auth.refreshProfile(serverUrl);
-        }
+        showToast(`"${pack.name}" unlocked! Equip it from your profile.`);
+        await auth.refreshProfile(serverUrl);
+        if (auth.profile) onProfileUpdated(auth.profile);
       }
     } catch {
       showToast('Something went wrong');
@@ -88,35 +84,11 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
     }
   }
 
-  async function handleEquip(packId: string) {
-    if (!auth.token) return;
-    try {
-      const res  = await fetch(`${serverUrl}/profile/equip-pack`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
-        body: JSON.stringify({ packId }),
-      });
-      const data = await res.json() as { profile?: UserProfile; error?: string };
-      if (res.ok && data.profile) {
-        onProfileUpdated(data.profile);
-        showToast(packId === 'default' ? 'Reverted to Classic art' : 'Skin equipped!');
-        setShop(prev => prev ? { ...prev, ownedIds: prev.ownedIds } : prev);
-      } else {
-        showToast(data.error ?? 'Equip failed');
-      }
-    } catch {
-      showToast('Something went wrong');
-    }
-  }
-
   // ─────────────────────────────────────────────────────────────────────────
 
   const containerStyle: React.CSSProperties = {
     display: 'flex', flexDirection: 'column', height: '100%',
     padding: '1.5rem 2rem', gap: 20,
-  };
-  const headerStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 16,
   };
   const gridStyle: React.CSSProperties = {
     display: 'grid',
@@ -130,20 +102,23 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
     transition: 'border-color 0.15s, box-shadow 0.15s',
   };
 
+  // Only show non-default packs
+  const visiblePacks = shop?.packs.filter(p => p.id !== 'default') ?? [];
+
   return (
     <div style={containerStyle}>
       {/* Header */}
-      <div style={headerStyle}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button onClick={onBack} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.9rem' }}>
           ← Back
         </button>
         <div>
           <h2 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.4rem' }}>Skin Shop</h2>
-          <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.8rem' }}>Cosmetic card packs — purely visual</p>
+          <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.8rem' }}>Cosmetic card packs — purely visual. Equip from your profile.</p>
         </div>
         {!auth.profile && (
           <span style={{ marginLeft: 'auto', color: 'var(--muted2)', fontSize: '0.8rem' }}>
-            Sign in to purchase
+            Sign in to unlock
           </span>
         )}
       </div>
@@ -169,74 +144,66 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
         </div>
       )}
 
-      {/* Pack grid */}
       {!shop && !loadErr && (
         <p style={{ color: 'var(--muted)', textAlign: 'center', marginTop: '4rem' }}>Loading…</p>
       )}
 
       {shop && (
         <div style={gridStyle}>
-          {shop.packs.map(pack => {
-            const isOwned    = pack.price_cents === 0 || ownedIds.includes(pack.id);
-            const isActive   = activePack === pack.id || (pack.id === 'default' && !activePack);
-            const isLoading  = busy === pack.id;
+          {visiblePacks.map(pack => {
+            const isOwned   = ownedIds.includes(pack.id);
+            const isLoading = busy === pack.id;
 
             return (
               <div
                 key={pack.id}
                 style={{
                   ...cardStyle,
-                  borderColor: isActive ? 'rgba(99,102,241,0.7)' : 'var(--border)',
-                  boxShadow: isActive ? '0 0 16px rgba(99,102,241,0.2)' : 'none',
+                  borderColor: isOwned ? 'rgba(99,102,241,0.55)' : 'var(--border)',
+                  boxShadow:   isOwned ? '0 0 12px rgba(99,102,241,0.15)' : 'none',
                 }}
               >
-                {/* Preview image */}
-                <div style={{
-                  height: 120, background: 'var(--bg)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  overflow: 'hidden',
-                }}>
+                {/* Preview */}
+                <div style={{ height: 120, background: 'var(--bg)', overflow: 'hidden', position: 'relative' }}>
                   <img
                     src={pack.preview_url}
                     alt={pack.name}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.2'; }}
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.15'; }}
                   />
+                  {isOwned && (
+                    <span style={{
+                      position: 'absolute', top: 8, right: 8,
+                      background: 'rgba(99,102,241,0.85)', color: '#fff',
+                      borderRadius: 8, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700,
+                    }}>
+                      OWNED
+                    </span>
+                  )}
                 </div>
 
                 {/* Info */}
                 <div style={{ padding: '0.85rem 1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--foreground)' }}>{pack.name}</span>
-                    {isActive && (
-                      <span style={{
-                        background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.4)',
-                        color: 'var(--accent)', borderRadius: 10, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700,
-                      }}>
-                        Active
-                      </span>
-                    )}
-                  </div>
+                  <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--foreground)' }}>{pack.name}</span>
                   <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.8rem', lineHeight: 1.4 }}>{pack.description}</p>
 
-                  <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
+                  <div style={{ marginTop: 'auto' }}>
                     {isOwned ? (
-                      <button
-                        onClick={() => handleEquip(pack.id)}
-                        disabled={isActive || isLoading}
-                        className={isActive ? 'btn-secondary' : 'btn-primary'}
-                        style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem', opacity: isActive ? 0.5 : 1 }}
-                      >
-                        {isActive ? 'Equipped' : 'Equip'}
-                      </button>
+                      <div style={{
+                        textAlign: 'center', padding: '0.5rem',
+                        color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 600,
+                      }}>
+                        ✓ Owned — equip from your profile
+                      </div>
                     ) : (
                       <button
                         onClick={() => handleBuy(pack)}
                         disabled={isLoading || !auth.token}
                         className="btn-primary"
-                        style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem' }}
+                        style={{ width: '100%', padding: '0.5rem', fontSize: '0.85rem' }}
+                        title={!auth.token ? 'Sign in to unlock packs' : undefined}
                       >
-                        {isLoading ? '…' : formatPrice(pack.price_cents)}
+                        {isLoading ? '…' : `Unlock — ${formatPrice(pack.price_cents)}`}
                       </button>
                     )}
                   </div>

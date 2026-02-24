@@ -29,6 +29,7 @@ import { HomeScreen } from './components/HomeScreen';
 import { AuthScreen } from './components/AuthScreen';
 import { ProfileScreen } from './components/ProfileScreen';
 import { ShopScreen } from './components/ShopScreen';
+import { SkinsScreen } from './components/SkinsScreen';
 import { PlayMenu } from './components/PlayMenu';
 import { MultiplayerMenu } from './components/MultiplayerMenu';
 import { MatchmakingScreen } from './components/MatchmakingScreen';
@@ -62,7 +63,7 @@ function PageTransition({ children, keyProp }: { children: React.ReactNode; keyP
 }
 
 type Screen =
-  | 'home' | 'auth' | 'profile' | 'shop'
+  | 'home' | 'auth' | 'profile' | 'shop' | 'skins'
   | 'play-menu' | 'single-player-menu' | 'single-player'
   | 'settings' | 'rules'
   | 'multiplayer-menu' | 'private-menu' | 'host' | 'join' | 'matchmaking'
@@ -534,9 +535,29 @@ function AppInner() {
             auth.logout();
             setScreen('home');
           }}
+          onSkins={() => setScreen('skins')}
           onShop={() => setScreen('shop')}
           onProfileUpdated={(profile) => {
             // Patch the profile in the auth state so active_pack_id updates immediately
+            if (auth.profile) {
+              Object.assign(auth.profile, profile);
+              refreshCardImages();
+            }
+          }}
+        />
+      </PageTransition>
+    );
+  }
+
+  if (screen === 'skins') {
+    return (
+      <PageTransition keyProp="skins">
+        <SkinsScreen
+          auth={auth}
+          serverUrl={DEDICATED_SERVER_URL}
+          onBack={() => setScreen('profile')}
+          onShop={() => setScreen('shop')}
+          onProfileUpdated={(profile) => {
             if (auth.profile) {
               Object.assign(auth.profile, profile);
               refreshCardImages();
