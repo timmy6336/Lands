@@ -538,11 +538,9 @@ function AppInner() {
           onSkins={() => setScreen('skins')}
           onShop={() => setScreen('shop')}
           onProfileUpdated={(profile) => {
-            // Patch the profile in the auth state so active_pack_id updates immediately
-            if (auth.profile) {
-              Object.assign(auth.profile, profile);
-              refreshCardImages();
-            }
+            // Properly update React state so active_pack_id triggers a re-render and
+            // useCardImagesProvider's useEffect fires with the new pack.
+            auth.updateProfile(profile);
           }}
         />
       </PageTransition>
@@ -558,10 +556,7 @@ function AppInner() {
           onBack={() => setScreen('profile')}
           onShop={() => setScreen('shop')}
           onProfileUpdated={(profile) => {
-            if (auth.profile) {
-              Object.assign(auth.profile, profile);
-              refreshCardImages();
-            }
+            auth.updateProfile(profile);
           }}
         />
       </PageTransition>
@@ -576,10 +571,7 @@ function AppInner() {
           serverUrl={DEDICATED_SERVER_URL}
           onBack={() => setScreen(auth.profile ? 'profile' : 'home')}
           onProfileUpdated={(profile) => {
-            if (auth.profile) {
-              Object.assign(auth.profile, profile);
-              refreshCardImages();
-            }
+            auth.updateProfile(profile);
           }}
         />
       </PageTransition>

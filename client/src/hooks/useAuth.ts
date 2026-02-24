@@ -19,6 +19,8 @@ export interface AuthState {
   register: (username: string, passcode: string, serverUrl: string) => Promise<void>;
   logout: () => void;
   refreshProfile: (serverUrl: string) => Promise<void>;
+  /** Replace the in-memory profile with a freshly-fetched copy (e.g. after equipping a skin). */
+  updateProfile: (profile: UserProfile) => void;
 }
 
 function getStoredToken(): string | null {
@@ -111,5 +113,9 @@ export function useAuth(): AuthState {
     setError(null);
   }, []);
 
-  return { token, profile, loading, error, login, register, logout, refreshProfile };
+  const updateProfile = useCallback((p: UserProfile) => {
+    setProfile(p);
+  }, []);
+
+  return { token, profile, loading, error, login, register, logout, refreshProfile, updateProfile };
 }

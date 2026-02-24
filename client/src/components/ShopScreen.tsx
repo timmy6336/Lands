@@ -30,6 +30,21 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
   const [loadErr, setLoadErr] = useState('');
   const [busy, setBusy]       = useState<string | null>(null);
   const [toast, setToast]     = useState('');
+  // In Electron the page loads from file:// so root-relative paths like
+  // /cards/skins/gilded/preview.svg don't resolve — we need a file:// base.
+  const [assetsBase, setAssetsBase] = useState('');
+
+  useEffect(() => {
+    if (window.electronAPI?.getCardAssetsBase) {
+      window.electronAPI.getCardAssetsBase().then(setAssetsBase).catch(() => {});
+    }
+  }, []);
+
+  /** Resolve a root-relative asset path to a usable URL in both web and Electron. */
+  function resolveUrl(assetPath: string): string {
+    if (!assetsBase) return assetPath;     // web: root-relative path works as-is
+    return assetsBase + assetPath;         // Electron: prepend file:///...client/dist
+  }
 
   // Merge server ownedIds with what we know from the auth profile
   const ownedIds = shop?.ownedIds ?? auth.profile?.owned_pack_ids ?? [];
@@ -166,7 +181,7 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
                 {/* Preview */}
                 <div style={{ height: 120, background: 'var(--bg)', overflow: 'hidden', position: 'relative' }}>
                   <img
-                    src={pack.preview_url}
+                    src={resolveUrl(pack.preview_url)}
                     alt={pack.name}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.15'; }}

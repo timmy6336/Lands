@@ -32,8 +32,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveCardImage: (color: string, srcPath: string) =>
     ipcRenderer.invoke('save-card-image', color, srcPath),
 
-  getCardImageUrls: () =>
-    ipcRenderer.invoke('get-card-image-urls'),
+  getCardImageUrls: (packId?: string) =>
+    ipcRenderer.invoke('get-card-image-urls', packId),
+
+  getCardAssetsBase: () =>
+    ipcRenderer.invoke('get-card-assets-base'),
 
   resetCardImage: (color: string) =>
     ipcRenderer.invoke('reset-card-image', color),

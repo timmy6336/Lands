@@ -32,8 +32,20 @@ interface ElectronAPI {
   /** Copy an image from srcPath into the userData card-images directory under the given color key. */
   saveCardImage(color: string, srcPath: string): Promise<void>;
 
-  /** Return a map of color → file:// URL for any custom card images saved in userData. */
-  getCardImageUrls(): Promise<Record<string, string>>;
+  /**
+   * Return a map of color → file:// URL for the active skin pack images, with any
+   * user-customized images taking priority.  Pass the active packId so skin-specific
+   * paths are resolved correctly; omit (or pass 'default') for the classic art.
+   */
+  getCardImageUrls(packId?: string): Promise<Record<string, string>>;
+
+  /**
+   * Returns the base file:// URL pointing at client/dist in the packaged app,
+   * so root-relative asset paths like /cards/skins/gilded/preview.svg can be
+   * resolved correctly in the Electron file:// context.
+   * Returns empty string in dev (localhost:5173 resolves these as-is).
+   */
+  getCardAssetsBase(): Promise<string>;
 
   /** Delete the custom image for a color, reverting it to the built-in default. */
   resetCardImage(color: string): Promise<void>;

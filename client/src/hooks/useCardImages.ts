@@ -50,19 +50,18 @@ export function useCardImagesProvider(activePack?: string | null): [CardImageUrl
   const [urls, setUrls] = useState<CardImageUrls>(() => skinUrls(activePack ?? 'default'));
 
   async function refresh() {
-    // Start from skin pack base
-    const base = skinUrls(activePack ?? 'default');
-
     if (window.electronAPI) {
-      // Electron: fetch per-color custom images and overlay on top of skin
-      const fetched = (await window.electronAPI.getCardImageUrls()) as Partial<CardImageUrls>;
-      const merged: CardImageUrls = { ...base };
+      // Electron: IPC handler resolves file:// URLs with priority:
+      //   1. user-uploaded custom image  2. active skin pack  3. bundled default art
+      const fetched = (await window.electronAPI.getCardImageUrls(activePack ?? 'default')) as Partial<CardImageUrls>;
+      const merged: CardImageUrls = { ...DEFAULT_URLS };
       for (const key of COLORS) {
         if (fetched[key]) merged[key] = fetched[key]!;
       }
       setUrls(merged);
     } else {
-      setUrls(base);
+      // Web: use root-relative skin pack paths (e.g. /cards/skins/gilded/white.svg)
+      setUrls(skinUrls(activePack ?? 'default'));
     }
   }
 

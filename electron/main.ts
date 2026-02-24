@@ -176,14 +176,14 @@ ipcMain.handle('save-card-image', async (_event, color: string, srcPath: string)
   fs.copyFileSync(srcPath, dest);
 });
 
-ipcMain.handle('get-card-image-urls', async () => {
+ipcMain.handle('get-card-image-urls', async (_event, packId?: string) => {
   const userDir = userCardsDir();
-  const resDir = resourceCardsDir();
   const urls: Record<string, string> = {};
 
   for (const color of COLORS) {
     let found = false;
-    // Prefer user-customized image
+
+    // Priority 1: user-customized image
     for (const ext of IMAGE_EXTS) {
       const p = path.join(userDir, `${color}${ext}`);
       if (fs.existsSync(p)) {
@@ -192,14 +192,35 @@ ipcMain.handle('get-card-image-urls', async () => {
         break;
       }
     }
+
+    // Priority 2: active skin pack image (if packId specified and not 'default')
+    if (!found && packId && packId !== 'default') {
+      const skinsDir = isDev
+        ? path.join(__dirname, '..', '..', 'client', 'public', 'cards', 'skins', packId)
+        : path.join(process.resourcesPath, 'client', 'dist', 'cards', 'skins', packId);
+      const p = path.join(skinsDir, `${color}.svg`);
+      if (fs.existsSync(p)) {
+        urls[color] = 'file:///' + p.replace(/\\/g, '/');
+        found = true;
+      }
+    }
+
+    // Priority 3: bundled default card art
     if (!found) {
-      // Fall back to bundled resource
-      const p = path.join(resDir, `${color}.svg`);
+      const p = path.join(resourceCardsDir(), `${color}.svg`);
       urls[color] = 'file:///' + p.replace(/\\/g, '/');
     }
   }
 
   return urls;
+});
+
+// Returns the base file:// URL for client/dist so the renderer can resolve
+// root-relative asset paths (e.g. /cards/skins/gilded/preview.svg) in Electron.
+ipcMain.handle('get-card-assets-base', async () => {
+  if (isDev) return ''; // dev uses localhost:5173 — root-relative paths work as-is
+  const base = path.join(process.resourcesPath, 'client', 'dist');
+  return 'file:///' + base.replace(/\\/g, '/');
 });
 
 ipcMain.handle('reset-card-image', async (_event, color: string) => {

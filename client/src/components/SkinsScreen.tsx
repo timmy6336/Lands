@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // client/src/components/SkinsScreen.tsx — card skin equip screen
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserProfile } from '@lands/shared';
 import { AuthState } from '../hooks/useAuth';
 
@@ -17,6 +17,17 @@ export function SkinsScreen({ auth, serverUrl, onBack, onShop, onProfileUpdated 
   const { profile } = auth;
   const [equipBusy, setEquipBusy] = useState<string | null>(null);
   const [equipMsg,  setEquipMsg]  = useState('');
+  const [assetsBase, setAssetsBase] = useState('');
+
+  useEffect(() => {
+    if (window.electronAPI?.getCardAssetsBase) {
+      window.electronAPI.getCardAssetsBase().then(setAssetsBase).catch(() => {});
+    }
+  }, []);
+
+  function resolveUrl(assetPath: string): string {
+    return assetsBase ? assetsBase + assetPath : assetPath;
+  }
 
   async function handleEquip(packId: string) {
     if (!auth.token) return;
@@ -53,9 +64,9 @@ export function SkinsScreen({ auth, serverUrl, onBack, onShop, onProfileUpdated 
   const cardColors = ['white', 'red', 'blue', 'green', 'black'] as const;
 
   function cardUrl(packId: string, color: string) {
-    return packId === 'default'
+    return resolveUrl(packId === 'default'
       ? `/cards/${color}.svg`
-      : `/cards/skins/${packId}/${color}.svg`;
+      : `/cards/skins/${packId}/${color}.svg`);
   }
 
   return (
