@@ -24,6 +24,16 @@ interface UISettings {
   setShowEffectResultBlack: (v: boolean) => void;
   theme: 'dark' | 'light';
   setTheme: (v: 'dark' | 'light') => void;
+  musicVolume: number;
+  setMusicVolume: (v: number) => void;
+  musicMuted: boolean;
+  setMusicMuted: (v: boolean) => void;
+  sfxVolume: number;
+  setSfxVolume: (v: number) => void;
+  sfxMuted: boolean;
+  setSfxMuted: (v: boolean) => void;
+  showEndAnimation: boolean;
+  setShowEndAnimation: (v: boolean) => void;
 }
 
 export const UISettingsContext = createContext<UISettings>({
@@ -41,6 +51,16 @@ export const UISettingsContext = createContext<UISettings>({
   setShowEffectResultBlack: () => {},
   theme: 'dark',
   setTheme: () => {},
+  musicVolume: 0.5,
+  setMusicVolume: () => {},
+  musicMuted: false,
+  setMusicMuted: () => {},
+  sfxVolume: 0.7,
+  setSfxVolume: () => {},
+  sfxMuted: false,
+  setSfxMuted: () => {},
+  showEndAnimation: true,
+  setShowEndAnimation: () => {},
 });
 
 /** Read UI preferences from context. Use this in any component that needs a setting. */
@@ -75,6 +95,21 @@ export function useUISettingsProvider(): UISettings {
   const [theme, setThemeState] = useState<'dark' | 'light'>(
     () => (localStorage.getItem('theme') as 'dark' | 'light') ?? 'dark'
   );
+  const [musicVolume, setMusicVolumeState] = useState(
+    () => parseFloat(localStorage.getItem('musicVolume') ?? '0.5')
+  );
+  const [musicMuted, setMusicMutedState] = useState(
+    () => localStorage.getItem('musicMuted') === 'true'
+  );
+  const [sfxVolume, setSfxVolumeState] = useState(
+    () => parseFloat(localStorage.getItem('sfxVolume') ?? '0.7')
+  );
+  const [sfxMuted, setSfxMutedState] = useState(
+    () => localStorage.getItem('sfxMuted') === 'true'
+  );
+  const [showEndAnimation, setShowEndAnimationState] = useState(
+    () => localStorage.getItem('showEndAnimation') !== 'false'
+  );
 
   function setTheme(v: 'dark' | 'light') {
     localStorage.setItem('theme', v);
@@ -105,6 +140,26 @@ export function useUISettingsProvider(): UISettings {
     localStorage.setItem('showEffectResultBlack', String(v));
     setShowEffectResultBlackState(v);
   }
+  function setMusicVolume(v: number) {
+    localStorage.setItem('musicVolume', String(v));
+    setMusicVolumeState(v);
+  }
+  function setMusicMuted(v: boolean) {
+    localStorage.setItem('musicMuted', String(v));
+    setMusicMutedState(v);
+  }
+  function setSfxVolume(v: number) {
+    localStorage.setItem('sfxVolume', String(v));
+    setSfxVolumeState(v);
+  }
+  function setSfxMuted(v: boolean) {
+    localStorage.setItem('sfxMuted', String(v));
+    setSfxMutedState(v);
+  }
+  function setShowEndAnimation(v: boolean) {
+    localStorage.setItem('showEndAnimation', String(v));
+    setShowEndAnimationState(v);
+  }
 
   return {
     showCardTypeOnHover, setShowCardTypeOnHover,
@@ -114,5 +169,10 @@ export function useUISettingsProvider(): UISettings {
     showEffectResultBlue, setShowEffectResultBlue,
     showEffectResultBlack, setShowEffectResultBlack,
     theme, setTheme,
+    musicVolume, setMusicVolume,
+    musicMuted, setMusicMuted,
+    sfxVolume, setSfxVolume,
+    sfxMuted, setSfxMuted,
+    showEndAnimation, setShowEndAnimation,
   };
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
-  ServerToClientEvents, ClientToServerEvents, GameState, ChatMessage,
+  ServerToClientEvents, ClientToServerEvents, GameState, ChatMessage, SendFn,
 } from '@lands/shared';
 
 type LandsSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -63,12 +63,9 @@ export function useSocket(serverUrl: string | null, authToken?: string | null) {
     };
   }, [serverUrl, authToken]);
 
-  function send<K extends keyof ClientToServerEvents>(
-    event: K,
-    ...args: Parameters<ClientToServerEvents[K]>
-  ) {
+  const send: SendFn = (event, ...args) => {
     socketRef.current?.emit(event, ...args);
-  }
+  };
 
   return { gameState, roomCode, error, connected, send, chatMessages, matchmakingStatus, matchmakingFound };
 }

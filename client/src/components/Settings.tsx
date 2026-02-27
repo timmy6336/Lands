@@ -34,6 +34,11 @@ export function Settings({ onBack, onRefreshImages }: Props) {
     showEffectResultBlue, setShowEffectResultBlue,
     showEffectResultBlack, setShowEffectResultBlack,
     theme, setTheme,
+    musicVolume, setMusicVolume,
+    musicMuted, setMusicMuted,
+    sfxVolume, setSfxVolume,
+    sfxMuted, setSfxMuted,
+    showEndAnimation, setShowEndAnimation,
   } = useUISettings();
 
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({
@@ -82,6 +87,36 @@ export function Settings({ onBack, onRefreshImages }: Props) {
     </div>
   );
 
+  const VolumeRow = ({
+    label, volume, muted, onVolume, onMuted,
+  }: { label: string; volume: number; muted: boolean; onVolume: (v: number) => void; onMuted: (v: boolean) => void }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span className="text-muted text-sm" style={{ minWidth: 112 }}>{label}</span>
+      <button
+        onClick={() => onMuted(!muted)}
+        title={muted ? 'Unmute' : 'Mute'}
+        style={{
+          background: 'none', border: '1px solid var(--border2)', borderRadius: 6,
+          cursor: 'pointer', padding: '2px 7px', fontSize: '1rem',
+          color: muted ? 'var(--muted)' : 'var(--foreground)',
+          opacity: muted ? 0.45 : 1, transition: 'opacity 0.15s',
+          flexShrink: 0,
+        }}
+      >
+        {muted ? '🔇' : volume < 0.4 ? '🔈' : '🔊'}
+      </button>
+      <input
+        type="range" min={0} max={1} step={0.01}
+        value={muted ? 0 : volume}
+        onChange={e => { onMuted(false); onVolume(parseFloat(e.target.value)); }}
+        style={{ flex: 1, accentColor: 'var(--accent)', cursor: 'pointer', minWidth: 80 }}
+      />
+      <span className="text-muted text-xs" style={{ minWidth: 30, textAlign: 'right' }}>
+        {muted ? '0%' : `${Math.round(volume * 100)}%`}
+      </span>
+    </div>
+  );
+
   const Toggle = ({ label, sub, checked, onChange }: { label: string; sub?: string; checked: boolean; onChange: (v: boolean) => void }) => (
     <label className="flex items-center justify-between gap-4 cursor-pointer">
       <div>
@@ -103,7 +138,30 @@ export function Settings({ onBack, onRefreshImages }: Props) {
         <button className="btn-secondary px-4 py-1.5" onClick={onBack}>← Back</button>
         <h2 className="text-accent m-0">Settings</h2>
       </div>
-
+      {/* ── Audio ──────────────────────────────── */}
+      <section>
+        <h3 className="text-foreground mb-3 text-base mt-0">Audio</h3>
+        <SectionBox>
+          <VolumeRow
+            label="Music"
+            volume={musicVolume} muted={musicMuted}
+            onVolume={setMusicVolume} onMuted={setMusicMuted}
+          />
+          <VolumeRow
+            label="Sound Effects"
+            volume={sfxVolume} muted={sfxMuted}
+            onVolume={setSfxVolume} onMuted={setSfxMuted}
+          />
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 2 }}>
+            <Toggle
+              label="Victory / defeat animation"
+              sub="Full-screen animation when a game ends"
+              checked={showEndAnimation}
+              onChange={setShowEndAnimation}
+            />
+          </div>
+        </SectionBox>
+      </section>
       {/* ── Appearance ───────────────────────────────── */}
       <section>
         <h3 className="text-foreground mb-3 text-base mt-0">Appearance</h3>

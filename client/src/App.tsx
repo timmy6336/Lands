@@ -24,7 +24,7 @@ import { useSocket } from './hooks/useSocket';
 import { useLocalGame, LocalGameParams } from './hooks/useLocalGame';
 import { useAuth } from './hooks/useAuth';
 import { CardImagesContext, useCardImagesProvider } from './hooks/useCardImages';
-import { UISettingsContext, useUISettingsProvider } from './hooks/useUISettings';
+import { UISettingsContext, useUISettings, useUISettingsProvider } from './hooks/useUISettings';
 import { HomeScreen } from './components/HomeScreen';
 import { AuthScreen } from './components/AuthScreen';
 import { ProfileScreen } from './components/ProfileScreen';
@@ -36,13 +36,12 @@ import { MatchmakingScreen } from './components/MatchmakingScreen';
 import { SinglePlayerMenu } from './components/SinglePlayerMenu';
 import { Settings } from './components/Settings';
 import { Lobby } from './components/Lobby';
-import { ReadyScreen } from './components/ReadyScreen';
-import { GameBoard } from './components/GameBoard';
-import { GameOver } from './components/GameOver';
-import { RpsScreen } from './components/RpsScreen';
+import { useBGMusic } from './hooks/useBGMusic';
 import { RulesScreen } from './components/RulesScreen';
 import { ReplayBrowser } from './components/ReplayBrowser';
 import { ReplayViewer } from './components/ReplayViewer';
+import { PrivateMenu } from './components/PrivateMenu';
+import { InGameRouter } from './components/InGameRouter';
 
 
 function PageTransition({ children, keyProp }: { children: React.ReactNode; keyProp: string }) {
@@ -96,8 +95,11 @@ function AppInner() {
   const [localGameParams, setLocalGameParams] = useState<LocalGameParams | null>(null);
   const [pendingSPRematch, setPendingSPRematch] = useState(false);
   const [replayToView, setReplayToView] = useState<ReplayFile | null>(null);
+  const [showEndAnim, setShowEndAnim] = useState(false);
+  const prevPhaseRef = useRef<string | null>(null);
 
   const auth = useAuth();
+  const { playBGM, stopBGM } = useBGMusic();
 
   // Refresh profile on mount if we have a stored token
   useEffect(() => {
@@ -188,119 +190,58 @@ function AppInner() {
   })();
 
   const phase = gameState?.phase ?? null;
+  const { showEndAnimation } = useUISettings();
+  useEffect(() => {
+    // Detect transition into 'ended' phase to trigger the end animation
+    if (phase === 'ended' && prevPhaseRef.current !== null && prevPhaseRef.current !== 'ended') {
+      setShowEndAnim(showEndAnimation);
+      stopBGM();
+    }
+    prevPhaseRef.current = phase;
+  }, [phase]);
+
+  useEffect(() => {
+    const gamePhasePrefixes = ['playing_', 'counter_', 'effect_'];
+    const isActiveGame = phase !== null && phase !== 'ended' &&
+      gamePhasePrefixes.some(p => phase.startsWith(p));
+    const isMenuOrPregame = !gameState || phase === 'waiting' ||
+      phase === null || phase === 'rps_pick' || phase === 'rps_choose' || phase === 'customizing';
+    if (isActiveGame) {
+      playBGM('game');
+    } else if (isMenuOrPregame) {
+      playBGM('menu');
+    }
+    // 'ended': BGM already stopped by the transition effect above
+  }, [phase, !!gameState]);
 
   // ── In-game screens (take priority over nav screens) ─────────────────────
 
   if (gameState && phase !== 'waiting') {
-    // If the opponent disconnected during lobby or RPS (before the engine starts),
-    // the server emits an error and deletes the room — show a prompt to go home.
-    const isPreGame = phase === 'customizing' || phase === 'rps_pick' || phase === 'rps_choose';
-    if (isPreGame && error) {
-      return (
-        <div className="flex flex-col items-center justify-center h-full gap-6 text-center p-8">
-          <p className="text-[3rem] m-0">⚠️</p>
-          <h2 className="m-0" style={{ color: '#e74c3c' }}>Opponent Disconnected</h2>
-          <p className="text-muted m-0">{error}</p>
-          <button className="btn-primary" onClick={goHome} style={{ padding: '0.75rem 2rem' }}>
-            Return to Menu
-          </button>
-        </div>
-      );
-    }
-
-    if (phase === 'rps_pick' || phase === 'rps_choose') {
-      return (
-        <CardImagesContext.Provider value={cardImageUrls}>
-          <RpsScreen
-            gameState={gameState}
-            myIndex={myIndex}
-            onPick={(choice) => send('rps_pick', { choice })}
-            onChoose={(firstPlayer) => send('rps_choose', { firstPlayer })}
-          />
-        </CardImagesContext.Provider>
-      );
-    }
-
-    if (phase === 'customizing') {
-      return (
-        <CardImagesContext.Provider value={cardImageUrls}>
-          <ReadyScreen
-            gameState={gameState}
-            myIndex={myIndex}
-            onReady={(customizations) => {
-              send('update_customization', { customizations });
-              send('set_ready');
-            }}
-          />
-        </CardImagesContext.Provider>
-      );
-    }
-
-    if (phase === 'ended') {
-      // Single-player: show a go-first picker before restarting
-      if (pendingSPRematch && isLocalGame && localGameParams) {
-        const aiName = gameState.players[localGameParams.goFirst ? 1 : 0].name;
-        return (
-          <div className="flex flex-col items-center justify-center h-full gap-6 text-center p-8">
-            <h2 className="text-accent m-0">Rematch — Who goes first?</h2>
-            <div className="flex gap-4 flex-wrap justify-center">
-              <button
-                className="btn-primary"
-                style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}
-                onClick={() => {
-                  setPendingSPRematch(false);
-                  setLocalGameParams(prev => prev ? { ...prev, goFirst: true, rematchCount: (prev.rematchCount ?? 0) + 1 } : null);
-                }}
-              >
-                {playerName} goes first
-              </button>
-              <button
-                className="btn-secondary"
-                style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}
-                onClick={() => {
-                  setPendingSPRematch(false);
-                  setLocalGameParams(prev => prev ? { ...prev, goFirst: false, rematchCount: (prev.rematchCount ?? 0) + 1 } : null);
-                }}
-              >
-                {aiName} goes first
-              </button>
-            </div>
-            <button className="btn-secondary" style={{ padding: '0.5rem 1.5rem' }} onClick={goHome}>
-              Leave Game
-            </button>
-          </div>
-        );
-      }
-
-      return (
-        <CardImagesContext.Provider value={cardImageUrls}>
-          <GameOver
-            gameState={gameState}
-            myIndex={myIndex}
-            onPlayAgain={goHome}
-            onRematch={() => {
-              if (isLocalGame) {
-                setPendingSPRematch(true);
-              } else {
-                send('rematch_vote');
-              }
-            }}
-          />
-        </CardImagesContext.Provider>
-      );
-    }
-
     return (
-      <CardImagesContext.Provider value={cardImageUrls}>
-        <GameBoard
-          gameState={gameState}
-          myIndex={myIndex}
-          send={send}
-          chatMessages={chatMessages}
-          onSendChat={handleSendChat}
-          playerName={playerName}
-        />
-      </CardImagesContext.Provider>
+      <InGameRouter
+        gameState={gameState}
+        phase={phase!}
+        myIndex={myIndex}
+        send={send}
+        chatMessages={chatMessages}
+        onSendChat={handleSendChat}
+        playerName={playerName}
+        isLocalGame={isLocalGame}
+        localGameParams={localGameParams}
+        error={error}
+        pendingSPRematch={pendingSPRematch}
+        setPendingSPRematch={setPendingSPRematch}
+        onRematchGoFirst={(goFirst) => {
+          setLocalGameParams(prev => prev
+            ? { ...prev, goFirst, rematchCount: (prev.rematchCount ?? 0) + 1 }
+            : null
+          );
+        }}
+        showEndAnim={showEndAnim}
+        setShowEndAnim={setShowEndAnim}
+        goHome={goHome}
+        cardImageUrls={cardImageUrls}
+      />
     );
   }
 
@@ -349,41 +290,11 @@ function AppInner() {
   if (screen === 'private-menu') {
     return (
       <PageTransition keyProp="private-menu">
-        <div className="flex flex-col items-center justify-center h-full gap-8">
-          <div className="text-center">
-            <h2 className="text-accent mb-1 m-0">Private Room</h2>
-            <p className="text-muted text-sm m-0">Create a room or join one with a code</p>
-          </div>
-          <div className="flex flex-col gap-3.5 min-w-[280px]">
-            <button
-              className="btn-primary text-left"
-              onClick={() => setScreen('host')}
-              style={{ fontSize: '1.05rem', padding: '0.8rem 2rem' }}
-            >
-              🖥 Host a Game
-              <span className="block text-[0.75rem] font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                Get a room code to share with your friend
-              </span>
-            </button>
-            <button
-              className="btn-secondary text-left"
-              onClick={() => setScreen('join')}
-              style={{ fontSize: '1.05rem', padding: '0.8rem 2rem' }}
-            >
-              🔗 Join a Game
-              <span className="block text-[0.75rem] font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                Enter the code your friend gave you
-              </span>
-            </button>
-          </div>
-          <button
-            className="btn-secondary"
-            onClick={() => setScreen('multiplayer-menu')}
-            style={{ fontSize: '0.9rem', padding: '0.5rem 1.5rem' }}
-          >
-            ← Back
-          </button>
-        </div>
+        <PrivateMenu
+          onHost={() => setScreen('host')}
+          onJoin={() => setScreen('join')}
+          onBack={() => setScreen('multiplayer-menu')}
+        />
       </PageTransition>
     );
   }

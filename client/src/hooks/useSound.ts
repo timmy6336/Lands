@@ -11,6 +11,7 @@
 // until the user interacts with the page.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useRef } from 'react';
+import { useUISettings } from './useUISettings';
 
 function getCtx(ref: React.MutableRefObject<AudioContext | null>): AudioContext {
   if (!ref.current || ref.current.state === 'closed') {
@@ -25,11 +26,14 @@ function getCtx(ref: React.MutableRefObject<AudioContext | null>): AudioContext 
 
 export function useSound() {
   const ctxRef = useRef<AudioContext | null>(null);
+  const { sfxVolume, sfxMuted } = useUISettings();
 
   /** Soft ascending whoosh — card drawn from deck */
   const playDraw = useCallback(() => {
     try {
+      if (sfxMuted) return;
       const ctx = getCtx(ctxRef);
+      const vol = 0.18 * sfxVolume;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -37,17 +41,19 @@ export function useSound() {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(280, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(560, ctx.currentTime + 0.12);
-      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.18);
     } catch (_) { /* ignore if AudioContext unavailable */ }
-  }, []);
+  }, [sfxVolume, sfxMuted]);
 
   /** Low resonant thud — land played onto field */
   const playPlay = useCallback(() => {
     try {
+      if (sfxMuted) return;
       const ctx = getCtx(ctxRef);
+      const vol = 0.42 * sfxVolume;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -55,16 +61,18 @@ export function useSound() {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(130, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(52, ctx.currentTime + 0.28);
-      gain.gain.setValueAtTime(0.42, ctx.currentTime);
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.32);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.32);
     } catch (_) { /* ignore */ }
-  }, []);
+  }, [sfxVolume, sfxMuted]);
 
   /** Sharp high-pass noise burst — counter clash */
   const playCounter = useCallback(() => {
     try {
+      if (sfxMuted) return;
+      if (sfxMuted) return;
       const ctx = getCtx(ctxRef);
       const sampleRate = ctx.sampleRate;
       const duration = 0.09;
@@ -81,14 +89,14 @@ export function useSound() {
       filter.frequency.value = 3200;
       filter.Q.value = 1.2;
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.55, ctx.currentTime);
+      gain.gain.setValueAtTime(0.55 * sfxVolume, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
       source.connect(filter);
       filter.connect(gain);
       gain.connect(ctx.destination);
       source.start(ctx.currentTime);
     } catch (_) { /* ignore */ }
-  }, []);
+  }, [sfxVolume, sfxMuted]);
 
   return { playDraw, playPlay, playCounter };
 }

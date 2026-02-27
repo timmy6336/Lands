@@ -270,6 +270,17 @@ export interface ClientToServerEvents {
 }
 
 export interface InterServerEvents { /* reserved */ }
+
+/**
+ * The typed `send` function shared by both useSocket and useLocalGame.
+ * Matches the Socket.io `emit` signature so GameBoard works identically
+ * for multiplayer and single-player games.
+ */
+export type SendFn = <K extends keyof ClientToServerEvents>(
+  event: K,
+  ...args: Parameters<ClientToServerEvents[K]>
+) => void;
+
 export interface SocketData {
   playerId:   string;
   roomCode:   string;
