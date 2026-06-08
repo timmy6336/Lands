@@ -1,10 +1,15 @@
-// Renders a player’s field (lands in play).
-// Cards are visually grouped by color into stacks, each showing a count badge.
-// When `selectableIds` is provided (Red/Green effect prompts), only those cards
-// are clickable; the rest are dimmed.
-import { Card } from './Card';
-import { useCardScale, useScaledSize } from '../hooks/useCardScale';
+// Renders a player's field as horizontal color-tile strip.
+// Each color becomes one 66×96px tile: card art background + count overlay.
+import { useCardImages } from '../hooks/useCardImages';
 import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
+
+const COLOR_BG: Record<Color, string> = {
+  white: 'var(--white-land)',
+  red:   'var(--red-land)',
+  blue:  'var(--blue-land)',
+  green: 'var(--green-land)',
+  black: 'var(--black-land)',
+};
 
 interface Props {
   cards: CardType[];
@@ -14,17 +19,7 @@ interface Props {
   onSelect?: (cardId: string) => void;
 }
 
-const COLOR_CSS: Record<Color, string> = {
-  white: 'var(--white-land)',
-  red:   'var(--red-land)',
-  blue:  'var(--blue-land)',
-  green: 'var(--green-land)',
-  black: 'var(--black-land)',
-};
-
 export function Field({ cards, customizations, label, selectableIds, onSelect }: Props) {
-  const scale = useCardScale();
-  // Group cards by color, preserving insertion order
   const groups = new Map<Color, CardType[]>();
   for (const card of cards) {
     if (!groups.has(card.color)) groups.set(card.color, []);
@@ -32,105 +27,91 @@ export function Field({ cards, customizations, label, selectableIds, onSelect }:
   }
 
   return (
-    <div className="field-box border border-border rounded-[10px] flex-1"
-      style={{ background: 'rgba(255,255,255,0.03)' }}>
-      <div className="text-xs text-muted mb-2.5 uppercase tracking-wider">
-        {label} — {cards.length} land{cards.length !== 1 ? 's' : ''} in play
-      </div>
-
-      <div className="field-cards-row items-end">
-        {groups.size === 0
-          ? <p className="text-muted self-center m-0" style={{ fontSize: `${0.875 * Math.max(scale, 0.7)}rem` }}>No lands yet</p>
-          : [...groups.entries()].map(([color, stackCards]) => {
-              const isSelectable = stackCards.some(c => selectableIds?.has(c.id));
-              // For selection, return the last card in the stack (top of pile)
-              const topCard = stackCards[stackCards.length - 1];
-              return (
-                <ColorStack
-                  key={color}
-                  cards={stackCards}
-                  topCard={topCard}
-                  customizations={customizations}
-                  isSelectable={isSelectable}
-                  onSelect={isSelectable ? () => onSelect?.(topCard.id) : undefined}
-                />
-              );
-            })
-        }
-      </div>
+    <div className="field-pane">
+      {groups.size === 0
+        ? <span style={{ color: 'var(--muted)', fontSize: '0.75rem', padding: '0 4px', flexShrink: 0 }}>
+            {label} — empty
+          </span>
+        : [...groups.entries()].map(([color, stackCards]) => {
+            const isSelectable = !!selectableIds && stackCards.some(c => selectableIds.has(c.id));
+            const topCard = stackCards[stackCards.length - 1];
+            return (
+              <FieldTile
+                key={color}
+                color={color}
+                count={stackCards.length}
+                customizations={customizations}
+                isSelectable={isSelectable}
+                onSelect={isSelectable ? () => onSelect?.(topCard.id) : undefined}
+              />
+            );
+          })
+      }
     </div>
   );
 }
 
-// ── ColorStack ────────────────────────────────────────────────────────────────
-
-interface StackProps {
-  cards: CardType[];
-  topCard: CardType;
+interface TileProps {
+  color: Color;
+  count: number;
   customizations?: Customizations;
   isSelectable: boolean;
   onSelect?: () => void;
 }
 
-function ColorStack({ cards, topCard, customizations, isSelectable, onSelect }: StackProps) {
-  const count = cards.length;
-  const { w: cardW, h: cardH, scale } = useScaledSize(80, 112);
-  const OFFSET = Math.max(2, Math.round(4 * scale));
-  const shadowDepth = Math.min(count - 1, 3);
-  const stackHeight = cardH + shadowDepth * OFFSET;
-  const stackWidth = cardW + shadowDepth * OFFSET;
-
-  const custom = customizations?.[topCard.color] ?? DEFAULT_CUSTOMIZATIONS[topCard.color];
-  const bg = COLOR_CSS[topCard.color];
+function FieldTile({ color, count, customizations, isSelectable, onSelect }: TileProps) {
+  const cardImageUrls = useCardImages();
+  const custom = customizations?.[color] ?? DEFAULT_CUSTOMIZATIONS[color];
 
   return (
     <div
       onClick={isSelectable ? onSelect : undefined}
-      className={isSelectable ? 'field-stack-interactive' : undefined}
+      className={isSelectable ? 'tile-interactive tile-selectable' : undefined}
       style={{
-        position: 'relative',
-        width: stackWidth,
-        height: stackHeight,
+        width: 66, height: 96,
+        borderRadius: 10, flexShrink: 0,
+        position: 'relative', overflow: 'hidden',
+        background: COLOR_BG[color],
+        border: isSelectable ? '2px solid rgba(255,255,255,0.85)' : '1px solid rgba(255,255,255,0.12)',
+        boxShadow: isSelectable
+          ? '0 0 18px rgba(255,255,255,0.3), 0 4px 14px rgba(0,0,0,0.6)'
+          : '0 3px 10px rgba(0,0,0,0.5)',
         cursor: isSelectable ? 'pointer' : 'default',
-        flexShrink: 0,
         touchAction: 'manipulation',
+        transition: 'box-shadow 0.15s, border-color 0.15s',
+        animation: 'card-enter 0.3s ease',
+        userSelect: 'none',
       }}
     >
-      {/* Shadow cards underneath — CSS only, no extra DOM images */}
-      {Array.from({ length: shadowDepth }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute',
-            top: (shadowDepth - i - 1) * OFFSET,
-            left: (shadowDepth - i - 1) * OFFSET,
-            width: cardW,
-            height: cardH,
-            borderRadius: 8,
-            border: '2px solid rgba(255,255,255,0.12)',
-            background: bg,
-            opacity: 0.5 - i * 0.1,
-          }}
-        />
-      ))}
-
-      {/* Top card — key triggers remount (and entrance animation) when topCard changes */}
-      <div key={topCard.id} className="absolute top-0 left-0" style={{ animation: 'card-enter 0.3s ease' }}>
-        <Card
-          card={topCard}
-          customizations={customizations}
-          selected={isSelectable}
-          noAnimate
-        />
-      </div>
-
-      {/* Count badge — only shown when stack has more than 1 */}
-      {count > 1 && (
-        <div className="absolute -top-2 -right-2 bg-accent text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold border-2 border-bg z-10 pointer-events-none">
+      <img
+        src={cardImageUrls[color]}
+        alt={color}
+        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.78 }}
+      />
+      {/* gradient overlay */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.52) 100%)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'space-between',
+        padding: '5px 3px 7px',
+        pointerEvents: 'none',
+      }}>
+        <span style={{
+          color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontSize: '0.58rem',
+          textTransform: 'uppercase', letterSpacing: '0.07em',
+          textShadow: '0 1px 4px rgba(0,0,0,0.9)', textAlign: 'center',
+        }}>
+          {custom.displayName}
+        </span>
+        <span style={{
+          color: '#fff', fontWeight: 900, fontSize: '2rem', lineHeight: 1,
+          textShadow: '0 2px 6px rgba(0,0,0,0.9)',
+        }}>
           {count}
-        </div>
-      )}
-
+        </span>
+      </div>
     </div>
   );
 }
