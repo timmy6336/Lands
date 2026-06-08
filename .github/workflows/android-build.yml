@@ -17,7 +17,9 @@ name: Android Build
 
 on:
   push:
-    branches: [android]
+    branches:
+      - android
+      - android-*
     paths:
       - 'client/**'
       - 'shared/**'
