@@ -23,7 +23,7 @@ export function Hand({ cards, hiddenCount, customizations, label, selectableIds,
       <div className="text-xs text-muted mb-1.5 uppercase tracking-widest">
         {label} — {isHidden ? hiddenCount : cards.length} card{(isHidden ? hiddenCount! : cards.length) !== 1 ? 's' : ''}
       </div>
-      <div className="hand-cards-row flex flex-wrap">
+      <div className="hand-cards-row">
         {isHidden
           ? Array.from({ length: hiddenCount! }).map((_, i) => <HiddenCard key={i} />)
           : cards.map(card => (

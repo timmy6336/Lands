@@ -1,4 +1,4 @@
-// Mode selection screen: choose between Single Player (vs AI) or Multiplayer.
+// Mode selection: Single Player vs Multiplayer — mobile-first layout.
 interface Props {
   onSinglePlayer: () => void;
   onMultiplayer: () => void;
@@ -7,44 +7,39 @@ interface Props {
 
 export function PlayMenu({ onSinglePlayer, onMultiplayer, onBack }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-8">
-      <div className="text-center">
-        <h2 className="text-accent mb-1 m-0">Play</h2>
-        <p className="text-muted text-sm m-0">Play solo or challenge someone online</p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 28, padding: '1.5rem 1.25rem' }}>
+      <div style={{ textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--accent)', margin: '0 0 6px', fontSize: '1.6rem' }}>Play</h2>
+        <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>Play solo or challenge someone online</p>
       </div>
 
-      <div className="flex flex-col gap-3.5 min-w-[280px]">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 360 }}>
         <button
-          className="btn-primary text-left"
+          className="btn-primary"
           onClick={onSinglePlayer}
-          style={{ fontSize: '1.05rem', padding: '0.8rem 2rem' }}
+          style={{ textAlign: 'left', fontSize: '1.05rem', padding: '0.9rem 1.25rem', minHeight: 64, borderRadius: 12 }}
         >
-          🌱 Single Player
-          <span className="block text-[0.75rem] font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+          <span style={{ display: 'block', fontWeight: 700 }}>🌱 Single Player</span>
+          <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 400, opacity: 0.7, marginTop: 3 }}>
             Play against AI — Easy, Medium, or Hard
           </span>
         </button>
 
         <button
-          className="btn-secondary text-left"
+          className="btn-secondary"
           onClick={onMultiplayer}
-          style={{ fontSize: '1.05rem', padding: '0.8rem 2rem' }}
+          style={{ textAlign: 'left', fontSize: '1.05rem', padding: '0.9rem 1.25rem', minHeight: 64, borderRadius: 12 }}
         >
-          🌐 Multiplayer
-          <span className="block text-[0.75rem] font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Private room or matchmaking — play against anyone
+          <span style={{ display: 'block', fontWeight: 700 }}>🌐 Multiplayer</span>
+          <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 400, opacity: 0.65, marginTop: 3 }}>
+            Private room or matchmaking
           </span>
         </button>
       </div>
 
-      <button
-        className="btn-secondary"
-        onClick={onBack}
-        style={{ fontSize: '0.9rem', padding: '0.5rem 1.5rem' }}
-      >
+      <button className="btn-secondary" onClick={onBack} style={{ fontSize: '0.9rem', padding: '0.6rem 1.75rem' }}>
         ← Back
       </button>
     </div>
   );
-
 }

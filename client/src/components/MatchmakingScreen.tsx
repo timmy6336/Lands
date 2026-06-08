@@ -65,7 +65,7 @@ export function MatchmakingScreen({ playerName, queuePosition, found, connected,
         <button
           className="btn-secondary"
           onClick={onCancel}
-          style={{ fontSize: '0.9rem', padding: '0.5rem 1.5rem' }}
+          style={{ fontSize: '0.95rem', minHeight: 50, padding: '0.6rem 2rem' }}
         >
           ✕ Cancel
         </button>

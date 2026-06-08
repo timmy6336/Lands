@@ -1,5 +1,4 @@
-// End-of-game overlay showing the winner, win reason, and rematch/home buttons.
-// Sits on top of GameBoard so the final board state is visible behind it.
+// End-of-game overlay — mobile-first layout.
 import { GameState } from '@lands/shared';
 
 const FUNNY_DRAW_LINES = [
@@ -31,72 +30,66 @@ export function GameOver({ gameState, myIndex, onPlayAgain, onRematch }: Props) 
   const funnyLine = FUNNY_DRAW_LINES[Math.floor(Math.random() * FUNNY_DRAW_LINES.length)];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 text-center p-8">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 20, textAlign: 'center', padding: '1.5rem 1.25rem', overflowY: 'auto' }}>
       {isDraw ? (
         <>
-          <p className="text-[5rem] m-0">🤯</p>
-          <h1 className="text-muted m-0">DRAW???</h1>
-          <p className="text-muted m-0" style={{ maxWidth: 400, lineHeight: 1.5 }}>{funnyLine}</p>
+          <p style={{ fontSize: '4rem', margin: 0 }}>🤯</p>
+          <h1 style={{ color: 'var(--muted)', margin: 0, fontSize: '2rem' }}>DRAW???</h1>
+          <p style={{ color: 'var(--muted)', margin: 0, maxWidth: 340, lineHeight: 1.55, fontSize: '0.9rem' }}>{funnyLine}</p>
         </>
       ) : iWon ? (
         <>
-          <p className="text-[5rem] m-0">🏆</p>
-          <h1 className="m-0" style={{ color: '#f1c40f' }}>Victory!</h1>
-          <p className="text-muted text-[1.1rem] m-0">
-            You defeated <strong className="text-foreground">{them.name}</strong>
+          <p style={{ fontSize: '4rem', margin: 0 }}>🏆</p>
+          <h1 style={{ color: '#f1c40f', margin: 0, fontSize: '2.2rem' }}>Victory!</h1>
+          <p style={{ color: 'var(--muted)', fontSize: '1rem', margin: 0 }}>
+            You defeated <strong style={{ color: 'var(--text)' }}>{them.name}</strong>
           </p>
         </>
       ) : (
         <>
-          <p className="text-[5rem] m-0">💀</p>
-          <h1 className="text-accent m-0">Defeat</h1>
-          <p className="text-muted text-[1.1rem] m-0">
-            <strong className="text-foreground">{winner !== undefined && !isDraw ? players[winner].name : ''}</strong> won this time.
+          <p style={{ fontSize: '4rem', margin: 0 }}>💀</p>
+          <h1 style={{ color: 'var(--accent)', margin: 0, fontSize: '2.2rem' }}>Defeat</h1>
+          <p style={{ color: 'var(--muted)', fontSize: '1rem', margin: 0 }}>
+            <strong style={{ color: 'var(--text)' }}>{winner !== undefined && !isDraw ? players[winner as 0 | 1].name : ''}</strong> won this time.
           </p>
         </>
       )}
 
       {winReason && (
-        <p className="bg-surface border border-border rounded-lg m-0 text-muted text-sm"
-          style={{ padding: '0.6rem 1.2rem' }}>
+        <p style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '0.6rem 1.1rem', color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>
           {winReason}
         </p>
       )}
 
-      <div className="flex gap-8 flex-wrap justify-center bg-surface border border-border rounded-[10px]"
-        style={{ padding: '1rem 1.5rem' }}>
+      {/* Stats */}
+      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '0.9rem 1.25rem' }}>
         {[me, them].map((p, i) => (
           <div key={i}>
-            <p className="text-muted text-[0.8rem] mb-1 m-0">{p.name}</p>
-            <p className="text-sm m-0">
-              {p.field.length} land{p.field.length !== 1 ? 's' : ''} in play
-            </p>
+            <p style={{ color: 'var(--muted)', fontSize: '0.78rem', marginBottom: 4 }}>{p.name}</p>
+            <p style={{ fontSize: '0.92rem' }}>{p.field.length} land{p.field.length !== 1 ? 's' : ''} in play</p>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-col items-center gap-2.5">
+      {/* Rematch */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%', maxWidth: 320 }}>
         <button
           className="btn-primary"
           onClick={onRematch}
           disabled={myVote}
-          style={{ padding: '0.75rem 2rem', opacity: myVote ? 0.6 : 1 }}
+          style={{ width: '100%', minHeight: 52, fontSize: '1rem', opacity: myVote ? 0.6 : 1 }}
         >
-          {myVote ? '✓ Rematch Voted' : 'Rematch'}
+          {myVote ? '✓ Rematch Voted' : '🔄 Rematch'}
         </button>
         {opponentVote && !myVote && (
-          <p className="m-0 text-sm" style={{ color: '#4ade80' }}>
-            {them.name} wants a rematch!
-          </p>
+          <p style={{ color: '#4ade80', fontSize: '0.88rem', margin: 0 }}>{them.name} wants a rematch!</p>
         )}
         {myVote && !opponentVote && (
-          <p className="text-muted text-sm m-0">
-            Waiting for {them.name}…
-          </p>
+          <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>Waiting for {them.name}…</p>
         )}
       </div>
 
-      <button className="btn-secondary" onClick={onPlayAgain} style={{ padding: '0.5rem 1.5rem' }}>
+      <button className="btn-secondary" onClick={onPlayAgain} style={{ minHeight: 48, padding: '0.6rem 2rem' }}>
         Leave Game
       </button>
     </div>

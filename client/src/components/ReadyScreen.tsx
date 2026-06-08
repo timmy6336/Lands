@@ -1,10 +1,6 @@
-// Customization + ready screen shown after both players join.
-// Each player can customize their land display names before clicking Ready.
-// Shows the opponent’s customizations live as they update.
-// When both players are ready, RPS begins.
+// Customization + ready screen — mobile-first layout.
 import { useState } from 'react';
 import { DEFAULT_CUSTOMIZATIONS, GameState } from '@lands/shared';
-
 
 interface Props {
   gameState: GameState;
@@ -18,24 +14,24 @@ export function ReadyScreen({ gameState, myIndex, onReady }: Props) {
   const opponent = gameState.players[1 - myIndex];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-8">
-      <h2 className="text-accent m-0">Game Ready</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 28, padding: '1.5rem 1.25rem', textAlign: 'center' }}>
+      <h2 style={{ color: 'var(--accent)', margin: 0, fontSize: '1.6rem' }}>Game Ready</h2>
 
-      <div className="bg-surface border border-border rounded-xl px-10 py-6 flex gap-12">
-        <div className="text-center">
-          <p className="text-muted text-[0.8rem] mb-1 m-0">YOU</p>
-          <p className="font-bold text-[1.1rem] m-0">{me.name}</p>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem 2rem', display: 'flex', gap: 36, justifyContent: 'center', width: '100%', maxWidth: 360 }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ color: 'var(--muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>YOU</p>
+          <p style={{ fontWeight: 700, fontSize: '1.05rem', margin: 0 }}>{me.name}</p>
         </div>
-        <div className="text-center">
-          <p className="text-muted text-[0.8rem] mb-1 m-0">OPPONENT</p>
-          <p className="font-bold text-[1.1rem] m-0" style={{ color: opponent.name ? 'var(--text)' : 'var(--muted)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ color: 'var(--muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>OPPONENT</p>
+          <p style={{ fontWeight: 700, fontSize: '1.05rem', margin: 0, color: opponent.name ? 'var(--text)' : 'var(--muted)' }}>
             {opponent.name || 'Waiting…'}
           </p>
         </div>
       </div>
 
       {!opponent.name && (
-        <p className="text-muted text-sm m-0">Waiting for opponent to join…</p>
+        <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>Waiting for opponent to join…</p>
       )}
 
       <button
@@ -45,7 +41,7 @@ export function ReadyScreen({ gameState, myIndex, onReady }: Props) {
           setReadySent(true);
           onReady(DEFAULT_CUSTOMIZATIONS);
         }}
-        style={{ minWidth: 160, fontSize: '1rem', padding: '0.75rem 2.5rem' }}
+        style={{ width: '100%', maxWidth: 360, minHeight: 56, fontSize: '1.05rem' }}
       >
         {readySent ? '✓ Ready! Waiting…' : "I'm Ready"}
       </button>

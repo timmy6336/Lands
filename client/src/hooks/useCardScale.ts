@@ -24,10 +24,10 @@
 // reuse the first instance's measurement and converge on the same value.
 import { useEffect, useLayoutEffect, useState } from 'react';
 
-// Combined natural height (at scale 1, in px) of the four card rows whose size
-// is driven by this scale: opponent hidden-hand cards (100) + your/opponent
-// field stacks and your hand (112 each).
-const CARD_ROWS_HEIGHT = 436;
+// Combined natural height (at scale 1, in px) of the three scale-driven card
+// rows: opponent field + my field + my hand (112px each).
+// The opponent hand is now a CSS-only mini strip — not scale-dependent.
+const CARD_ROWS_HEIGHT = 336;
 const REFERENCE_HEIGHT = 760; // viewport height at/above which cards render at full size
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 1;

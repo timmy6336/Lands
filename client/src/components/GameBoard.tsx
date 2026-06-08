@@ -1,21 +1,20 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // client/src/components/GameBoard.tsx
 //
-// The main game screen rendered during an active game.
-// Composed of five visible layers (top to bottom):
-//   1. Opponent info bar    — name, turn indicator, hand count
-//   2. Opponent Hand        — face-down if opponent (hidden cards shown as backs)
-//   3. Opponent Field       — lands in play, grouped by color; + Graveyard + Deck
-//   4. Status bar           — turn number, current phase label, countdown timer
-//   5. My Field             — same structure as opponent
-//   6. My Hand              — face-up, selectable during playing_play
-//   7. My info bar          — name, surrender button, Log/Chat toggles
+// Mobile-first game screen. Portrait phone layout (top → bottom):
+//   1. Opponent info bar   — name, hand count, connection status
+//   2. Opponent field row  — Field + Graveyard + Deck (horizontal-scroll)
+//   3. Status bar          — turn, phase, pending-play info
+//   4. My field row        — Field + Graveyard + Deck (horizontal-scroll)
+//   5. My hand             — face-up, selectable (horizontal-scroll)
+//   6. Bottom action bar   — name/turn, Chat, Log, Surrender
 //
 // Floating overlays (conditional):
-//   CounterPrompt     — defender’s counter window
-//   EffectPrompt      — target selection for Red/Green/Blue/Black effects
-//   GameLog panel     — side drawer
-//   ChatPanel         — side drawer
+//   CounterPrompt  — defender counter window
+//   EffectPrompt   — target selection
+//   ChatPanel      — bottom-sheet drawer
+//   GameLog        — bottom-sheet drawer
+//   Surrender confirm — modal overlay
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from 'react';
 import { ChatMessage, GameState, ClientToServerEvents, Color } from '@lands/shared';
@@ -30,6 +29,7 @@ import { ChatPanel } from './ChatPanel';
 import { useUISettings } from '../hooks/useUISettings';
 import { useSound } from '../hooks/useSound';
 import { useGameLog } from '../hooks/useGameLog';
+import { useCardScale } from '../hooks/useCardScale';
 
 interface Props {
   gameState: GameState;
@@ -45,13 +45,13 @@ interface Props {
 
 const PHASE_LABELS: Record<string, string> = {
   playing_play:      'Play a land',
-  counter_window:    'Counter window open…',
-  counter_response:  'Counter-counter window open…',
-  effect_red_pick:   'Red land effect',
-  effect_green_pick: 'Green land effect',
-  effect_blue_look:  'Blue land effect',
-  effect_black_show: 'Black land effect',
-  effect_black_pick: 'Black land effect',
+  counter_window:    'Counter window…',
+  counter_response:  'Counter-counter…',
+  effect_red_pick:   'Red effect',
+  effect_green_pick: 'Green effect',
+  effect_blue_look:  'Blue effect',
+  effect_black_show: 'Black effect',
+  effect_black_pick: 'Black effect',
 };
 
 const EFFECT_COLORS: Record<string, string> = {
@@ -63,27 +63,27 @@ const EFFECT_COLORS: Record<string, string> = {
 };
 
 export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, playerName }: Props) {
-  const [surrenderConfirm, setSurrenderConfirm] = useState(false);
+  const [surrenderOpen, setSurrenderOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const { playDraw, playPlay, playCounter } = useSound();
   const { entries: logEntries, addEntry: addLogEntry } = useGameLog(gameState);
+  const scale = useCardScale();
   const {
     showEffectResultRed, showEffectResultGreen,
     showEffectResultBlue, showEffectResultBlack,
   } = useUISettings();
 
-  // Effect result popup — only shown to the non-attacker, and only if the setting is enabled.
   type EffectPopup =
     | { type: 'red';   cardColor: Color; ownerName: string }
     | { type: 'green'; cardColor: Color; ownerName: string }
     | { type: 'blue';  keptOnTop: boolean }
     | { type: 'black'; cardColor: Color; ownerName: string };
   const [effectPopup, setEffectPopup] = useState<EffectPopup | null>(null);
+
   useEffect(() => {
     const r = gameState.effectResult;
     if (!r) return;
-    // Only show to the opponent — not the player who played the effect
     if (gameState.viewerIndex === r.attackerIndex) return;
     const settingOn =
       (r.type === 'red'   && showEffectResultRed)   ||
@@ -94,14 +94,12 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
     setEffectPopup(r);
   }, [gameState.effectResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-dismiss the effect popup after 3 seconds
   useEffect(() => {
     if (!effectPopup) return;
     const id = setTimeout(() => setEffectPopup(null), 3000);
     return () => clearTimeout(id);
   }, [effectPopup]);
 
-  // Mirror incoming chat messages into the game log
   const prevChatLenRef = useRef(0);
   useEffect(() => {
     if (chatMessages.length > prevChatLenRef.current) {
@@ -112,7 +110,6 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
     }
   }, [chatMessages]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sound triggers — detect state transitions
   const prevRef = useRef({
     turnNumber: gameState.turnNumber,
     pendingPlayId: gameState.pendingPlay?.id,
@@ -125,14 +122,13 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
     if (counterChain.length > 1 && counterChain.length > prev.chainLength) playCounter();
     if (turnNumber > prev.turnNumber) playDraw();
     prevRef.current = { turnNumber, pendingPlayId: pendingPlay?.id, chainLength: counterChain.length };
-  }, [gameState]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [gameState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const me = gameState.players[myIndex];
   const opponent = gameState.players[1 - myIndex];
   const isMyTurn = gameState.currentPlayerIndex === myIndex;
   const phase = gameState.phase;
 
-  // ── Which hand cards are playable? ────────────────────────────────────────
   const playableIds: Set<string> | undefined =
     isMyTurn && phase === 'playing_play'
       ? new Set(me.hand.map(c => c.id))
@@ -140,55 +136,75 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
 
   const phaseLabel = PHASE_LABELS[phase] ?? phase;
 
-  const showCounterWindow =
-    phase === 'counter_window' && !isMyTurn;
-  const showCounterCounterWindow =
-    phase === 'counter_response' && isMyTurn;
+  const showCounterWindow = phase === 'counter_window' && !isMyTurn;
+  const showCounterCounterWindow = phase === 'counter_response' && isMyTurn;
   const showEffect = [
     'effect_red_pick', 'effect_green_pick', 'effect_blue_look',
     'effect_black_show', 'effect_black_pick',
   ].includes(phase);
 
-  // ── Shared info bar style factory ─────────────────────────────────────────
-  const activeBarStyle = (active: boolean, color: string): React.CSSProperties => ({
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    borderRadius: 6, padding: '0.2rem 0.6rem',
-    fontSize: '0.72rem', flexShrink: 0,
-    background: active ? `rgba(${color}, 0.1)` : 'var(--surface)',
-    border: active ? `2px solid rgba(${color}, 0.55)` : '2px solid transparent',
-    boxShadow: active ? `0 0 12px rgba(${color}, 0.2)` : 'none',
-    transition: 'background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease',
-  });
+  // Card size for the tiny opponent-hand strip
+  const miniCardW = Math.round(28 * Math.max(scale, 0.7));
+  const miniCardH = Math.round(40 * Math.max(scale, 0.7));
 
   return (
-    <div className="game-root flex flex-col h-screen">
+    <div className="game-root flex flex-col" style={{ height: '100dvh' }}>
 
-      {/* ── Opponent info bar ───────────────────────────────────────────────── */}
-      <div style={activeBarStyle(!isMyTurn, '241,196,15')}>
-        <span className="font-semibold flex items-center gap-1.5">
+      {/* ── 1. Opponent info bar ─────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderRadius: 8,
+        padding: '0.3rem 0.6rem',
+        minHeight: 40,
+        flexShrink: 0,
+        background: !isMyTurn ? 'rgba(241,196,15,0.08)' : 'var(--surface)',
+        border: !isMyTurn ? '2px solid rgba(241,196,15,0.45)' : '2px solid transparent',
+        boxShadow: !isMyTurn ? '0 0 10px rgba(241,196,15,0.15)' : 'none',
+        transition: 'background 0.3s, border-color 0.3s',
+      }}>
+        <span style={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
           {!isMyTurn && (
-            <span className="font-bold text-[0.8rem]" style={{ color: '#f1c40f', letterSpacing: '0.04em' }}>
-              ▶ TURN
-            </span>
+            <span style={{ color: '#f1c40f', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em' }}>▶</span>
           )}
           {opponent.name}
         </span>
-        <span className="text-muted">Hand: {opponent.handCount}</span>
-        {!opponent.isConnected && (
-          <span className="text-[0.8rem]" style={{ color: '#e74c3c' }}>⚠ Disconnected</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.8rem', color: 'var(--muted)' }}>
+          {!opponent.isConnected && (
+            <span style={{ color: '#e74c3c', fontSize: '0.75rem' }}>⚠ Disconnected</span>
+          )}
+          <span>Hand: <strong style={{ color: 'var(--text)' }}>{opponent.handCount}</strong></span>
+        </div>
+      </div>
+
+      {/* ── 2. Opponent hand (compact strip of face-down placeholders) ────────── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '0.2rem 0.5rem',
+        overflowX: 'auto',
+        flexShrink: 0,
+        scrollbarWidth: 'none',
+      }}>
+        {Array.from({ length: opponent.handCount }).map((_, i) => (
+          <div key={i} style={{
+            width: miniCardW,
+            height: miniCardH,
+            borderRadius: 4,
+            border: '1.5px solid rgba(255,255,255,0.14)',
+            background: 'linear-gradient(135deg, var(--surface2), var(--surface))',
+            flexShrink: 0,
+          }} />
+        ))}
+        {opponent.handCount === 0 && (
+          <span style={{ fontSize: '0.7rem', color: 'var(--muted)', padding: '0 0.25rem' }}>Empty</span>
         )}
       </div>
 
-      {/* ── Opponent hand (hidden face-down cards) ───────────────────────────── */}
-      <Hand
-        cards={[]}
-        hiddenCount={opponent.handCount}
-        customizations={opponent.customizations}
-        label={`${opponent.name}'s Hand`}
-      />
-
-      {/* ── Opponent field + graveyard + deck ────────────────────────────────── */}
-      <div className="flex gap-2 flex-1 min-h-0">
+      {/* ── 3. Opponent field row ─────────────────────────────────────────────── */}
+      <div className="flex gap-1.5 flex-1 min-h-0">
         <Field
           cards={opponent.field}
           customizations={opponent.customizations}
@@ -202,23 +218,44 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         <div className="deck-box border border-border rounded-[10px] flex flex-col items-center justify-center gap-1"
           style={{ background: 'rgba(255,255,255,0.03)' }}>
           <DeckDisplay count={opponent.deckCount} />
-          <span className="text-[0.6rem] text-muted uppercase" style={{ letterSpacing: '0.06em' }}>Deck</span>
+          <span style={{ fontSize: '0.55rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Deck</span>
         </div>
       </div>
 
-      {/* ── Status bar ──────────────────────────────────────────────────────── */}
-      <div className="bg-surface-2 rounded-lg flex justify-between items-center shrink-0 px-2.5 py-0.5 text-xs">
-        <span className="text-muted text-[0.8rem]">Turn {gameState.turnNumber}</span>
-        <span className="text-muted">{phaseLabel}</span>
-        <span className="text-muted text-[0.8rem]">&nbsp;</span>
+      {/* ── 4. Status bar ────────────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexShrink: 0,
+        borderRadius: 8,
+        padding: '0.3rem 0.75rem',
+        minHeight: 38,
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+      }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 500 }}>
+          Turn {gameState.turnNumber}
+        </span>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text)', fontWeight: 600, textAlign: 'center' }}>
+          {gameState.pendingPlay && !showCounterWindow && !showCounterCounterWindow
+            ? (isMyTurn
+                ? `Waiting for ${opponent.name}…`
+                : `${opponent.name} played ${gameState.pendingPlay.color}`)
+            : phaseLabel}
+        </span>
+        <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 500 }}>
+          {isMyTurn ? 'Your turn' : `${opponent.name}'s`}
+        </span>
       </div>
 
-      {/* ── My field + graveyard + deck ───────────────────────────────────────── */}
-      <div className="flex gap-2 flex-1 min-h-0">
+      {/* ── 5. My field row ──────────────────────────────────────────────────── */}
+      <div className="flex gap-1.5 flex-1 min-h-0">
         <Field
           cards={me.field}
           customizations={me.customizations}
           label="Your Field"
+          selectableIds={showEffect ? undefined : undefined}
         />
         <Graveyard
           cards={me.graveyard}
@@ -228,11 +265,11 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         <div className="deck-box border border-border rounded-[10px] flex flex-col items-center justify-center gap-1"
           style={{ background: 'rgba(255,255,255,0.03)' }}>
           <DeckDisplay count={me.deckCount} />
-          <span className="text-[0.6rem] text-muted uppercase" style={{ letterSpacing: '0.06em' }}>Deck</span>
+          <span style={{ fontSize: '0.55rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Deck</span>
         </div>
       </div>
 
-      {/* ── My hand ─────────────────────────────────────────────────────────── */}
+      {/* ── 6. My hand ───────────────────────────────────────────────────────── */}
       <Hand
         cards={me.hand}
         customizations={me.customizations}
@@ -241,48 +278,111 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         onSelect={(cardId) => send('play_card', { cardId })}
       />
 
-      {/* ── My info bar ──────────────────────────────────────────────────────── */}
-      <div style={activeBarStyle(isMyTurn, '39,174,96')}>
-        <span className="font-semibold flex items-center gap-1.5">
+      {/* ── 7. Bottom action bar ─────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexShrink: 0,
+        borderRadius: 8,
+        padding: '0.2rem 0.5rem',
+        minHeight: 46,
+        background: isMyTurn ? 'rgba(39,174,96,0.1)' : 'var(--surface)',
+        border: isMyTurn ? '2px solid rgba(39,174,96,0.45)' : '2px solid transparent',
+        boxShadow: isMyTurn ? '0 0 10px rgba(39,174,96,0.15)' : 'none',
+        transition: 'background 0.3s, border-color 0.3s',
+        gap: 6,
+      }}>
+        {/* Name + turn */}
+        <span style={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, overflow: 'hidden' }}>
           {isMyTurn && (
-            <span className="font-bold text-[0.8rem]" style={{ color: '#27ae60', letterSpacing: '0.04em' }}>
-              ▶ YOUR TURN
-            </span>
+            <span style={{ color: '#27ae60', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', flexShrink: 0 }}>▶</span>
           )}
-          {me.name}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {me.name}
+          </span>
         </span>
 
-        {/* Surrender */}
-        {surrenderConfirm ? (
-          <div className="flex items-center gap-2">
-            <span className="text-muted text-[0.8rem]">Surrender?</span>
-            <button
-              className="btn-primary"
-              onClick={() => { send('surrender'); setSurrenderConfirm(false); }}
-              style={{ fontSize: '0.75rem', padding: '0.2rem 0.7rem', background: '#c0392b', borderColor: '#c0392b' }}
-            >
-              Yes
-            </button>
-            <button
-              className="btn-secondary"
-              onClick={() => setSurrenderConfirm(false)}
-              style={{ fontSize: '0.75rem', padding: '0.2rem 0.7rem' }}
-            >
-              No
-            </button>
-          </div>
-        ) : (
+        {/* Icon buttons: Chat, Log, Surrender */}
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
           <button
-            className="btn-secondary"
-            onClick={() => setSurrenderConfirm(true)}
-            style={{ fontSize: '0.75rem', padding: '0.2rem 0.8rem', color: '#e74c3c', borderColor: 'rgba(231,76,60,0.4)' }}
+            onClick={() => { setChatOpen(v => !v); setLogOpen(false); }}
+            style={{
+              background: chatOpen ? 'var(--surface2)' : 'transparent',
+              border: chatOpen ? '1px solid var(--accent)' : '1px solid var(--border)',
+              borderRadius: 8,
+              color: chatOpen ? 'var(--accent)' : 'var(--muted)',
+              fontSize: '0.8rem',
+              padding: '0.2rem 0.55rem',
+              minHeight: 36,
+              fontWeight: 600,
+            }}
+            aria-label="Chat"
+          >
+            💬
+          </button>
+          <button
+            onClick={() => { setLogOpen(v => !v); setChatOpen(false); }}
+            style={{
+              background: logOpen ? 'var(--surface2)' : 'transparent',
+              border: logOpen ? '1px solid var(--accent)' : '1px solid var(--border)',
+              borderRadius: 8,
+              color: logOpen ? 'var(--accent)' : 'var(--muted)',
+              fontSize: '0.8rem',
+              padding: '0.2rem 0.55rem',
+              minHeight: 36,
+              fontWeight: 600,
+            }}
+            aria-label="Game log"
+          >
+            📜
+          </button>
+          <button
+            onClick={() => setSurrenderOpen(true)}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(231,76,60,0.35)',
+              borderRadius: 8,
+              color: '#e74c3c',
+              fontSize: '0.75rem',
+              padding: '0.2rem 0.65rem',
+              minHeight: 36,
+              fontWeight: 600,
+            }}
           >
             Surrender
           </button>
-        )}
+        </div>
       </div>
 
       {/* ── Overlays ────────────────────────────────────────────────────────── */}
+
+      {/* Surrender confirm */}
+      {surrenderOpen && (
+        <div className="overlay">
+          <div className="overlay-box" style={{ maxWidth: 320, alignItems: 'center', textAlign: 'center' }}>
+            <p style={{ fontSize: '1.5rem', margin: 0 }}>🏳</p>
+            <h3 style={{ margin: 0, color: 'var(--accent)' }}>Surrender?</h3>
+            <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.9rem' }}>You'll forfeit the game.</p>
+            <div style={{ display: 'flex', gap: 10, width: '100%' }}>
+              <button
+                className="btn-secondary"
+                onClick={() => setSurrenderOpen(false)}
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                style={{ flex: 1, background: '#c0392b', color: '#fff', fontWeight: 700, border: 'none', borderRadius: 10, minHeight: 48 }}
+                onClick={() => { send('surrender'); setSurrenderOpen(false); }}
+              >
+                Yes, Surrender
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showCounterWindow && gameState.pendingPlay && (
         <CounterPrompt
           gameState={gameState}
@@ -314,111 +414,81 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         />
       )}
 
-      {/* Pending play indicator */}
-      {gameState.pendingPlay && !showCounterWindow && !showCounterCounterWindow && (
-        <div className="fixed top-3 left-1/2 -translate-x-1/2 bg-surface-2 border border-border rounded-lg px-4 py-1.5 text-sm text-muted pointer-events-none z-50">
-          {isMyTurn
-            ? `Waiting for ${opponent.name} to respond…`
-            : `${opponent.name} played a ${gameState.pendingPlay.color} land`}
-        </div>
-      )}
-
       {/* Effect result popup */}
       {effectPopup && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
-        >
+        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
           <div
             className="pointer-events-auto rounded-xl border border-border flex flex-col items-center gap-3 text-center cursor-pointer"
             style={{
               background: 'var(--surface)',
               boxShadow: `0 0 28px rgba(0,0,0,0.55), 0 0 0 2px ${'cardColor' in effectPopup ? EFFECT_COLORS[effectPopup.cardColor] : EFFECT_COLORS.blue}55`,
-              padding: '1.5rem 2rem',
-              maxWidth: 320,
+              padding: '1.25rem 1.5rem',
+              maxWidth: 300,
+              margin: '0 1rem',
             }}
             onClick={() => setEffectPopup(null)}
           >
             {effectPopup.type === 'red' ? (
               <>
-                <span style={{ fontSize: '2.5rem' }}>💥</span>
-                <p className="m-0 font-semibold" style={{ color: EFFECT_COLORS.red, fontSize: '1rem' }}>
-                  Land Destroyed
-                </p>
-                <div
-                  className="rounded-lg px-4 py-2 font-bold text-sm"
-                  style={{ background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}
-                >
+                <span style={{ fontSize: '2rem' }}>💥</span>
+                <p style={{ margin: 0, fontWeight: 600, color: EFFECT_COLORS.red }}>Land Destroyed</p>
+                <div style={{ borderRadius: 8, padding: '0.4rem 0.9rem', fontWeight: 700, fontSize: '0.85rem', background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}>
                   {effectPopup.cardColor.charAt(0).toUpperCase() + effectPopup.cardColor.slice(1)} land
                 </div>
-                <p className="text-muted text-sm m-0">
-                  Removed from <strong className="text-foreground">{effectPopup.ownerName}</strong>'s field
+                <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0 }}>
+                  Removed from <strong style={{ color: 'var(--text)' }}>{effectPopup.ownerName}</strong>'s field
                 </p>
               </>
             ) : effectPopup.type === 'green' ? (
               <>
-                <span style={{ fontSize: '2.5rem' }}>♻️</span>
-                <p className="m-0 font-semibold" style={{ color: EFFECT_COLORS.green, fontSize: '1rem' }}>
-                  Land Retrieved
-                </p>
-                <div
-                  className="rounded-lg px-4 py-2 font-bold text-sm"
-                  style={{ background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}
-                >
+                <span style={{ fontSize: '2rem' }}>♻️</span>
+                <p style={{ margin: 0, fontWeight: 600, color: EFFECT_COLORS.green }}>Land Retrieved</p>
+                <div style={{ borderRadius: 8, padding: '0.4rem 0.9rem', fontWeight: 700, fontSize: '0.85rem', background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}>
                   {effectPopup.cardColor.charAt(0).toUpperCase() + effectPopup.cardColor.slice(1)} land
                 </div>
-                <p className="text-muted text-sm m-0">
-                  Returned to <strong className="text-foreground">{effectPopup.ownerName}</strong>'s hand
+                <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0 }}>
+                  Returned to <strong style={{ color: 'var(--text)' }}>{effectPopup.ownerName}</strong>'s hand
                 </p>
               </>
             ) : effectPopup.type === 'blue' ? (
               <>
-                <span style={{ fontSize: '2.5rem' }}>🔮</span>
-                <p className="m-0 font-semibold" style={{ color: EFFECT_COLORS.blue, fontSize: '1rem' }}>
-                  Blue Land Effect
-                </p>
-                <p className="text-muted text-sm m-0">
-                  Opponent's top deck card was{' '}
-                  <strong className="text-foreground">
-                    {effectPopup.keptOnTop ? 'kept on top' : 'sent to the bottom'}
-                  </strong>
+                <span style={{ fontSize: '2rem' }}>🔮</span>
+                <p style={{ margin: 0, fontWeight: 600, color: EFFECT_COLORS.blue }}>Blue Land Effect</p>
+                <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0 }}>
+                  Top card <strong style={{ color: 'var(--text)' }}>{effectPopup.keptOnTop ? 'kept on top' : 'sent to bottom'}</strong>
                 </p>
               </>
             ) : (
               <>
-                <span style={{ fontSize: '2.5rem' }}>💀</span>
-                <p className="m-0 font-semibold" style={{ color: EFFECT_COLORS.black, fontSize: '1rem' }}>
-                  Card Discarded
-                </p>
-                <div
-                  className="rounded-lg px-4 py-2 font-bold text-sm"
-                  style={{ background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}
-                >
+                <span style={{ fontSize: '2rem' }}>💀</span>
+                <p style={{ margin: 0, fontWeight: 600, color: EFFECT_COLORS.black }}>Card Discarded</p>
+                <div style={{ borderRadius: 8, padding: '0.4rem 0.9rem', fontWeight: 700, fontSize: '0.85rem', background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}>
                   {effectPopup.cardColor.charAt(0).toUpperCase() + effectPopup.cardColor.slice(1)} land
                 </div>
-                <p className="text-muted text-sm m-0">
-                  Discarded from <strong className="text-foreground">{effectPopup.ownerName}</strong>'s hand
+                <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0 }}>
+                  Discarded from <strong style={{ color: 'var(--text)' }}>{effectPopup.ownerName}</strong>'s hand
                 </p>
               </>
             )}
-            <p className="text-muted text-[0.7rem] m-0">click to dismiss</p>
+            <p style={{ color: 'var(--muted)', fontSize: '0.68rem', margin: 0 }}>tap to dismiss</p>
           </div>
         </div>
       )}
 
-      {/* Chat panel overlay */}
+      {/* Chat panel bottom sheet */}
       <ChatPanel
         messages={chatMessages}
         myName={playerName}
         isOpen={chatOpen}
-        onToggle={() => setChatOpen(v => !v)}
+        onClose={() => setChatOpen(false)}
         onSend={onSendChat}
       />
 
-      {/* Game log overlay */}
+      {/* Game log bottom sheet */}
       <GameLog
         entries={logEntries}
         isOpen={logOpen}
-        onToggle={() => setLogOpen(v => !v)}
+        onClose={() => setLogOpen(false)}
       />
     </div>
   );

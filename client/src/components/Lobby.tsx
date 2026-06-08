@@ -1,36 +1,21 @@
-// Multiplayer lobby screens (remote dedicated-server edition).
-//
-// HostLobby: user configures settings → "Create Room" connects to the
-//            dedicated server and receives a 4-char room code to share.
-//
-// JoinLobby: user enters a 4-char room code → "Connect" joins the room.
-//
-// The actual Socket.io connection is managed in App.tsx via serverUrl/useSocket.
+// Multiplayer lobby screens — mobile-first layout.
 import { useState } from 'react';
 import { GameSettings } from '@lands/shared';
-
-// ── Host Lobby ────────────────────────────────────────────────────────────────
 
 interface HostProps {
   mode: 'host';
   playerName: string;
-  /** True once the socket connects to the dedicated server. */
   connected: boolean;
-  /** Room code from server, null while waiting for it. */
   roomCode: string | null;
   error: string | null;
-  /** Called once when the user clicks "Create Room"; sets serverUrl in App. */
   onCreateRoom: (settings: GameSettings) => void;
   onBack: () => void;
 }
-
-// ── Join Lobby ────────────────────────────────────────────────────────────────
 
 interface JoinProps {
   mode: 'join';
   playerName: string;
   error: string | null;
-  /** Called with the room code when user clicks "Connect"; sets serverUrl in App. */
   onConnect: (roomCode: string) => void;
   onBack: () => void;
 }
@@ -42,8 +27,6 @@ export function Lobby(props: Props) {
   return <JoinLobby {...props} />;
 }
 
-// ── HostLobby ─────────────────────────────────────────────────────────────────
-
 function HostLobby({ playerName, connected, roomCode, error, onCreateRoom, onBack }: HostProps) {
   const [timerSec, setTimerSec] = useState<number | null>(15);
   const [started, setStarted] = useState(false);
@@ -54,34 +37,30 @@ function HostLobby({ playerName, connected, roomCode, error, onCreateRoom, onBac
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6">
-      <div className="text-center">
-        <h2 className="text-accent mb-1">Host Game</h2>
-        <p className="text-muted text-sm">Create a private room and share the code with your friend</p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 24, padding: '1.5rem 1.25rem' }}>
+      <div style={{ textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--accent)', margin: '0 0 6px' }}>Host Game</h2>
+        <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>Create a private room and share the code</p>
       </div>
 
       {error && (
-        <p className="text-sm px-4 py-2 rounded-md" style={{ color: '#e74c3c', background: '#2c1010' }}>
+        <p style={{ color: '#e74c3c', background: '#2c1010', padding: '0.6rem 1rem', borderRadius: 8, fontSize: '0.88rem', margin: 0 }}>
           {error}
         </p>
       )}
 
       {!started ? (
-        /* Settings form */
-        <div className="bg-surface border border-border rounded-xl p-6 flex flex-col gap-4 min-w-[300px]">
-          <p className="text-muted text-sm m-0">
-            Playing as: <strong className="text-foreground">{playerName}</strong>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: 360 }}>
+          <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>
+            Playing as: <strong style={{ color: 'var(--text)' }}>{playerName}</strong>
           </p>
 
-          <label className="flex flex-col gap-1">
-            <span className="text-muted text-sm">Counter window timer</span>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>Counter window timer</span>
             <select
               value={timerSec === null ? 'infinite' : String(timerSec)}
               onChange={e => setTimerSec(e.target.value === 'infinite' ? null : Number(e.target.value))}
-              style={{
-                background: 'var(--surface2)', border: '1px solid var(--border)',
-                borderRadius: 6, color: 'var(--text)', padding: '0.5rem', fontSize: '0.95rem',
-              }}
+              style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', padding: '0.65rem 0.75rem', fontSize: '0.95rem', minHeight: 44 }}
             >
               <option value="5">5 seconds</option>
               <option value="10">10 seconds</option>
@@ -91,98 +70,89 @@ function HostLobby({ playerName, connected, roomCode, error, onCreateRoom, onBac
             </select>
           </label>
 
-          <div className="flex gap-2 mt-1">
-            <button className="btn-primary" onClick={handleCreate}>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn-primary" onClick={handleCreate} style={{ flex: 1, minHeight: 50 }}>
               🖥 Create Room
             </button>
-            <button className="btn-secondary" onClick={onBack}>Back</button>
+            <button className="btn-secondary" onClick={onBack} style={{ flex: 1, minHeight: 50 }}>Back</button>
           </div>
         </div>
       ) : roomCode ? (
-        /* Room ready */
-        <div className="bg-surface border border-border rounded-xl px-8 py-6 flex flex-col items-center gap-4 min-w-[300px]">
-          <p className="text-muted text-xs uppercase tracking-widest m-0">Share this code</p>
-          <p
-            className="text-[3rem] font-black text-accent m-0"
-            style={{ letterSpacing: '0.35em' }}
-          >
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: '100%', maxWidth: 360 }}>
+          <p style={{ color: 'var(--muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Share this code</p>
+          <p style={{ fontSize: '3.2rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.35em', margin: 0 }}>
             {roomCode}
           </p>
-          <p className="text-muted text-sm text-center m-0">
+          <p style={{ color: 'var(--muted)', fontSize: '0.88rem', textAlign: 'center', margin: 0 }}>
             ⏳ Waiting for your opponent to enter this code…
           </p>
-          <button className="btn-secondary text-sm mt-2" onClick={onBack}>✕ Cancel</button>
+          <button className="btn-secondary" onClick={onBack} style={{ minHeight: 48, padding: '0.6rem 1.75rem' }}>✕ Cancel</button>
         </div>
       ) : (
-        /* Connecting */
-        <div className="bg-surface border border-border rounded-xl px-8 py-6 flex flex-col items-center gap-4 min-w-[300px]">
-          <div
-            className="animate-spin"
-            style={{
-              width: 32, height: 32,
-              border: '3px solid var(--border)',
-              borderTopColor: 'var(--accent)',
-              borderRadius: '50%',
-            }}
-          />
-          <p className="text-muted text-sm m-0">
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: '100%', maxWidth: 360 }}>
+          <Spinner />
+          <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>
             {connected ? 'Creating room…' : 'Connecting to server…'}
           </p>
-          <button className="btn-secondary text-sm" onClick={onBack}>✕ Cancel</button>
+          <button className="btn-secondary" onClick={onBack} style={{ minHeight: 48 }}>✕ Cancel</button>
         </div>
       )}
     </div>
   );
 }
 
-// ── JoinLobby ─────────────────────────────────────────────────────────────────
-
 function JoinLobby({ playerName, error, onConnect, onBack }: JoinProps) {
   const [roomCode, setRoomCode] = useState('');
-
   const canConnect = roomCode.trim().length === 4;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6">
-      <div className="text-center">
-        <h2 className="text-accent mb-1">Join Game</h2>
-        <p className="text-muted text-sm">Enter the room code your friend shared with you</p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 24, padding: '1.5rem 1.25rem' }}>
+      <div style={{ textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--accent)', margin: '0 0 6px' }}>Join Game</h2>
+        <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>Enter the room code your friend shared</p>
       </div>
 
       {error && (
-        <p className="text-sm px-4 py-2 rounded-md" style={{ color: '#e74c3c', background: '#2c1010' }}>
+        <p style={{ color: '#e74c3c', background: '#2c1010', padding: '0.6rem 1rem', borderRadius: 8, fontSize: '0.88rem', margin: 0 }}>
           {error}
         </p>
       )}
 
-      <div className="bg-surface border border-border rounded-xl p-6 flex flex-col gap-4 min-w-[300px]">
-        <p className="text-muted text-sm m-0">
-          Playing as: <strong className="text-foreground">{playerName}</strong>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: 360 }}>
+        <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>
+          Playing as: <strong style={{ color: 'var(--text)' }}>{playerName}</strong>
         </p>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-muted text-sm">Room code</span>
+        <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <span style={{ color: 'var(--muted)', fontSize: '0.82rem' }}>Room code</span>
           <input
             value={roomCode}
             onChange={e => setRoomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
             placeholder="XXXX"
             maxLength={4}
             autoFocus
-            style={{ letterSpacing: '0.3em', fontWeight: 700, fontSize: '1.4rem', textAlign: 'center' }}
+            style={{ letterSpacing: '0.3em', fontWeight: 700, fontSize: '1.6rem', textAlign: 'center', minHeight: 56 }}
           />
         </label>
 
-        <div className="flex gap-2 mt-1">
+        <div style={{ display: 'flex', gap: 10 }}>
           <button
             className="btn-primary"
             disabled={!canConnect}
             onClick={() => onConnect(roomCode.trim())}
+            style={{ flex: 1, minHeight: 50 }}
           >
             🔗 Connect
           </button>
-          <button className="btn-secondary" onClick={onBack}>Back</button>
+          <button className="btn-secondary" onClick={onBack} style={{ flex: 1, minHeight: 50 }}>Back</button>
         </div>
       </div>
     </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
   );
 }

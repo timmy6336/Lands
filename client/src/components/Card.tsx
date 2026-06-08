@@ -1,23 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// client/src/components/Card.tsx
+// client/src/components/Card.tsx — renders a single land card.
 //
-// Renders a single land card.
-// Appearance is driven by the card’s color and the player’s Customizations
-// (which can rename “Plains” to anything the player wants).
-//
-// States the card can be in (props):
-//   faceDown     — renders `<HiddenCard>` (back side), used for opponent hand
-//   selected     — green glow outline, used in multi-select effect prompts
-//   disabled     — dimmed, non-interactive (greyed out in effect prompts)
-//   selectionIndex — shows a numbered badge for ordered multi-select
-//   small        — reduced size for graveyard / deck display
-//
-// Card image comes from useCardImages() context — defaults to bundled SVG
-// but can be overridden per-color with user-uploaded images.
+// Mobile-first: hover states replaced with CSS :active touch feedback.
+// Selected cards show a glow/lift; tappable cards get active scale-down.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState } from 'react';
 import { useCardImages } from '../hooks/useCardImages';
-import { useUISettings } from '../hooks/useUISettings';
 import { useScaledSize } from '../hooks/useCardScale';
 import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
 
@@ -29,14 +16,6 @@ const COLOR_CSS: Record<Color, string> = {
   black: 'var(--black-land)',
 };
 
-const CARD_EFFECTS: Record<Color, string> = {
-  white: 'Draw 1 card from your deck.',
-  red:   'Destroy one of your opponent\'s lands in play.',
-  blue:  'Look at the top card of your deck — keep it on top or send it to the bottom. Blue cards can also counter any land play (costs 1 Blue + 1 matching color).',
-  green: 'Retrieve any card from your graveyard back to your hand.',
-  black: 'Opponent reveals 3 cards from their hand; you choose 1 for them to discard.',
-};
-
 interface Props {
   card: CardType;
   customizations?: Customizations;
@@ -45,19 +24,12 @@ interface Props {
   small?: boolean;
   onClick?: () => void;
   disabled?: boolean;
-  /** Skip entrance animation (e.g. cards already in hand at game start) */
   noAnimate?: boolean;
-  /**
-   * For ordered multi-select: shows this number in the corner badge (1-based).
-   * When selected but no index is given, shows a ✓ checkmark instead.
-   */
   selectionIndex?: number;
 }
 
 export function Card({ card, customizations, selected, faceDown, small, onClick, disabled, noAnimate, selectionIndex }: Props) {
   const cardImageUrls = useCardImages();
-  const { showCardTypeOnHover, showCardEffectsOnHover } = useUISettings();
-  const [hovered, setHovered] = useState(false);
   const custom = customizations?.[card.color] ?? DEFAULT_CUSTOMIZATIONS[card.color];
   const bgColor = COLOR_CSS[card.color];
   const { w, h, scale } = useScaledSize(small ? 56 : 80, small ? 78 : 112);
@@ -79,49 +51,37 @@ export function Card({ card, customizations, selected, faceDown, small, onClick,
     );
   }
 
-  // Compute transform/shadow based on selected + hover state
-  const transform = selected
-    ? `translateY(${small ? -6 : -10}px) scale(1.08)`
-    : (isClickable && hovered ? 'translateY(-10px) scale(1.05)' : 'none');
-
+  const transform = selected ? `translateY(${small ? -5 : -8}px) scale(1.06)` : 'none';
   const boxShadow = selected
-    ? '0 0 0 2px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.55), 0 8px 20px rgba(0,0,0,0.5)'
-    : (isClickable && hovered ? '0 14px 30px rgba(255,255,255,0.2)' : '0 2px 6px rgba(0,0,0,0.4)');
+    ? '0 0 0 2px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.5), 0 6px 18px rgba(0,0,0,0.5)'
+    : '0 2px 6px rgba(0,0,0,0.4)';
 
-  const showTypeOverlay  = showCardTypeOnHover   && hovered;
-  const showEffectTooltip = showCardEffectsOnHover && hovered;
-
-  // Badge size scales with card size
   const badgeSize = Math.round((small ? 17 : 22) * scale);
   const badgeFontSize = `${(small ? 0.55 : 0.68) * Math.max(scale, 0.8)}rem`;
 
   return (
-    // Outer wrapper: handles hover, transform, and is the positioning context for overlays.
-    // overflow: visible so the badge and tooltip can escape the card bounds.
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="relative inline-block shrink-0"
+      className={isClickable ? 'card-interactive relative inline-block shrink-0' : 'relative inline-block shrink-0'}
       style={{
-        zIndex: (selected || hovered) ? 10 : 0,
+        zIndex: selected ? 10 : 0,
         transform,
         transition: 'transform 0.15s ease',
         animation: noAnimate ? undefined : 'card-enter-hand 0.25s ease',
+        touchAction: 'manipulation',
       }}
     >
-      {/* Inner card face — overflow: hidden clips the image to rounded corners */}
       <div
         onClick={disabled ? undefined : onClick}
         style={{
           width: w, height: h,
           border: selected
             ? '2px solid rgba(255,255,255,0.95)'
-            : (isClickable && hovered ? '2px solid rgba(255,255,255,0.5)' : '2px solid rgba(255,255,255,0.2)'),
+            : '2px solid rgba(255,255,255,0.18)',
           borderRadius: 8,
           overflow: 'hidden',
           cursor: isClickable ? 'pointer' : 'default',
           boxShadow,
-          transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
+          transition: 'box-shadow 0.15s ease',
           opacity: disabled ? 0.45 : 1,
           background: bgColor,
           userSelect: 'none',
@@ -134,21 +94,28 @@ export function Card({ card, customizations, selected, faceDown, small, onClick,
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
 
-        {/* Card type name overlay (semi-transparent, centred) */}
-        {showTypeOverlay && (
-          <div className="absolute inset-0 flex items-center justify-center font-bold text-white uppercase pointer-events-none text-center"
-            style={{
-              background: 'rgba(0,0,0,0.6)',
-              fontSize: small ? '0.6rem' : '0.72rem',
-              letterSpacing: '0.06em',
-              padding: '0 4px',
-            }}>
+        {/* Show card name as overlay when selected (replaces hover tooltip on mobile) */}
+        {selected && !small && (
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'rgba(0,0,0,0.65)',
+            fontSize: '0.62rem',
+            fontWeight: 700,
+            color: '#fff',
+            textAlign: 'center',
+            padding: '3px 2px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}>
             {custom.displayName}
           </div>
         )}
       </div>
 
-      {/* Selection badge — sits outside overflow:hidden in the outer wrapper */}
+      {/* Selection badge */}
       {selected && (
         <div style={{
           position: 'absolute',
@@ -173,39 +140,10 @@ export function Card({ card, customizations, selected, faceDown, small, onClick,
           {selectionIndex !== undefined ? selectionIndex : '✓'}
         </div>
       )}
-
-      {/* Effect tooltip — floats above the card, outside overflow:hidden */}
-      {showEffectTooltip && (
-        <div style={{
-          position: 'absolute',
-          bottom: 'calc(100% + 8px)',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'rgba(8,8,18,0.97)',
-          border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: 7,
-          padding: '0.45rem 0.65rem',
-          fontSize: '0.72rem',
-          color: 'var(--text)',
-          lineHeight: 1.45,
-          whiteSpace: 'normal',
-          width: 160,
-          textAlign: 'center',
-          zIndex: 200,
-          pointerEvents: 'none',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
-        }}>
-          <strong style={{ display: 'block', color: 'var(--accent)', marginBottom: 3, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {custom.displayName}
-          </strong>
-          {CARD_EFFECTS[card.color]}
-        </div>
-      )}
     </div>
   );
 }
 
-/** A placeholder card shown when hand is hidden (opponent's hand) */
 export function HiddenCard({ small }: { small?: boolean }) {
   const cardImageUrls = useCardImages();
   const { w, h } = useScaledSize(small ? 56 : 72, small ? 78 : 100);

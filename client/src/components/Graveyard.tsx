@@ -16,11 +16,10 @@ export function Graveyard({ cards, customizations, label }: Props) {
   const topCard = cards[cards.length - 1];
 
   return (
-    <div className="graveyard-box border border-border rounded-[10px] flex flex-col gap-1.5"
+    <div className="border border-border rounded-[10px] px-3 py-2.5 flex flex-col gap-1.5 min-w-[110px]"
       style={{ background: 'rgba(255,255,255,0.02)' }}>
       <div
-        className="text-[0.7rem] text-muted uppercase tracking-widest flex justify-between items-center"
-        style={{ cursor: count > 0 ? 'pointer' : 'default' }}
+        style={{ cursor: count > 0 ? 'pointer' : 'default', fontSize: '0.65rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', justifyContent: 'space-between', alignItems: 'center', touchAction: 'manipulation', minHeight: 24, userSelect: 'none' }}
         onClick={() => count > 0 && setExpanded(e => !e)}
       >
         <span>{label}</span>
@@ -40,7 +39,7 @@ export function Graveyard({ cards, customizations, label }: Props) {
       )}
 
       {expanded && (
-        <div className="graveyard-list flex flex-wrap gap-1.5 overflow-y-auto">
+        <div className="flex flex-wrap gap-1.5 max-h-[200px] overflow-y-auto">
           {cards.map(card => (
             <Card key={card.id} card={card} customizations={customizations} small />
           ))}

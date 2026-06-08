@@ -2,7 +2,6 @@
 // Cards are visually grouped by color into stacks, each showing a count badge.
 // When `selectableIds` is provided (Red/Green effect prompts), only those cards
 // are clickable; the rest are dimmed.
-import { useState } from 'react';
 import { Card } from './Card';
 import { useCardScale, useScaledSize } from '../hooks/useCardScale';
 import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
@@ -39,7 +38,7 @@ export function Field({ cards, customizations, label, selectableIds, onSelect }:
         {label} — {cards.length} land{cards.length !== 1 ? 's' : ''} in play
       </div>
 
-      <div className="field-cards-row flex flex-wrap items-end">
+      <div className="field-cards-row items-end">
         {groups.size === 0
           ? <p className="text-muted self-center m-0" style={{ fontSize: `${0.875 * Math.max(scale, 0.7)}rem` }}>No lands yet</p>
           : [...groups.entries()].map(([color, stackCards]) => {
@@ -76,11 +75,10 @@ interface StackProps {
 function ColorStack({ cards, topCard, customizations, isSelectable, onSelect }: StackProps) {
   const count = cards.length;
   const { w: cardW, h: cardH, scale } = useScaledSize(80, 112);
-  const OFFSET = Math.max(2, Math.round(4 * scale)); // px offset per card in the shadow stack
-  const shadowDepth = Math.min(count - 1, 3); // show up to 3 shadow layers
+  const OFFSET = Math.max(2, Math.round(4 * scale));
+  const shadowDepth = Math.min(count - 1, 3);
   const stackHeight = cardH + shadowDepth * OFFSET;
   const stackWidth = cardW + shadowDepth * OFFSET;
-  const [hovered, setHovered] = useState(false);
 
   const custom = customizations?.[topCard.color] ?? DEFAULT_CUSTOMIZATIONS[topCard.color];
   const bg = COLOR_CSS[topCard.color];
@@ -88,18 +86,14 @@ function ColorStack({ cards, topCard, customizations, isSelectable, onSelect }: 
   return (
     <div
       onClick={isSelectable ? onSelect : undefined}
-      onMouseEnter={() => isSelectable && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className={isSelectable ? 'field-stack-interactive' : undefined}
       style={{
         position: 'relative',
         width: stackWidth,
         height: stackHeight,
         cursor: isSelectable ? 'pointer' : 'default',
         flexShrink: 0,
-        transform: isSelectable && hovered ? 'translateY(-8px)' : 'none',
-        filter: isSelectable && hovered ? 'brightness(1.25) drop-shadow(0 8px 16px rgba(255,255,255,0.15))' : 'none',
-        transition: 'transform 0.15s ease, filter 0.15s ease',
-        zIndex: hovered ? 10 : 0,
+        touchAction: 'manipulation',
       }}
     >
       {/* Shadow cards underneath — CSS only, no extra DOM images */}

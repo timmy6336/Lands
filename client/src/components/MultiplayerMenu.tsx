@@ -1,4 +1,4 @@
-// Multiplayer mode selector: Private Room (host/join) vs Matchmaking.
+// Multiplayer mode selector — mobile-first layout.
 interface Props {
   onPrivate: () => void;
   onMatchmaking: () => void;
@@ -7,41 +7,37 @@ interface Props {
 
 export function MultiplayerMenu({ onPrivate, onMatchmaking, onBack }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-8">
-      <div className="text-center">
-        <h2 className="text-accent mb-1 m-0">Multiplayer</h2>
-        <p className="text-muted text-sm m-0">Play against a friend or a random opponent</p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 28, padding: '1.5rem 1.25rem' }}>
+      <div style={{ textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--accent)', margin: '0 0 6px', fontSize: '1.6rem' }}>Multiplayer</h2>
+        <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>Play against a friend or a random opponent</p>
       </div>
 
-      <div className="flex flex-col gap-3.5 min-w-[280px]">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 360 }}>
         <button
-          className="btn-primary text-left"
+          className="btn-primary"
           onClick={onPrivate}
-          style={{ fontSize: '1.05rem', padding: '0.8rem 2rem' }}
+          style={{ textAlign: 'left', fontSize: '1.05rem', padding: '0.9rem 1.25rem', minHeight: 64, borderRadius: 12 }}
         >
-          🔐 Private Room
-          <span className="block text-[0.75rem] font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+          <span style={{ display: 'block', fontWeight: 700 }}>🔐 Private Room</span>
+          <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 400, opacity: 0.7, marginTop: 3 }}>
             Host or join a game with a room code
           </span>
         </button>
 
         <button
-          className="btn-secondary text-left"
+          className="btn-secondary"
           onClick={onMatchmaking}
-          style={{ fontSize: '1.05rem', padding: '0.8rem 2rem' }}
+          style={{ textAlign: 'left', fontSize: '1.05rem', padding: '0.9rem 1.25rem', minHeight: 64, borderRadius: 12 }}
         >
-          🔍 Matchmaking
-          <span className="block text-[0.75rem] font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+          <span style={{ display: 'block', fontWeight: 700 }}>🔍 Matchmaking</span>
+          <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 400, opacity: 0.65, marginTop: 3 }}>
             Get matched with another player automatically
           </span>
         </button>
       </div>
 
-      <button
-        className="btn-secondary"
-        onClick={onBack}
-        style={{ fontSize: '0.9rem', padding: '0.5rem 1.5rem' }}
-      >
+      <button className="btn-secondary" onClick={onBack} style={{ fontSize: '0.9rem', padding: '0.6rem 1.75rem' }}>
         ← Back
       </button>
     </div>

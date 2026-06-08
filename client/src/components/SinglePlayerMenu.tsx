@@ -1,4 +1,4 @@
-// Single-player configuration screen: choose AI difficulty, counter time limit, and who goes first.
+// Single-player config screen — mobile-first layout.
 import { useState } from 'react';
 import { AIDifficulty, GameSettings } from '@lands/shared';
 
@@ -8,9 +8,9 @@ interface Props {
 }
 
 const DIFFICULTIES: { id: AIDifficulty; label: string; desc: string; color: string }[] = [
-  { id: 'easy',   label: 'Sapling',   desc: 'Mostly random play. Good for learning the game.',                                                    color: '#27ae60' },
-  { id: 'medium', label: 'Ironbark',  desc: 'Tracks win conditions, plays strategically, counters meaningful threats.',                           color: '#e67e22' },
-  { id: 'hard',   label: 'Dreadroot', desc: 'Fully strategic. Saves blues for counter wars, targets your win path, and remembers revealed cards.', color: '#e74c3c' },
+  { id: 'easy',   label: 'Sapling',   desc: 'Mostly random play. Good for learning.',             color: '#27ae60' },
+  { id: 'medium', label: 'Ironbark',  desc: 'Tracks win conditions and counters key threats.',     color: '#e67e22' },
+  { id: 'hard',   label: 'Dreadroot', desc: 'Fully strategic. Saves blues, targets your win path.', color: '#e74c3c' },
 ];
 
 export function SinglePlayerMenu({ onStart, onBack }: Props) {
@@ -20,25 +20,26 @@ export function SinglePlayerMenu({ onStart, onBack }: Props) {
 
   const settings: GameSettings = { counterTimeLimitSeconds: timerSeconds, isSinglePlayer: true };
 
-  const toggleStyle = (active: boolean): React.CSSProperties => ({
+  const pillStyle = (active: boolean): React.CSSProperties => ({
     flex: 1,
     background:   active ? 'var(--accent)' : 'var(--surface)',
     border:       active ? '2px solid var(--accent)' : '2px solid var(--border)',
-    borderRadius: 8, padding: '0.45rem 0',
+    borderRadius: 10, padding: '0.55rem 0',
     color:        active ? '#fff' : 'var(--muted)',
-    cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
-    transition: 'all 0.15s ease',
+    cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600,
+    minHeight: 44,
+    transition: 'all 0.15s',
   });
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6">
-      <div className="text-center">
-        <h2 className="text-accent mb-1">Single Player</h2>
-        <p className="text-muted text-sm">Choose your opponent</p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 20, padding: '1.5rem 1.25rem', overflowY: 'auto' }}>
+      <div style={{ textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--accent)', margin: '0 0 4px' }}>Single Player</h2>
+        <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>Choose your opponent</p>
       </div>
 
       {/* Difficulty */}
-      <div className="flex flex-col gap-2 min-w-[280px]">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 360 }}>
         {DIFFICULTIES.map(d => (
           <button
             key={d.id}
@@ -46,34 +47,34 @@ export function SinglePlayerMenu({ onStart, onBack }: Props) {
             style={{
               background:   difficulty === d.id ? `rgba(${hexToRgb(d.color)}, 0.15)` : 'var(--surface)',
               border:       difficulty === d.id ? `2px solid ${d.color}` : '2px solid var(--border)',
-              borderRadius: 10, padding: '0.75rem 1rem',
-              textAlign: 'left', cursor: 'pointer',
-              transition: 'all 0.18s ease',
+              borderRadius: 12, padding: '0.8rem 1rem',
+              textAlign: 'left', cursor: 'pointer', minHeight: 64,
+              transition: 'all 0.15s',
             }}
           >
             <div style={{ fontWeight: 700, color: difficulty === d.id ? d.color : 'var(--text)', fontSize: '1rem' }}>
               {d.label}
             </div>
-            <div className="text-muted text-xs mt-0.5">{d.desc}</div>
+            <div style={{ color: 'var(--muted)', fontSize: '0.78rem', marginTop: 2 }}>{d.desc}</div>
           </button>
         ))}
       </div>
 
       {/* Turn order */}
-      <div className="flex flex-col gap-1.5 min-w-[280px]">
-        <label className="text-muted text-xs uppercase tracking-wider">Turn Order</label>
-        <div className="flex gap-2">
-          <button onClick={() => setGoFirst(true)}  style={toggleStyle(goFirst)}>I go first</button>
-          <button onClick={() => setGoFirst(false)} style={toggleStyle(!goFirst)}>I go second</button>
+      <div style={{ width: '100%', maxWidth: 360 }}>
+        <label style={{ display: 'block', color: 'var(--muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Turn Order</label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setGoFirst(true)}  style={pillStyle(goFirst)}>I go first</button>
+          <button onClick={() => setGoFirst(false)} style={pillStyle(!goFirst)}>I go second</button>
         </div>
       </div>
 
       {/* Counter timer */}
-      <div className="flex flex-col gap-1.5 min-w-[280px]">
-        <label className="text-muted text-xs uppercase tracking-wider">Counter Timer</label>
-        <div className="flex gap-2">
+      <div style={{ width: '100%', maxWidth: 360 }}>
+        <label style={{ display: 'block', color: 'var(--muted)', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Counter Timer</label>
+        <div style={{ display: 'flex', gap: 8 }}>
           {([10, 15, 30, null] as (number | null)[]).map(v => (
-            <button key={String(v)} onClick={() => setTimerSeconds(v)} style={toggleStyle(timerSeconds === v)}>
+            <button key={String(v)} onClick={() => setTimerSeconds(v)} style={pillStyle(timerSeconds === v)}>
               {v === null ? '∞' : `${v}s`}
             </button>
           ))}
@@ -81,11 +82,15 @@ export function SinglePlayerMenu({ onStart, onBack }: Props) {
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col gap-3 min-w-[280px]">
-        <button className="btn-primary text-lg py-3 px-8" onClick={() => onStart(difficulty, settings, goFirst)}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 360 }}>
+        <button
+          className="btn-primary"
+          style={{ fontSize: '1.1rem', minHeight: 56, borderRadius: 12 }}
+          onClick={() => onStart(difficulty, settings, goFirst)}
+        >
           Start Game
         </button>
-        <button className="btn-secondary" onClick={onBack}>← Back</button>
+        <button className="btn-secondary" onClick={onBack} style={{ minHeight: 48 }}>← Back</button>
       </div>
     </div>
   );

@@ -1,13 +1,11 @@
-// Rock-Paper-Scissors screen shown before the game starts to determine who goes first.
-// Both players simultaneously pick; ties show the result and re-run;
-// the winner then picks which player goes first (can be either player).
+// Rock-Paper-Scissors screen — mobile-first large tap targets.
 import { useEffect, useState } from 'react';
 import { GameState, RpsChoice } from '@lands/shared';
 
-const RPS_OPTIONS: { choice: RpsChoice; label: string; emoji: string }[] = [
-  { choice: 'rock',     label: 'Rock',     emoji: '🪨' },
-  { choice: 'paper',    label: 'Paper',    emoji: '📄' },
-  { choice: 'scissors', label: 'Scissors', emoji: '✂️' },
+const RPS_OPTIONS: { choice: RpsChoice; emoji: string }[] = [
+  { choice: 'rock',     emoji: '🪨' },
+  { choice: 'paper',    emoji: '📄' },
+  { choice: 'scissors', emoji: '✂️' },
 ];
 
 const OUTCOME_LINES: Record<string, string> = {
@@ -31,12 +29,10 @@ export function RpsScreen({ gameState, myIndex, onPick, onChoose }: Props) {
   const opponent = gameState.players[(1 - myIndex) as 0 | 1];
 
   const resultKey = rpsResult ? `${rpsResult.picks[0]}-${rpsResult.picks[1]}` : '';
-  useEffect(() => {
-    setMyPick(null);
-  }, [resultKey]);
+  useEffect(() => { setMyPick(null); }, [resultKey]);
 
   if (phase === 'rps_choose' && rpsResult) {
-    const iAmWinner = rpsResult.winner === myIndex;
+    const iAmWinner    = rpsResult.winner === myIndex;
     const myPickDisp   = rpsResult.picks[myIndex];
     const oppPickDisp  = rpsResult.picks[(1 - myIndex) as 0 | 1];
     const outcomeKey   = `${myPickDisp}_${oppPickDisp}`;
@@ -46,45 +42,35 @@ export function RpsScreen({ gameState, myIndex, onPick, onChoose }: Props) {
       : (OUTCOME_LINES[revOutcomeKey] ?? 'They win!');
 
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-7 text-center p-8">
-        <h2 className="text-accent m-0 text-[1.4rem]">Rock Paper Scissors</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 24, textAlign: 'center', padding: '1.5rem' }}>
+        <h2 style={{ color: 'var(--accent)', margin: 0 }}>Rock Paper Scissors</h2>
 
-        <div className="flex gap-8 items-center text-[3rem]">
-          <div className="text-center">
+        <div style={{ display: 'flex', gap: 28, alignItems: 'center', fontSize: '3.5rem' }}>
+          <div style={{ textAlign: 'center' }}>
             <div>{emojiFor(myPickDisp)}</div>
-            <div className="text-[0.7rem] text-muted mt-1">You</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 6 }}>You</div>
           </div>
-          <span className="text-[1.2rem] text-muted">vs</span>
-          <div className="text-center">
+          <span style={{ fontSize: '1.1rem', color: 'var(--muted)' }}>vs</span>
+          <div style={{ textAlign: 'center' }}>
             <div>{emojiFor(oppPickDisp)}</div>
-            <div className="text-[0.7rem] text-muted mt-1">{opponent.name}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 6 }}>{opponent.name}</div>
           </div>
         </div>
 
-        <p className="text-muted text-sm m-0">{outcomeText}</p>
+        <p style={{ color: 'var(--muted)', margin: 0 }}>{outcomeText}</p>
 
         {iAmWinner ? (
-          <>
-            <h3 className="m-0" style={{ color: '#f1c40f' }}>You won! Choose who goes first:</h3>
-            <div className="flex gap-4">
-              <button
-                className="btn-primary"
-                onClick={() => onChoose(myIndex)}
-                style={{ padding: '0.65rem 1.75rem', fontSize: '1rem' }}
-              >
-                I go first
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={() => onChoose((1 - myIndex) as 0 | 1)}
-                style={{ padding: '0.65rem 1.75rem', fontSize: '1rem' }}
-              >
-                {opponent.name} goes first
-              </button>
-            </div>
-          </>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: '100%', maxWidth: 320 }}>
+            <h3 style={{ margin: 0, color: '#f1c40f' }}>You won! Who goes first?</h3>
+            <button className="btn-primary" onClick={() => onChoose(myIndex)} style={{ width: '100%', minHeight: 52, fontSize: '1rem' }}>
+              I go first
+            </button>
+            <button className="btn-secondary" onClick={() => onChoose((1 - myIndex) as 0 | 1)} style={{ width: '100%', minHeight: 52, fontSize: '1rem' }}>
+              {opponent.name} goes first
+            </button>
+          </div>
         ) : (
-          <p className="text-muted text-base m-0">
+          <p style={{ color: 'var(--muted)', fontSize: '0.95rem', margin: 0 }}>
             {opponent.name} won — waiting for them to choose who goes first…
           </p>
         )}
@@ -95,63 +81,53 @@ export function RpsScreen({ gameState, myIndex, onPick, onChoose }: Props) {
   const isDraw = rpsResult?.winner === 'draw';
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-7 text-center p-8">
-      <h2 className="text-accent m-0 text-[1.4rem]">Rock Paper Scissors</h2>
-      <p className="text-muted text-sm m-0">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 24, textAlign: 'center', padding: '1.5rem' }}>
+      <h2 style={{ color: 'var(--accent)', margin: 0 }}>Rock Paper Scissors</h2>
+      <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>
         {me.name} vs {opponent.name} — winner chooses who goes first
       </p>
 
       {isDraw && rpsResult && (
-        <div className="flex flex-col items-center gap-2 border border-border rounded-[10px]"
-          style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem 1.5rem' }}>
-          <div className="flex gap-6 text-[2.5rem]">
-            <div className="text-center">
+        <div style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'rgba(255,255,255,0.05)', padding: '0.75rem 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 24, fontSize: '2.8rem' }}>
+            <div style={{ textAlign: 'center' }}>
               <div>{emojiFor(rpsResult.picks[myIndex])}</div>
-              <div className="text-[0.65rem] text-muted mt-0.5">You</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--muted)', marginTop: 4 }}>You</div>
             </div>
-            <span className="text-base text-muted self-center">vs</span>
-            <div className="text-center">
+            <span style={{ fontSize: '1rem', color: 'var(--muted)', alignSelf: 'center' }}>vs</span>
+            <div style={{ textAlign: 'center' }}>
               <div>{emojiFor(rpsResult.picks[(1 - myIndex) as 0 | 1])}</div>
-              <div className="text-[0.65rem] text-muted mt-0.5">{opponent.name}</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--muted)', marginTop: 4 }}>{opponent.name}</div>
             </div>
           </div>
-          <p className="font-bold m-0 text-sm" style={{ color: '#f1c40f' }}>
-            Draw! Pick again.
-          </p>
+          <p style={{ fontWeight: 700, margin: 0, color: '#f1c40f' }}>Draw! Pick again.</p>
         </div>
       )}
 
       {myPick ? (
-        <div className="text-center">
-          <div className="text-[4rem]">{emojiFor(myPick)}</div>
-          <p className="text-muted mt-2 m-0">
-            You chose <strong className="text-foreground">{myPick}</strong> — waiting for {opponent.name}…
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '4rem' }}>{emojiFor(myPick)}</div>
+          <p style={{ color: 'var(--muted)', marginTop: 12, margin: 0 }}>
+            You chose <strong style={{ color: 'var(--text)' }}>{myPick}</strong> — waiting for {opponent.name}…
           </p>
         </div>
       ) : (
-        <div className="flex gap-4">
-          {RPS_OPTIONS.map(({ choice, label, emoji }) => (
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', width: '100%', maxWidth: 320 }}>
+          {RPS_OPTIONS.map(({ choice, emoji }) => (
             <button
               key={choice}
               onClick={() => { setMyPick(choice); onPick(choice); }}
-              className="flex flex-col items-center gap-1.5 bg-surface border-2 border-border rounded-xl font-semibold text-foreground"
               style={{
-                padding: '1rem 1.5rem', fontSize: '1rem', cursor: 'pointer',
-                transition: 'border-color 0.15s ease, transform 0.12s ease, background 0.15s ease',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)';
-                (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-4px)';
-                (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)';
-                (e.currentTarget as HTMLButtonElement).style.transform = 'none';
-                (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface)';
+                flex: 1,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                background: 'var(--surface)', border: '2px solid var(--border)', borderRadius: 14,
+                padding: '1rem 0.5rem', fontSize: '0.9rem', fontWeight: 700,
+                minHeight: 88, cursor: 'pointer',
+                color: 'var(--text)', touchAction: 'manipulation',
               }}
             >
-              <span className="text-[2.5rem] leading-none">{emoji}</span>
-              {label}
+              <span style={{ fontSize: '2.6rem', lineHeight: 1 }}>{emoji}</span>
+              <span style={{ textTransform: 'capitalize' }}>{choice}</span>
             </button>
           ))}
         </div>
