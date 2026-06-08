@@ -1,0 +1,126 @@
+name: Mobile Android Build
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Builds the React Native / Expo mobile app (mobile/) into an installable
+# Android APK via `expo prebuild` + Gradle — no EAS account/cloud build needed.
+#
+# Why CI instead of building locally: the Android Gradle Plugin and SDK
+# components are distributed from Google's Maven repo (dl.google.com), which
+# many sandboxed/dev environments block. GitHub-hosted runners have full
+# network access and ship with the Android SDK preinstalled.
+#
+# Trigger it from the Actions tab ("Run workflow"). The finished APK is
+# uploaded as a workflow artifact — open the run's summary page, download
+# the artifact zip, transfer the APK inside it to your phone, and install it
+# (enable "Install unknown apps" for your file manager / browser first).
+#
+# The release variant is signed with the Android debug keystore so it installs
+# without needing a production keystore. It runs fully standalone — no Metro
+# dev server required.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [feature/rn-rewrite]
+    paths:
+      - 'mobile/**'
+      - 'shared/**'
+      - 'server/src/game/**'
+      - 'server/src/ai/**'
+      - '.github/workflows/mobile-android-build.yml'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build variant'
+        required: true
+        default: 'release'
+        type: choice
+        options: [release, debug]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install mobile dependencies
+        run: npm install --prefix mobile
+
+      # Bake the dedicated multiplayer server URL into the build, if configured.
+      # Without this, the app falls back to http://localhost:3001 — fine for
+      # single-player (which runs fully offline), but multiplayer needs a real
+      # URL. Set the DEDICATED_SERVER_URL repo/organization variable to your
+      # hosted server (Settings → Secrets and variables → Actions → Variables).
+      - name: Configure dedicated server URL
+        if: ${{ vars.DEDICATED_SERVER_URL != '' }}
+        run: echo "EXPO_PUBLIC_DEDICATED_SERVER_URL=${{ vars.DEDICATED_SERVER_URL }}" > mobile/.env.local
+
+      # Generates the native android/ project from app.json (gitignored —
+      # this is a managed Expo workflow, the native project is build output).
+      - name: Prebuild native Android project
+        run: npx expo prebuild --platform android --no-install
+        working-directory: mobile
+
+      - name: Grant execute permission to gradlew
+        run: chmod +x gradlew
+        working-directory: mobile/android
+
+      # Debug builds bundle JS by default only when connected to Metro.
+      # Setting bundleInDebug=true makes the debug APK self-contained too.
+      - name: Build debug APK (self-contained)
+        if: ${{ github.event.inputs.build_type == 'debug' }}
+        run: ./gradlew assembleDebug --no-daemon -PbundleInDebug=true
+        working-directory: mobile/android
+
+      # Release APKs must be signed to sideload on Android. We sign with the
+      # standard Android debug keystore (auto-created by the SDK setup step)
+      # — sufficient for personal use, no production keystore needed.
+      - name: Build release APK (signed with debug keystore)
+        if: ${{ github.event.inputs.build_type != 'debug' }}
+        run: |
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$HOME/.android/debug.keystore" \
+            -Pandroid.injected.signing.store.password=android \
+            -Pandroid.injected.signing.key.alias=androiddebugkey \
+            -Pandroid.injected.signing.key.password=android
+        working-directory: mobile/android
+
+      - name: Locate APK
+        id: apk
+        run: |
+          if [ "${{ github.event.inputs.build_type }}" = "debug" ]; then
+            PATH_GLOB="app/build/outputs/apk/debug/*.apk"
+          else
+            PATH_GLOB="app/build/outputs/apk/release/*.apk"
+          fi
+          APK_PATH=$(ls mobile/android/$PATH_GLOB | head -n1)
+          echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$APK_PATH")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lands-mobile-android-${{ github.event.inputs.build_type || 'release' }}
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 30
