@@ -3,6 +3,8 @@ import { Color } from '@lands/shared';
 
 export type CardImageUrls = Record<Color | 'back', string>;
 
+const COLORS: (Color | 'back')[] = ['white', 'red', 'blue', 'green', 'black', 'back'];
+
 const DEFAULT_URLS: CardImageUrls = {
   white: '/cards/white.svg',
   red:   '/cards/red.svg',
@@ -12,6 +14,19 @@ const DEFAULT_URLS: CardImageUrls = {
   back:  '/cards/back.svg',
 };
 
+function skinUrls(packId: string): CardImageUrls {
+  if (!packId || packId === 'default') return DEFAULT_URLS;
+  const base = `/cards/skins/${packId}`;
+  return {
+    white: `${base}/white.svg`,
+    red:   `${base}/red.svg`,
+    blue:  `${base}/blue.svg`,
+    green: `${base}/green.svg`,
+    black: `${base}/black.svg`,
+    back:  `${base}/back.svg`,
+  };
+}
+
 /** Context that provides card image URLs throughout the component tree */
 export const CardImagesContext = createContext<CardImageUrls>(DEFAULT_URLS);
 
@@ -20,18 +35,15 @@ export function useCardImages(): CardImageUrls {
   return useContext(CardImagesContext);
 }
 
-/** Used once in App.tsx to load and refresh card image URLs (Electron or browser fallback) */
-export function useCardImagesProvider(): [CardImageUrls, () => Promise<void>] {
-  const [urls, setUrls] = useState<CardImageUrls>(DEFAULT_URLS);
+/** Used once in App.tsx. Re-runs when the active skin pack changes. */
+export function useCardImagesProvider(activePack?: string | null): [CardImageUrls, () => Promise<void>] {
+  const [urls, setUrls] = useState<CardImageUrls>(() => skinUrls(activePack ?? 'default'));
 
   async function refresh() {
-    if (window.electronAPI) {
-      const fetched = await window.electronAPI.getCardImageUrls();
-      setUrls(fetched as CardImageUrls);
-    }
+    setUrls(skinUrls(activePack ?? 'default'));
   }
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => { refresh(); }, [activePack]);
 
   return [urls, refresh];
 }

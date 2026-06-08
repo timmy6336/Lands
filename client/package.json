@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.4.0",
+    "@capacitor/browser": "^6.0.3",
     "@capacitor/core": "^8.4.0",
     "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/share": "^6.0.3",
     "framer-motion": "^12.34.3",
     "lands": "file:..",
     "react": "^18.2.0",

@@ -118,3 +118,51 @@ export async function deleteReplay(id: string): Promise<void> {
     return;
   }
 }
+
+/**
+ * Share a replay via the OS share sheet (Android/iOS) or download it (web/Electron).
+ * On Android/iOS this triggers the native share dialog so the user can send the
+ * replay JSON to Discord, WhatsApp, email, etc.
+ */
+export async function shareReplay(id: string): Promise<void> {
+  const replay = await loadReplay(id);
+  if (!replay) return;
+
+  const json = JSON.stringify(replay, null, 2);
+  const filename = `lands-replay-${id}.json`;
+
+  if (useCapacitor()) {
+    // Write to a cache file so Capacitor Share can reference it by URI
+    const cachePath = `cache/${filename}`;
+    try {
+      await Filesystem.mkdir({ path: 'cache', directory: Directory.Cache, recursive: true });
+    } catch { /* exists */ }
+    await Filesystem.writeFile({
+      path: cachePath, data: json,
+      directory: Directory.Cache, encoding: Encoding.UTF8,
+    });
+    const { uri } = await Filesystem.getUri({ path: cachePath, directory: Directory.Cache });
+
+    try {
+      const { Share } = await import('@capacitor/share');
+      await Share.share({
+        title: `Lands Replay — ${replay.playerNames[0]} vs ${replay.playerNames[1]}`,
+        text: `Turn ${replay.turnCount} · Winner: ${replay.winner === 'draw' ? 'Draw' : replay.playerNames[replay.winner as 0 | 1] ?? 'Unknown'}`,
+        url: uri,
+        dialogTitle: 'Share replay',
+      });
+    } catch {
+      // Share cancelled or plugin missing — nothing to do
+    }
+    return;
+  }
+
+  // Web / Electron fallback: trigger a browser download
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

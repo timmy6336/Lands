@@ -1,12 +1,10 @@
-// ReplayBrowser.tsx — Lists saved replay files from local storage (Electron's
-// userData directory or, on Android, the app's private Capacitor filesystem
-// directory — see lib/replayStorage.ts for the platform-detection layer).
-// Clicking a replay calls onSelect to launch ReplayViewer. Files are sorted
-// newest-first by their embedded timestamp.
+// ReplayBrowser.tsx — Lists saved replay files from local storage (Capacitor
+// filesystem or Electron — see lib/replayStorage.ts). Supports sharing replays
+// via the Android/iOS share sheet (Capacitor Share plugin).
 
 import { useEffect, useState } from 'react';
 import { ReplayFile } from '@lands/shared';
-import { isAvailable, listReplays, loadReplay, deleteReplay, ReplayMeta } from '../lib/replayStorage';
+import { isAvailable, listReplays, loadReplay, deleteReplay, shareReplay, ReplayMeta } from '../lib/replayStorage';
 
 interface Props {
   onBack: () => void;
@@ -17,6 +15,7 @@ export function ReplayBrowser({ onBack, onView }: Props) {
   const [metas, setMetas] = useState<ReplayMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [sharingId, setSharingId] = useState<string | null>(null);
   const available = isAvailable();
 
   useEffect(() => {
@@ -42,6 +41,16 @@ export function ReplayBrowser({ onBack, onView }: Props) {
     if (!available) return;
     await deleteReplay(id).catch(() => {});
     setMetas(prev => prev.filter(m => m.id !== id));
+  }
+
+  async function handleShare(id: string) {
+    if (!available) return;
+    setSharingId(id);
+    try {
+      await shareReplay(id);
+    } finally {
+      setSharingId(null);
+    }
   }
 
   return (
@@ -72,8 +81,10 @@ export function ReplayBrowser({ onBack, onView }: Props) {
               key={m.id}
               meta={m}
               isLoading={loadingId === m.id}
+              isSharing={sharingId === m.id}
               onView={() => handleView(m.id)}
               onDelete={() => handleDelete(m.id)}
+              onShare={() => handleShare(m.id)}
             />
           ))}
         </div>
@@ -83,12 +94,14 @@ export function ReplayBrowser({ onBack, onView }: Props) {
 }
 
 function ReplayRow({
-  meta, isLoading, onView, onDelete,
+  meta, isLoading, isSharing, onView, onDelete, onShare,
 }: {
   meta: ReplayMeta;
   isLoading: boolean;
+  isSharing: boolean;
   onView: () => void;
   onDelete: () => void;
+  onShare: () => void;
 }) {
   const date = new Date(meta.date);
   const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -128,6 +141,15 @@ function ReplayRow({
         style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
       >
         {isLoading ? '…' : 'Watch'}
+      </button>
+      <button
+        className="btn-secondary"
+        onClick={onShare}
+        disabled={isSharing}
+        style={{ padding: '0.45rem 0.8rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+        title="Share replay"
+      >
+        {isSharing ? '…' : '⬆ Share'}
       </button>
       <button
         className="btn-secondary"

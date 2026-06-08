@@ -1,30 +1,19 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // client/src/App.tsx — top-level screen router
-//
-// Manages which screen is displayed and owns all the top-level state that
-// needs to be shared between screens (server URL, player name, game settings…).
-//
-// Screen routing:
-//   home              — main menu
-//   play-menu         — multiplayer / single-player selector
-//   single-player-menu — AI difficulty + go-first choice
-//   single-player     — active local game (routed to GameBoard/GameOver)
-//   host / join       — multiplayer room creation/joining (connects socket)
-//   replays           — saved replay browser
-//   replay-viewer     — watching a replay
-//   settings / rules  — info screens
-//
-// When `gameState` is non-null and not in 'waiting', in-game screens
-// (RpsScreen, GameBoard, GameOver) take priority over nav screens.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatMessage, GameSettings, ReplayFile } from '@lands/shared';
 import { useSocket } from './hooks/useSocket';
 import { useLocalGame, LocalGameParams } from './hooks/useLocalGame';
+import { useAuth } from './hooks/useAuth';
 import { CardImagesContext, useCardImagesProvider } from './hooks/useCardImages';
 import { UISettingsContext, useUISettingsProvider } from './hooks/useUISettings';
 import { HomeScreen } from './components/HomeScreen';
+import { AuthScreen } from './components/AuthScreen';
+import { ProfileScreen } from './components/ProfileScreen';
+import { ShopScreen } from './components/ShopScreen';
+import { SkinsScreen } from './components/SkinsScreen';
 import { PlayMenu } from './components/PlayMenu';
 import { MultiplayerMenu } from './components/MultiplayerMenu';
 import { MatchmakingScreen } from './components/MatchmakingScreen';
@@ -58,17 +47,20 @@ function PageTransition({ children, keyProp }: { children: React.ReactNode; keyP
 }
 
 type Screen =
-  | 'home' | 'play-menu' | 'single-player-menu' | 'single-player'
+  | 'home' | 'auth' | 'profile' | 'shop' | 'skins'
+  | 'play-menu' | 'single-player-menu' | 'single-player'
   | 'settings' | 'rules'
   | 'multiplayer-menu' | 'private-menu' | 'host' | 'join' | 'matchmaking'
   | 'replays' | 'replay-viewer';
 
-// URL of the shared dedicated server.  Set VITE_DEDICATED_SERVER_URL at build time.
-// Falls back to localhost for development / LAN testing.
 const DEDICATED_SERVER_URL = import.meta.env.VITE_DEDICATED_SERVER_URL ?? 'http://localhost:3001';
 
 export default function App() {
   const uiSettings = useUISettingsProvider();
+  const { theme } = uiSettings;
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
   return (
     <UISettingsContext.Provider value={uiSettings}>
       <AppInner />
@@ -86,23 +78,31 @@ function AppInner() {
   const [pendingSPRematch, setPendingSPRematch] = useState(false);
   const [replayToView, setReplayToView] = useState<ReplayFile | null>(null);
 
-  // Saved Electron settings — reserved for future use
-  // (Port / UPnP removed; multiplayer now uses the hosted dedicated server)
+  const auth = useAuth();
 
-  const [cardImageUrls, refreshCardImages] = useCardImagesProvider();
+  // Refresh profile from server on mount if a JWT is stored
+  useEffect(() => {
+    auth.refreshProfile(DEDICATED_SERVER_URL);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // When the user logs in, sync their username as the in-game player name
+  useEffect(() => {
+    if (auth.profile) setPlayerName(auth.profile.username);
+  }, [auth.profile?.username]);
+
+  const [cardImageUrls, refreshCardImages] = useCardImagesProvider(auth.profile?.active_pack_id);
 
   const { gameState: socketGameState, roomCode, error, connected, send: socketSend,
     chatMessages: socketChatMessages,
     matchmakingStatus, matchmakingFound,
-  } = useSocket(serverUrl);
+  } = useSocket(serverUrl, auth.token);
   const { gameState: localGameState, send: localSend } = useLocalGame(localGameParams);
 
-  // Route to local engine when in single-player mode, socket otherwise
   const isLocalGame = localGameParams !== null;
   const gameState   = isLocalGame ? localGameState  : socketGameState;
   const send        = isLocalGame ? localSend        : socketSend;
 
-  // Chat: local state for single-player, socket messages for multiplayer
   const [localChatMessages, setLocalChatMessages] = useState<ChatMessage[]>([]);
   const chatMessages = isLocalGame ? localChatMessages : socketChatMessages;
 
@@ -114,10 +114,8 @@ function AppInner() {
     }
   }
 
-  // Track whether we've already emitted create_room / join_room for this connection
   const roomActionSent = useRef(false);
 
-  // Auto emit create_room / join_room / join_matchmaking once connected (multiplayer only)
   useEffect(() => {
     if (!connected || roomActionSent.current) return;
 
@@ -133,18 +131,10 @@ function AppInner() {
     }
   }, [connected, screen, pendingJoin]);
 
-  // Reset roomActionSent when serverUrl changes (new connection)
-  useEffect(() => {
-    roomActionSent.current = false;
-  }, [serverUrl]);
-
-  // Reset roomActionSent on server error so the user can retry (e.g. bad room code)
-  useEffect(() => {
-    if (error) roomActionSent.current = false;
-  }, [error]);
+  useEffect(() => { roomActionSent.current = false; }, [serverUrl]);
+  useEffect(() => { if (error) roomActionSent.current = false; }, [error]);
 
   function goHome() {
-    // Tell the server to pull us out of the matchmaking queue if needed
     if (screen === 'matchmaking' && connected) {
       socketSend('leave_matchmaking');
     }
@@ -156,8 +146,6 @@ function AppInner() {
     setScreen('home');
   }
 
-  // ── Which player are we? ──────────────────────────────────────────────────
-  // viewerIndex is set per-player; fall back to hand detection for edge cases.
   const myIndex: 0 | 1 = (() => {
     if (!gameState) return 0;
     if (gameState.viewerIndex !== undefined) return gameState.viewerIndex;
@@ -171,8 +159,6 @@ function AppInner() {
   // ── In-game screens (take priority over nav screens) ─────────────────────
 
   if (gameState && phase !== 'waiting') {
-    // If the opponent disconnected during lobby or RPS (before the engine starts),
-    // the server emits an error and deletes the room — show a prompt to go home.
     const isPreGame = phase === 'customizing' || phase === 'rps_pick' || phase === 'rps_choose';
     if (isPreGame && error) {
       return (
@@ -216,7 +202,6 @@ function AppInner() {
     }
 
     if (phase === 'ended') {
-      // Single-player: show a go-first picker before restarting
       if (pendingSPRematch && isLocalGame && localGameParams) {
         const aiName = gameState.players[localGameParams.goFirst ? 1 : 0].name;
         return (
@@ -283,7 +268,62 @@ function AppInner() {
     );
   }
 
-  // ── Pre-game navigation screens ───────────────────────────────────────────
+  // ── Nav screens ─────────────────────────────────────────────────────────
+
+  if (screen === 'auth') {
+    return (
+      <PageTransition keyProp="auth">
+        <AuthScreen
+          auth={auth}
+          serverUrl={DEDICATED_SERVER_URL}
+          onBack={() => setScreen('home')}
+        />
+      </PageTransition>
+    );
+  }
+
+  if (screen === 'profile') {
+    return (
+      <PageTransition keyProp="profile">
+        <ProfileScreen
+          auth={auth}
+          serverUrl={DEDICATED_SERVER_URL}
+          onBack={() => setScreen('home')}
+          onLogout={() => { auth.logout(); setScreen('home'); }}
+          onSkins={() => setScreen('skins')}
+          onShop={() => setScreen('shop')}
+          onProfileUpdated={(profile) => auth.updateProfile(profile)}
+        />
+      </PageTransition>
+    );
+  }
+
+  if (screen === 'skins') {
+    return (
+      <PageTransition keyProp="skins">
+        <SkinsScreen
+          auth={auth}
+          serverUrl={DEDICATED_SERVER_URL}
+          onBack={() => setScreen('profile')}
+          onShop={() => setScreen('shop')}
+          onProfileUpdated={(profile) => auth.updateProfile(profile)}
+        />
+      </PageTransition>
+    );
+  }
+
+  if (screen === 'shop') {
+    return (
+      <PageTransition keyProp="shop">
+        <ShopScreen
+          auth={auth}
+          serverUrl={DEDICATED_SERVER_URL}
+          onBack={() => setScreen(auth.profile ? 'profile' : 'home')}
+          onProfileUpdated={(profile) => auth.updateProfile(profile)}
+        />
+      </PageTransition>
+    );
+  }
 
   if (screen === 'settings') {
     return (
@@ -355,11 +395,7 @@ function AppInner() {
               </span>
             </button>
           </div>
-          <button
-            className="btn-secondary"
-            onClick={() => setScreen('multiplayer-menu')}
-            style={{ fontSize: '0.9rem', padding: '0.5rem 1.5rem' }}
-          >
+          <button className="btn-secondary" onClick={() => setScreen('multiplayer-menu')} style={{ fontSize: '0.9rem', padding: '0.5rem 1.5rem' }}>
             ← Back
           </button>
         </div>
@@ -401,7 +437,6 @@ function AppInner() {
   }
 
   if (screen === 'single-player') {
-    // useLocalGame starts the engine immediately; game_state takes over rendering
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-muted">Starting game…</p>
@@ -489,8 +524,6 @@ function AppInner() {
     );
   }
 
-  // ── Home screen (default) ─────────────────────────────────────────────────
-
   return (
     <PageTransition keyProp="home">
       <HomeScreen
@@ -498,6 +531,9 @@ function AppInner() {
         onSettings={() => setScreen('settings')}
         onRules={() => setScreen('rules')}
         onReplays={() => setScreen('replays')}
+        onProfile={() => setScreen(auth.profile ? 'profile' : 'auth')}
+        onShop={() => setScreen('shop')}
+        username={auth.profile?.username ?? null}
       />
     </PageTransition>
   );
