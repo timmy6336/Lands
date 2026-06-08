@@ -1,0 +1,113 @@
+name: Android Build
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Builds the Lands Android APK via Capacitor + Gradle.
+#
+# Why CI instead of building locally: the Android Gradle Plugin and SDK
+# components are distributed from Google's Maven repo (dl.google.com), which
+# many sandboxed/dev environments block. GitHub-hosted runners have full
+# network access and ship with the Android SDK preinstalled, so this is the
+# most reliable way to produce an installable APK for this project.
+#
+# Trigger it from the Actions tab ("Run workflow") or push to the android
+# branch. The finished APK is uploaded as a workflow artifact — download it
+# from the run's summary page, transfer it to your phone, and install it
+# (enable "Install unknown apps" for your file manager / browser first).
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [android]
+    paths:
+      - 'client/**'
+      - 'shared/**'
+      - 'server/src/game/**'
+      - 'server/src/ai/**'
+      - '.github/workflows/android-build.yml'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build variant'
+        required: true
+        default: 'debug'
+        type: choice
+        options: [debug, release]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install client dependencies
+        run: npm install --prefix client
+
+      # Bake the dedicated multiplayer server URL into the build, if configured.
+      # Without this, the client falls back to http://localhost:3001 — fine for
+      # single-player (which runs fully offline), but multiplayer needs a real URL.
+      # Set the DEDICATED_SERVER_URL repo/organization variable to your hosted
+      # server (Settings → Secrets and variables → Actions → Variables).
+      - name: Configure dedicated server URL
+        if: ${{ vars.DEDICATED_SERVER_URL != '' }}
+        run: echo "VITE_DEDICATED_SERVER_URL=${{ vars.DEDICATED_SERVER_URL }}" > client/.env.local
+
+      - name: Build web client
+        run: npm run build --prefix client
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+        working-directory: client
+
+      - name: Grant execute permission to gradlew
+        run: chmod +x gradlew
+        working-directory: client/android
+
+      - name: Build debug APK
+        if: ${{ github.event.inputs.build_type != 'release' }}
+        run: ./gradlew assembleDebug --no-daemon
+        working-directory: client/android
+
+      - name: Build release APK (unsigned)
+        if: ${{ github.event.inputs.build_type == 'release' }}
+        run: ./gradlew assembleRelease --no-daemon
+        working-directory: client/android
+
+      - name: Locate APK
+        id: apk
+        run: |
+          if [ "${{ github.event.inputs.build_type }}" = "release" ]; then
+            PATH_GLOB="app/build/outputs/apk/release/*.apk"
+          else
+            PATH_GLOB="app/build/outputs/apk/debug/*.apk"
+          fi
+          APK_PATH=$(ls client/android/$PATH_GLOB | head -n1)
+          echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$APK_PATH")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lands-android-${{ github.event.inputs.build_type || 'debug' }}
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 30
