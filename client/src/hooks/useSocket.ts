@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import {
   ServerToClientEvents, ClientToServerEvents, GameState, ChatMessage,
 } from '@lands/shared';
+import { saveReplay } from '../lib/replayStorage';
 
 type LandsSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -48,7 +49,7 @@ export function useSocket(serverUrl: string | null) {
     socket.on('matchmaking_status', (data) => setMatchmakingStatus(data));
     socket.on('matchmaking_found', () => { setMatchmakingFound(true); setMatchmakingStatus(null); });
     socket.on('replay_complete', (replay) => {
-      window.electronAPI?.saveReplay(replay).catch(() => {});
+      saveReplay(replay).catch(() => {});
     });
 
     return () => {

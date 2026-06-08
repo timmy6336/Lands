@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from 'react';
 import { GameState, AIDifficulty, GameSettings, ClientToServerEvents, ReplayFile } from '@lands/shared';
 import { GameEngine } from '@lands/game/GameEngine';
 import { AIPlayer, AI_NAMES } from '@lands/ai/AIPlayer';
+import { saveReplay } from '../lib/replayStorage';
 
 export interface LocalGameParams {
   playerName: string;
@@ -101,7 +102,7 @@ export function useLocalGame(params: LocalGameParams | null): {
       setGameState(sanitized);
 
       // Save replay once when the game ends
-      if (state.phase === 'ended' && !replaySaved.current && window.electronAPI) {
+      if (state.phase === 'ended' && !replaySaved.current) {
         replaySaved.current = true;
         const replay: ReplayFile = {
           id: state.gameId,
@@ -113,7 +114,7 @@ export function useLocalGame(params: LocalGameParams | null): {
           mode: 'single-player',
           snapshots: engineInstance.replaySnapshots,
         };
-        window.electronAPI.saveReplay(replay).catch(() => {});
+        saveReplay(replay).catch(() => {});
       }
     };
 

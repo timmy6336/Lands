@@ -1,12 +1,12 @@
-// ReplayBrowser.tsx — Lists saved replay files from the user's data directory (loaded via
-// the electron IPC 'list-replays' channel). Clicking a replay calls onSelect to launch
-// ReplayViewer. Files are sorted newest-first by their embedded timestamp.
+// ReplayBrowser.tsx — Lists saved replay files from local storage (Electron's
+// userData directory or, on Android, the app's private Capacitor filesystem
+// directory — see lib/replayStorage.ts for the platform-detection layer).
+// Clicking a replay calls onSelect to launch ReplayViewer. Files are sorted
+// newest-first by their embedded timestamp.
 
 import { useEffect, useState } from 'react';
 import { ReplayFile } from '@lands/shared';
-
-// Metadata-only shape returned by listReplays (no snapshots)
-type ReplayMeta = Omit<ReplayFile, 'snapshots'>;
+import { isAvailable, listReplays, loadReplay, deleteReplay, ReplayMeta } from '../lib/replayStorage';
 
 interface Props {
   onBack: () => void;
@@ -17,20 +17,21 @@ export function ReplayBrowser({ onBack, onView }: Props) {
   const [metas, setMetas] = useState<ReplayMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const available = isAvailable();
 
   useEffect(() => {
-    if (!window.electronAPI) { setLoading(false); return; }
-    window.electronAPI.listReplays()
-      .then(raw => setMetas(raw as ReplayMeta[]))
+    if (!available) { setLoading(false); return; }
+    listReplays()
+      .then(setMetas)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [available]);
 
   async function handleView(id: string) {
-    if (!window.electronAPI) return;
+    if (!available) return;
     setLoadingId(id);
     try {
-      const replay = await window.electronAPI.loadReplay(id) as ReplayFile;
+      const replay = await loadReplay(id);
       if (replay) onView(replay);
     } finally {
       setLoadingId(null);
@@ -38,8 +39,8 @@ export function ReplayBrowser({ onBack, onView }: Props) {
   }
 
   async function handleDelete(id: string) {
-    if (!window.electronAPI) return;
-    await window.electronAPI.deleteReplay(id).catch(() => {});
+    if (!available) return;
+    await deleteReplay(id).catch(() => {});
     setMetas(prev => prev.filter(m => m.id !== id));
   }
 
@@ -52,19 +53,19 @@ export function ReplayBrowser({ onBack, onView }: Props) {
         <h2 className="text-accent m-0" style={{ fontSize: '1.6rem', fontWeight: 700 }}>Replays</h2>
       </div>
 
-      {!window.electronAPI && (
-        <p className="text-muted">Replays are only available in the desktop app.</p>
+      {!available && (
+        <p className="text-muted">Replays are only available in the desktop and mobile apps.</p>
       )}
 
-      {window.electronAPI && loading && (
+      {available && loading && (
         <p className="text-muted">Loading…</p>
       )}
 
-      {window.electronAPI && !loading && metas.length === 0 && (
+      {available && !loading && metas.length === 0 && (
         <p className="text-muted">No replays saved yet. Complete a game to record one.</p>
       )}
 
-      {window.electronAPI && !loading && metas.length > 0 && (
+      {available && !loading && metas.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', overflowY: 'auto' }}>
           {metas.map(m => (
             <ReplayRow
