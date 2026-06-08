@@ -122,7 +122,7 @@ export function createShopRouter(): Router {
       // Install stripe: npm install stripe (when going to production)
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const Stripe = require('stripe') as typeof import('stripe').default;
-      const stripe = new Stripe(stripeKey, { apiVersion: '2026-01-28.clover' });
+      const stripe = new Stripe(stripeKey, { apiVersion: '2026-02-25.clover' });
 
       const priceId = STRIPE_PRICE_IDS[packId];
       if (!priceId) {
@@ -158,7 +158,7 @@ export function createShopRouter(): Router {
       if (webhookSecret) {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const Stripe = require('stripe') as typeof import('stripe').default;
-        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-01-28.clover' });
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-02-25.clover' });
         const sig = req.headers['stripe-signature'] as string;
         try {
           event = stripe.webhooks.constructEvent(req.body as Buffer, sig, webhookSecret) as unknown as typeof event;

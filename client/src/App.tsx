@@ -57,10 +57,6 @@ const DEDICATED_SERVER_URL = import.meta.env.VITE_DEDICATED_SERVER_URL ?? 'http:
 
 export default function App() {
   const uiSettings = useUISettingsProvider();
-  const { theme } = uiSettings;
-  if (typeof document !== 'undefined') {
-    document.documentElement.setAttribute('data-theme', theme);
-  }
   return (
     <UISettingsContext.Provider value={uiSettings}>
       <AppInner />
