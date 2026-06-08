@@ -124,7 +124,7 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
         padding: '1.1rem 1.5rem 0.9rem',
         borderBottom: '1px solid var(--border)', flexShrink: 0,
       }}>
-        <button onClick={onBack} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.9rem' }}>
+        <button onClick={onBack} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.9rem', minHeight: 44, flexShrink: 0 }}>
           ← Back
         </button>
         <div>
@@ -147,7 +147,7 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
       )}
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, alignItems: 'start' }}>
           {loadErr && (
             <div style={{ color: '#e74c3c', textAlign: 'center', paddingTop: '2rem', gridColumn: '1/-1' }}>
               {loadErr}
@@ -206,7 +206,7 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
                         onClick={() => handleBuy(pack)}
                         disabled={isLoading || !auth.token}
                         className="btn-primary"
-                        style={{ padding: '0.28rem 0.75rem', fontSize: '0.78rem' }}
+                        style={{ padding: '0.45rem 0.75rem', fontSize: '0.78rem', minHeight: 40 }}
                         title={!auth.token ? 'Sign in to unlock packs' : undefined}
                       >
                         {isLoading ? '…' : `Unlock — ${formatPrice(pack.price_cents)}`}
@@ -216,8 +216,9 @@ export function ShopScreen({ auth, serverUrl, onBack, onProfileUpdated }: Props)
                       onClick={() => toggleExpand(pack.id)}
                       style={{
                         marginLeft: 'auto', background: 'none', border: '1px solid var(--border)',
-                        borderRadius: 6, padding: '0.22rem 0.55rem',
+                        borderRadius: 6, padding: '0.45rem 0.65rem',
                         color: 'var(--muted)', fontSize: '0.74rem', cursor: 'pointer',
+                        minHeight: 40, touchAction: 'manipulation',
                       }}
                     >
                       Cards {isExpanded ? '▲' : '▼'}

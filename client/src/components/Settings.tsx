@@ -104,10 +104,10 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
   }
 
   return (
-    <div className="flex flex-col h-full px-8 py-6 gap-6 overflow-y-auto">
+    <div className="flex flex-col h-full px-5 py-5 gap-6 overflow-y-auto">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button className="btn-secondary px-4 py-1.5" onClick={onBack}>← Back</button>
+        <button className="btn-secondary px-4 py-2" onClick={onBack} style={{ minHeight: 44 }}>← Back</button>
         <h2 className="text-accent m-0">Settings</h2>
       </div>
 
@@ -136,24 +136,24 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
           <p className="text-muted text-sm mb-3">Card image upload is only available in the desktop app.</p>
         )}
 
-        <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit">
+        <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit" style={{ minHeight: 44 }}>
           <input
             type="checkbox"
             checked={showCardTypeOnHover}
             onChange={e => setShowCardTypeOnHover(e.target.checked)}
-            style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--accent)' }}
+            style={{ width: 20, height: 20, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
           />
-          <span className="text-muted text-sm">Show card type on hover</span>
+          <span className="text-muted text-sm">Show card type on select</span>
         </label>
 
-        <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit">
+        <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit" style={{ minHeight: 44 }}>
           <input
             type="checkbox"
             checked={showCardEffectsOnHover}
             onChange={e => setShowCardEffectsOnHover(e.target.checked)}
-            style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--accent)' }}
+            style={{ width: 20, height: 20, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
           />
-          <span className="text-muted text-sm">Show card effect on hover</span>
+          <span className="text-muted text-sm">Show card effect on select</span>
         </label>
       </section>
 
@@ -168,13 +168,13 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
             { key: 'blue',  label: 'Blue — deck card kept on top / sent to bottom', val: showEffectResultBlue, set: setShowEffectResultBlue },
             { key: 'black', label: 'Black — card discarded from hand',        val: showEffectResultBlack, set: setShowEffectResultBlack },
           ] as const).map(({ key, label, val, set }) => (
-            <label key={key} className="flex items-center justify-between gap-4 cursor-pointer">
+            <label key={key} className="flex items-center justify-between gap-4 cursor-pointer" style={{ minHeight: 44 }}>
               <span className="text-muted text-sm">{label}</span>
               <input
                 type="checkbox"
                 checked={val}
                 onChange={e => set(e.target.checked)}
-                style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
+                style={{ width: 20, height: 20, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
               />
             </label>
           ))}

@@ -149,7 +149,7 @@ export function ProfileScreen({ auth, serverUrl: _serverUrl, onBack, onLogout, o
           style={{
             width: '100%', padding: '0.75rem 1rem',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            fontSize: '0.95rem',
+            fontSize: '0.95rem', minHeight: 52,
           }}
         >
           <span>🎨 Card Skins</span>
@@ -164,6 +164,7 @@ export function ProfileScreen({ auth, serverUrl: _serverUrl, onBack, onLogout, o
             border: '1px solid var(--border)', borderRadius: 8,
             color: 'var(--muted)', padding: '0.55rem 1rem', fontSize: '0.82rem',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            minHeight: 48, touchAction: 'manipulation',
           }}
         >
           <span>🛒 Pack Shop</span>
@@ -173,7 +174,7 @@ export function ProfileScreen({ auth, serverUrl: _serverUrl, onBack, onLogout, o
 
       {/* Actions */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280 }}>
-        <button onClick={onBack} className="btn-secondary" style={{ padding: '0.65rem' }}>
+        <button onClick={onBack} className="btn-secondary" style={{ padding: '0.65rem', minHeight: 50 }}>
           ← Back
         </button>
         <button
@@ -181,10 +182,8 @@ export function ProfileScreen({ auth, serverUrl: _serverUrl, onBack, onLogout, o
           style={{
             background: 'none', border: '1px solid rgba(231,76,60,0.4)', borderRadius: 8,
             color: '#e74c3c', padding: '0.55rem', fontSize: '0.9rem', cursor: 'pointer',
-            transition: 'background 0.15s',
+            minHeight: 48, touchAction: 'manipulation',
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(231,76,60,0.08)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >
           Sign Out
         </button>

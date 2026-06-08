@@ -59,11 +59,12 @@ export function AuthScreen({ auth, serverUrl, onBack }: Props) {
     color: active ? '#fff' : 'var(--muted)',
     fontWeight: active ? 700 : 400,
     fontSize: '0.9rem', transition: 'background 0.15s',
+    minHeight: 44, touchAction: 'manipulation',
   });
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '0.65rem 0.9rem',
+    width: '100%', padding: '0.75rem 0.9rem',
     background: 'var(--bg)', border: '1px solid var(--border)',
-    borderRadius: 8, color: 'var(--foreground)', fontSize: '0.95rem',
+    borderRadius: 8, color: 'var(--foreground)', fontSize: '1rem',
     outline: 'none', boxSizing: 'border-box',
   };
   const labelStyle: React.CSSProperties = {
@@ -138,7 +139,7 @@ export function AuthScreen({ auth, serverUrl, onBack }: Props) {
             type="submit"
             className="btn-primary"
             disabled={auth.loading}
-            style={{ padding: '0.7rem', fontSize: '1rem', marginTop: 4 }}
+            style={{ padding: '0.7rem', fontSize: '1rem', marginTop: 4, minHeight: 52 }}
           >
             {auth.loading ? '…' : isLogin ? 'Sign In' : 'Create Account'}
           </button>
@@ -147,7 +148,7 @@ export function AuthScreen({ auth, serverUrl, onBack }: Props) {
 
       {/* Back / Guest */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.9rem' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.9rem', minHeight: 44, touchAction: 'manipulation' }}>
           ← Back
         </button>
         <span style={{ color: 'var(--muted2)', fontSize: '0.8rem' }}>

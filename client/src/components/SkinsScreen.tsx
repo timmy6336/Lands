@@ -67,15 +67,15 @@ export function SkinsScreen({ auth, serverUrl, onBack, onShop, onProfileUpdated 
         borderBottom: '1px solid var(--border)',
         flexShrink: 0,
       }}>
-        <button onClick={onBack} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.9rem' }}>
+        <button onClick={onBack} className="btn-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.9rem', minHeight: 44 }}>
           ← Back
         </button>
         <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--foreground)' }}>Card Skins</h2>
         <button
           onClick={onShop}
-          style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+          style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.85rem', cursor: 'pointer', padding: '0.5rem', minHeight: 44, touchAction: 'manipulation' }}
         >
-          Browse Shop →
+          Shop →
         </button>
       </div>
 
@@ -114,13 +114,13 @@ export function SkinsScreen({ auth, serverUrl, onBack, onShop, onProfileUpdated 
                 )}
               </div>
 
-              <div style={{ display: 'flex', gap: 8, marginBottom: 10, justifyContent: 'center' }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10, overflowX: 'auto', paddingBottom: 4 }}>
                 {cardColors.map(color => (
-                  <div key={color} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <div key={color} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flexShrink: 0 }}>
                     <img
                       src={cardUrl(packId, color)}
                       alt={color}
-                      style={{ width: 50, height: 70, borderRadius: 6, objectFit: 'cover', border: '1px solid var(--border)', boxShadow: '0 2px 6px rgba(0,0,0,0.22)' }}
+                      style={{ width: 46, height: 64, borderRadius: 6, objectFit: 'cover', border: '1px solid var(--border)', boxShadow: '0 2px 6px rgba(0,0,0,0.22)' }}
                       onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.2'; }}
                     />
                     <span style={{ fontSize: '0.58rem', color: 'var(--muted)', textTransform: 'capitalize' }}>{color}</span>
@@ -132,7 +132,7 @@ export function SkinsScreen({ auth, serverUrl, onBack, onShop, onProfileUpdated 
                 onClick={() => handleEquip(packId)}
                 disabled={isActive || isBusy || !!equipBusy}
                 className={isActive ? 'btn-secondary' : 'btn-primary'}
-                style={{ width: '100%', padding: '0.5rem', fontSize: '0.85rem', opacity: !isActive && equipBusy && equipBusy !== packId ? 0.45 : 1 }}
+                style={{ width: '100%', padding: '0.6rem', fontSize: '0.9rem', minHeight: 50, opacity: !isActive && equipBusy && equipBusy !== packId ? 0.45 : 1 }}
               >
                 {isBusy ? '…' : isActive ? '✓ Currently Active' : 'Use This Skin'}
               </button>

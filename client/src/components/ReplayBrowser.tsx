@@ -54,12 +54,12 @@ export function ReplayBrowser({ onBack, onView }: Props) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '2rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-        <button className="btn-secondary" onClick={onBack} style={{ padding: '0.5rem 1.2rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '1.25rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        <button className="btn-secondary" onClick={onBack} style={{ padding: '0.5rem 1.2rem', minHeight: 44 }}>
           ← Back
         </button>
-        <h2 className="text-accent m-0" style={{ fontSize: '1.6rem', fontWeight: 700 }}>Replays</h2>
+        <h2 className="text-accent m-0" style={{ fontSize: '1.4rem', fontWeight: 700 }}>Replays</h2>
       </div>
 
       {!available && (
@@ -117,48 +117,50 @@ function ReplayRow({
 
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: '1rem',
-      background: 'var(--surface)', borderRadius: '8px', padding: '0.8rem 1rem',
+      display: 'flex', flexDirection: 'column', gap: '0.6rem',
+      background: 'var(--surface)', borderRadius: '10px', padding: '0.85rem 1rem',
       border: '1px solid var(--border)',
     }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div>
         <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
           {meta.playerNames[0]} vs {meta.playerNames[1]}
         </div>
-        <div className="text-muted" style={{ fontSize: '0.8rem', marginTop: '2px' }}>
+        <div className="text-muted" style={{ fontSize: '0.78rem', marginTop: '3px' }}>
           {dateStr} {timeStr} · {modeTag} · Turn {meta.turnCount} · Winner: {winnerName}
         </div>
         {meta.winReason && (
-          <div className="text-muted" style={{ fontSize: '0.78rem', marginTop: '1px', fontStyle: 'italic' }}>
+          <div className="text-muted" style={{ fontSize: '0.75rem', marginTop: '2px', fontStyle: 'italic' }}>
             {meta.winReason}
           </div>
         )}
       </div>
-      <button
-        className="btn-primary"
-        onClick={onView}
-        disabled={isLoading}
-        style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
-      >
-        {isLoading ? '…' : 'Watch'}
-      </button>
-      <button
-        className="btn-secondary"
-        onClick={onShare}
-        disabled={isSharing}
-        style={{ padding: '0.45rem 0.8rem', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
-        title="Share replay"
-      >
-        {isSharing ? '…' : '⬆ Share'}
-      </button>
-      <button
-        className="btn-secondary"
-        onClick={onDelete}
-        style={{ padding: '0.45rem 0.8rem', fontSize: '0.85rem', color: 'var(--red-land)' }}
-        title="Delete replay"
-      >
-        ✕
-      </button>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button
+          className="btn-primary"
+          onClick={onView}
+          disabled={isLoading}
+          style={{ flex: 1, padding: '0.55rem 1rem', fontSize: '0.88rem', minHeight: 44 }}
+        >
+          {isLoading ? '…' : '▶ Watch'}
+        </button>
+        <button
+          className="btn-secondary"
+          onClick={onShare}
+          disabled={isSharing}
+          style={{ padding: '0.55rem 0.9rem', fontSize: '0.88rem', minHeight: 44 }}
+          title="Share replay"
+        >
+          {isSharing ? '…' : '⬆ Share'}
+        </button>
+        <button
+          className="btn-secondary"
+          onClick={onDelete}
+          style={{ padding: '0.55rem 0.8rem', fontSize: '0.88rem', minHeight: 44, color: 'var(--red-land)' }}
+          title="Delete replay"
+        >
+          ✕
+        </button>
+      </div>
     </div>
   );
 }
