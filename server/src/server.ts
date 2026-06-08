@@ -27,14 +27,26 @@ export interface LandsServer {
  */
 export function startServer(port: number): Promise<LandsServer> {
   return new Promise((resolve, reject) => {
+    // Allow restricting CORS to a known origin via env var (e.g. deployed frontend URL).
+    // Defaults to '*' so the Electron client and local dev work out of the box.
+    const allowedOrigin: string | string[] = process.env.ALLOWED_ORIGIN
+      ? process.env.ALLOWED_ORIGIN.split(',').map(s => s.trim())
+      : '*';
+
     const app = express();
-    app.use(cors());
+    app.use(cors({ origin: allowedOrigin }));
     app.use(express.json());
+
+    // Health-check endpoint — used by hosting providers (e.g. Render) to keep the
+    // server alive and confirm it's responding.
+    app.get('/health', (_req, res) => {
+      res.status(200).json({ status: 'ok', ts: Date.now() });
+    });
 
     const httpServer = createHttpServer(app);
     const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(
       httpServer,
-      { cors: { origin: '*', methods: ['GET', 'POST'] } },
+      { cors: { origin: allowedOrigin, methods: ['GET', 'POST'] } },
     );
 
     io.on('connection', (socket) => {

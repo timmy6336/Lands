@@ -241,8 +241,7 @@ export interface ClientToServerEvents {
 
 export interface InterServerEvents { /* reserved */ }
 export interface SocketData {
-  playerId:      string;
-  roomCode:      string;
-  playerName:    string;
-  inMatchmaking: boolean;
+  playerId:   string;
+  roomCode:   string;
+  playerName: string;
 }

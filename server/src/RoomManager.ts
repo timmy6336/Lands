@@ -169,8 +169,13 @@ export class RoomManager {
 
     if (room.engine) {
       room.engine.playerDisconnected(playerId);
+      // Clean up rooms whose game has ended (normal finish or forfeit on disconnect)
+      // so they don't accumulate in memory indefinitely.
+      if (room.engine.state.phase === 'ended') {
+        this.rooms.delete(room.code);
+      }
     } else {
-      // Room not started — remove entirely if host leaves, or just remove the player
+      // Room not started — delete entirely so the slot is freed
       this.rooms.delete(room.code);
     }
   }
