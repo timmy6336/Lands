@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#282018"/><stop offset="50%" stop-color="#342a1e"/><stop offset="100%" stop-color="#3e3226"/>
+  </linearGradient>
+  <radialGradient id="circ" cx="50%" cy="50%" r="42%">
+    <stop offset="0%" stop-color="#c8a840" stop-opacity="0.22"/><stop offset="100%" stop-color="#342a1e" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="rg"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <radialGradient id="v" cx="50%" cy="50%" r="70%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.55)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#c8a840"/><stop offset="100%" stop-color="#5a3e10"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<!-- Stone grain -->
+<g stroke="#4a3828" stroke-width="0.35" stroke-opacity="0.32">
+  <line x1="0" y1="24" x2="200" y2="22"/><line x1="0" y1="52" x2="200" y2="54"/>
+  <line x1="0" y1="80" x2="200" y2="78"/><line x1="0" y1="108" x2="200" y2="110"/>
+  <line x1="0" y1="136" x2="200" y2="134"/><line x1="0" y1="164" x2="200" y2="166"/>
+  <line x1="0" y1="192" x2="200" y2="190"/><line x1="0" y1="220" x2="200" y2="222"/>
+  <line x1="0" y1="248" x2="200" y2="246"/>
+</g>
+<!-- Radial glow -->
+<circle cx="100" cy="140" r="60" fill="url(#circ)"/>
+<!-- Vegvísir — Norse compass outer circle -->
+<circle cx="100" cy="140" r="58" fill="none" stroke="#c8a840" stroke-width="1.2" stroke-opacity="0.5"/>
+<circle cx="100" cy="140" r="50" fill="none" stroke="#c8a840" stroke-width="0.6" stroke-opacity="0.35"/>
+<!-- 8 compass arms -->
+<g stroke="#c8a840" stroke-width="2" stroke-linecap="round" filter="url(#rg)" stroke-opacity="0.75">
+  <line x1="100" y1="90" x2="100" y2="75"/><line x1="100" y1="190" x2="100" y2="205"/>
+  <line x1="50" y1="140" x2="35" y2="140"/><line x1="150" y1="140" x2="165" y2="140"/>
+  <line x1="65" y1="105" x2="54" y2="94"/><line x1="135" y1="105" x2="146" y2="94"/>
+  <line x1="65" y1="175" x2="54" y2="186"/><line x1="135" y1="175" x2="146" y2="186"/>
+</g>
+<!-- Inner rune staves on each arm -->
+<g stroke="#c8a840" stroke-width="1" stroke-linecap="round" stroke-opacity="0.55">
+  <!-- N arm decorations -->
+  <line x1="96" y1="88" x2="100" y2="82"/><line x1="104" y1="88" x2="100" y2="82"/>
+  <!-- S arm -->
+  <line x1="96" y1="192" x2="100" y2="198"/><line x1="104" y1="192" x2="100" y2="198"/>
+  <!-- E arm -->
+  <line x1="152" y1="136" x2="158" y2="140"/><line x1="152" y1="144" x2="158" y2="140"/>
+  <!-- W arm -->
+  <line x1="48" y1="136" x2="42" y2="140"/><line x1="48" y1="144" x2="42" y2="140"/>
+</g>
+<!-- Center circle and star -->
+<circle cx="100" cy="140" r="14" fill="none" stroke="#c8a840" stroke-width="1.2" stroke-opacity="0.6"/>
+<circle cx="100" cy="140" r="5" fill="#c8a840" fill-opacity="0.7" filter="url(#rg)"/>
+<circle cx="100" cy="140" r="2.5" fill="#ffe898"/>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#c8a840" stroke-width="0.6" stroke-opacity="0.4"/>
+<g fill="#8a6820" opacity="0.75">
+  <polygon points="9,9 22,9 9,22"/><polygon points="191,9 178,9 191,22"/>
+  <polygon points="9,271 22,271 9,258"/><polygon points="191,271 178,271 191,258"/>
+</g>
+</svg>

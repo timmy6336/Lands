@@ -123,6 +123,30 @@ export const BUILTIN_PACKS: SkinPackRow[] = [
     released_at: '2026-01-01T00:00:00.000Z',
   },
   // ─── Add new packs below ────────────────────────────────────────────────
+  {
+    id:          'void',
+    name:        'Void',
+    description: 'Deep space phenomena — pulsars, nebulae, black holes, and auroras.',
+    price_cents: 0,
+    preview_url: '/cards/skins/void/preview.svg',
+    released_at: '2026-02-01T00:00:00.000Z',
+  },
+  {
+    id:          'runic',
+    name:        'Runic',
+    description: 'Norse runes carved in glowing stone. Ancient power in every card.',
+    price_cents: 0,
+    preview_url: '/cards/skins/runic/preview.svg',
+    released_at: '2026-02-01T00:00:00.000Z',
+  },
+  {
+    id:          'prism',
+    name:        'Prism',
+    description: 'Precious gemstones on dark velvet — diamond, ruby, sapphire, emerald, onyx.',
+    price_cents: 0,
+    preview_url: '/cards/skins/prism/preview.svg',
+    released_at: '2026-02-01T00:00:00.000Z',
+  },
   // {
   //   id:          'autumn',
   //   name:        'Autumn Lands',

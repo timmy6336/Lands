@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#060608"/><stop offset="50%" stop-color="#090910"/><stop offset="100%" stop-color="#0c0c14"/>
+  </linearGradient>
+  <!-- Onyx: deep grey sheen with subtle warmth -->
+  <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#2a2a38" stop-opacity="0.45"/><stop offset="50%" stop-color="#090910" stop-opacity="0"/><stop offset="100%" stop-color="#1e1e2a" stop-opacity="0.35"/>
+  </linearGradient>
+  <radialGradient id="rc" cx="50%" cy="44%" r="38%">
+    <stop offset="0%" stop-color="#8866cc" stop-opacity="0.5"/><stop offset="100%" stop-color="#060608" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="rg"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="sg"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <radialGradient id="v" cx="50%" cy="50%" r="70%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.62)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#9966dd"/><stop offset="100%" stop-color="#220033"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<!-- Polish sheen overlay -->
+<rect width="200" height="280" fill="url(#sheen)" rx="10"/>
+<!-- Fine bands (onyx layering) -->
+<g stroke="#16161e" stroke-width="0.5" stroke-opacity="0.5">
+  <line x1="0" y1="32" x2="200" y2="32"/><line x1="0" y1="60" x2="200" y2="60"/>
+  <line x1="0" y1="88" x2="200" y2="88"/><line x1="0" y1="116" x2="200" y2="116"/>
+  <line x1="0" y1="144" x2="200" y2="144"/><line x1="0" y1="172" x2="200" y2="172"/>
+  <line x1="0" y1="200" x2="200" y2="200"/><line x1="0" y1="228" x2="200" y2="228"/>
+  <line x1="0" y1="256" x2="200" y2="256"/>
+</g>
+<!-- Faint aura glow -->
+<ellipse cx="100" cy="124" rx="50" ry="58" fill="url(#rc)"/>
+<!-- Onyx — cushion cut (rounded square with stepped dome) -->
+<!-- Glow -->
+<g filter="url(#rg)" opacity="0.65">
+  <rect x="52" y="68" width="96" height="116" rx="24"
+    fill="none" stroke="#7755bb" stroke-width="7"/>
+</g>
+<!-- Outer cushion -->
+<rect x="52" y="68" width="96" height="116" rx="24"
+  fill="rgba(80,50,140,0.07)" stroke="#7755bb" stroke-width="1.4" stroke-opacity="0.7"/>
+<!-- First step ring -->
+<rect x="62" y="80" width="76" height="92" rx="18"
+  fill="rgba(90,60,150,0.08)" stroke="#6644aa" stroke-width="0.9" stroke-opacity="0.6"/>
+<!-- Second step ring (table) -->
+<rect x="72" y="92" width="56" height="68" rx="12"
+  fill="rgba(100,70,160,0.1)" stroke="#8866cc" stroke-width="0.9" stroke-opacity="0.65"/>
+<!-- Inner glow surface -->
+<rect x="82" y="104" width="36" height="44" rx="8"
+  fill="rgba(120,90,180,0.12)" stroke="#9977dd" stroke-width="0.7" stroke-opacity="0.5"/>
+<!-- Corner bridge facets -->
+<line x1="52" y1="92" x2="62" y2="80" stroke="#7755bb" stroke-width="0.9" stroke-opacity="0.5"/>
+<line x1="148" y1="92" x2="138" y2="80" stroke="#7755bb" stroke-width="0.9" stroke-opacity="0.5"/>
+<line x1="52" y1="160" x2="62" y2="172" stroke="#7755bb" stroke-width="0.9" stroke-opacity="0.5"/>
+<line x1="148" y1="160" x2="138" y2="172" stroke="#7755bb" stroke-width="0.9" stroke-opacity="0.5"/>
+<!-- Cross-facet lines through table center -->
+<line x1="72" y1="126" x2="52" y2="126" stroke="rgba(140,100,200,0.35)" stroke-width="0.7"/>
+<line x1="128" y1="126" x2="148" y2="126" stroke="rgba(140,100,200,0.35)" stroke-width="0.7"/>
+<!-- Core ghost glow -->
+<ellipse cx="100" cy="126" rx="12" ry="14" fill="#6633aa" fill-opacity="0.4" filter="url(#rg)"/>
+<!-- Subtle sparkle — onyx is understated -->
+<g filter="url(#sg)" stroke="#bbaaff" stroke-linecap="round" stroke-opacity="0.7">
+  <line x1="100" y1="110" x2="100" y2="102" stroke-width="1.2"/>
+  <line x1="100" y1="142" x2="100" y2="150" stroke-width="1.2"/>
+  <line x1="84" y1="126" x2="76" y2="126" stroke-width="1.2"/>
+  <line x1="116" y1="126" x2="124" y2="126" stroke-width="1.2"/>
+</g>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#554488" stroke-width="0.7" stroke-opacity="0.45"/>
+<g fill="#221133" opacity="0.75">
+  <polygon points="9,9 22,9 9,22"/><polygon points="191,9 178,9 191,22"/>
+  <polygon points="9,271 22,271 9,258"/><polygon points="191,271 178,271 191,258"/>
+</g>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="52" y="257" width="96" height="16" rx="4" fill="rgba(0,0,0,0.5)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#bbaaff" letter-spacing="3">ONYX</text>
+</svg>

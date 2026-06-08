@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#d8cc9a"/><stop offset="50%" stop-color="#b8a06a"/><stop offset="100%" stop-color="#8a7040"/>
+  </linearGradient>
+  <radialGradient id="rc" cx="50%" cy="50%" r="38%">
+    <stop offset="0%" stop-color="#e8d860" stop-opacity="0.32"/><stop offset="100%" stop-color="#b8a06a" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="rg"><feGaussianBlur stdDeviation="4.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <radialGradient id="v" cx="50%" cy="50%" r="70%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.42)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#e0cc60"/><stop offset="100%" stop-color="#806820"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<!-- Stone grain texture -->
+<g stroke="#c0a060" stroke-width="0.35" stroke-opacity="0.28">
+  <line x1="0" y1="24" x2="200" y2="26"/><line x1="0" y1="50" x2="200" y2="52"/>
+  <line x1="0" y1="78" x2="200" y2="76"/><line x1="0" y1="106" x2="200" y2="104"/>
+  <line x1="0" y1="134" x2="200" y2="136"/><line x1="0" y1="162" x2="200" y2="160"/>
+  <line x1="0" y1="190" x2="200" y2="192"/><line x1="0" y1="218" x2="200" y2="216"/>
+  <line x1="0" y1="246" x2="200" y2="248"/>
+</g>
+<!-- Shallow chips/cracks -->
+<g stroke="#906030" stroke-width="0.5" stroke-opacity="0.2">
+  <line x1="30" y1="60" x2="50" y2="68"/><line x1="160" y1="90" x2="148" y2="105"/>
+  <line x1="22" y1="200" x2="40" y2="195"/><line x1="170" y1="220" x2="155" y2="215"/>
+</g>
+<!-- Rune glow aura -->
+<ellipse cx="100" cy="136" rx="48" ry="58" fill="url(#rc)"/>
+<!-- Sowilo rune (sun / lightning S-zigzag) — glowing -->
+<polyline points="118,80 80,116 120,152 82,188"
+  fill="none" stroke="#e8cc40" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" filter="url(#rg)" opacity="0.9"/>
+<polyline points="118,80 80,116 120,152 82,188"
+  fill="none" stroke="#fff8c0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- Chisel border -->
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#d4b040" stroke-width="0.7" stroke-opacity="0.45"/>
+<g fill="#c88820" opacity="0.75">
+  <polygon points="9,9 22,9 9,22"/><polygon points="191,9 178,9 191,22"/>
+  <polygon points="9,271 22,271 9,258"/><polygon points="191,271 178,271 191,258"/>
+</g>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="52" y="257" width="96" height="16" rx="4" fill="rgba(0,0,0,0.38)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#eedc60" letter-spacing="2.5">SOWILO</text>
+</svg>

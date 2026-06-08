@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="260" viewBox="0 0 400 260">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#282018"/><stop offset="100%" stop-color="#3e3226"/>
+  </linearGradient>
+  <filter id="g"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <radialGradient id="v" cx="50%" cy="50%" r="65%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.45)"/>
+  </radialGradient>
+</defs>
+<rect width="400" height="260" fill="url(#bg)" rx="12"/>
+<!-- Stone grain -->
+<g stroke="#4a3828" stroke-width="0.35" stroke-opacity="0.28">
+  <line x1="0" y1="30" x2="400" y2="28"/><line x1="0" y1="65" x2="400" y2="67"/>
+  <line x1="0" y1="100" x2="400" y2="98"/><line x1="0" y1="135" x2="400" y2="137"/>
+  <line x1="0" y1="170" x2="400" y2="168"/><line x1="0" y1="205" x2="400" y2="207"/>
+  <line x1="0" y1="240" x2="400" y2="238"/>
+</g>
+<!-- Sowilo (white) -->
+<polyline points="72,52 52,78 78,104 58,130"
+  fill="none" stroke="#e8cc40" stroke-width="7" stroke-linecap="round" filter="url(#g)" opacity="0.85"/>
+<polyline points="72,52 52,78 78,104 58,130" fill="none" stroke="#fff8c0" stroke-width="2.5" stroke-linecap="round"/>
+<!-- Tiwaz (red) -->
+<g fill="none" stroke="#ff6622" stroke-width="7" stroke-linecap="round" filter="url(#g)" opacity="0.85">
+  <line x1="140" y1="48" x2="140" y2="138"/>
+  <line x1="140" y1="92" x2="120" y2="120"/>
+  <line x1="140" y1="92" x2="160" y2="120"/>
+</g>
+<g fill="none" stroke="#ffa888" stroke-width="2.5" stroke-linecap="round">
+  <line x1="140" y1="48" x2="140" y2="138"/>
+  <line x1="140" y1="92" x2="120" y2="120"/>
+  <line x1="140" y1="92" x2="160" y2="120"/>
+</g>
+<!-- Laguz (blue) -->
+<g fill="none" stroke="#44aaee" stroke-width="7" stroke-linecap="round" filter="url(#g)" opacity="0.85">
+  <line x1="215" y1="48" x2="215" y2="138"/>
+  <line x1="215" y1="93" x2="238" y2="115"/>
+</g>
+<g fill="none" stroke="#aaddff" stroke-width="2.5" stroke-linecap="round">
+  <line x1="215" y1="48" x2="215" y2="138"/>
+  <line x1="215" y1="93" x2="238" y2="115"/>
+</g>
+<!-- Jera (green) -->
+<g fill="none" stroke="#44cc44" stroke-width="7" stroke-linecap="round" filter="url(#g)" opacity="0.85">
+  <polyline points="268,93 288,60 308,93"/>
+  <polyline points="268,100 288,133 308,100"/>
+</g>
+<g fill="none" stroke="#aaffaa" stroke-width="2.5" stroke-linecap="round">
+  <polyline points="268,93 288,60 308,93"/>
+  <polyline points="268,100 288,133 308,100"/>
+</g>
+<!-- Hagalaz (black) -->
+<g fill="none" stroke="#aa55ff" stroke-width="7" stroke-linecap="round" filter="url(#g)" opacity="0.85">
+  <line x1="356" y1="48" x2="356" y2="138"/>
+  <line x1="378" y1="48" x2="378" y2="138"/>
+  <line x1="356" y1="93" x2="378" y2="93"/>
+</g>
+<g fill="none" stroke="#ddaaff" stroke-width="2.5" stroke-linecap="round">
+  <line x1="356" y1="48" x2="356" y2="138"/>
+  <line x1="378" y1="48" x2="378" y2="138"/>
+  <line x1="356" y1="93" x2="378" y2="93"/>
+</g>
+<line x1="20" y1="160" x2="380" y2="160" stroke="#c8a840" stroke-opacity="0.2" stroke-width="0.6"/>
+<!-- Title -->
+<rect width="400" height="260" fill="url(#v)" rx="12"/>
+<rect x="4" y="4" width="392" height="252" rx="10" fill="none" stroke="#c8a840" stroke-width="1.2" stroke-opacity="0.5"/>
+<rect x="110" y="174" width="180" height="46" rx="6" fill="rgba(0,0,0,0.42)"/>
+<text x="200" y="192" font-size="13" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#e0c060" letter-spacing="4">RUNIC</text>
+<text x="200" y="210" font-size="8" font-family="Georgia,serif" text-anchor="middle" fill="#907840" letter-spacing="2">CARVED STONE COLLECTION</text>
+</svg>

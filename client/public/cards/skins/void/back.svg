@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#040210"/><stop offset="55%" stop-color="#060318"/><stop offset="100%" stop-color="#080520"/>
+  </linearGradient>
+  <radialGradient id="core" cx="50%" cy="50%" r="22%">
+    <stop offset="0%" stop-color="#fff8e8"/><stop offset="30%" stop-color="#ffe8aa"/><stop offset="65%" stop-color="#cc9933" stop-opacity="0.7"/><stop offset="100%" stop-color="#080520" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="halo" cx="50%" cy="50%" r="48%">
+    <stop offset="0%" stop-color="#ffe8aa" stop-opacity="0.14"/><stop offset="100%" stop-color="#080520" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="g"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="sg"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <radialGradient id="v" cx="50%" cy="50%" r="70%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.62)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#9988ff"/><stop offset="50%" stop-color="#5544aa"/><stop offset="100%" stop-color="#221866"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<!-- Dense star field -->
+<g fill="white" opacity="0.55">
+  <circle cx="8" cy="8" r="0.5"/><circle cx="25" cy="18" r="0.6"/><circle cx="55" cy="5" r="0.4"/>
+  <circle cx="88" cy="10" r="0.5"/><circle cx="140" cy="8" r="0.6"/><circle cx="168" cy="5" r="0.5"/>
+  <circle cx="188" cy="14" r="0.4"/><circle cx="12" cy="35" r="0.5"/><circle cx="192" cy="38" r="0.6"/>
+  <circle cx="5" cy="62" r="0.4"/><circle cx="196" cy="68" r="0.5"/><circle cx="10" cy="225" r="0.5"/>
+  <circle cx="192" cy="230" r="0.6"/><circle cx="18" cy="255" r="0.4"/><circle cx="188" cy="260" r="0.5"/>
+</g>
+<g fill="white" opacity="0.8">
+  <circle cx="32" cy="22" r="0.9" filter="url(#sg)"/><circle cx="158" cy="16" r="0.8" filter="url(#sg)"/>
+  <circle cx="10" cy="95" r="0.7"/><circle cx="194" cy="105" r="0.8"/>
+  <circle cx="15" cy="188" r="0.7"/><circle cx="192" cy="175" r="0.8"/>
+</g>
+<!-- Galactic halo -->
+<circle cx="100" cy="140" r="66" fill="url(#halo)"/>
+<!-- Spiral arm 1 — warm stars -->
+<path d="M100 140 Q132 124 150 106 Q166 88 156 68 Q146 48 120 46 Q96 44 78 60 Q62 76 68 100 Q74 122 97 132"
+  fill="none" stroke="#ffe8aa" stroke-width="15" stroke-opacity="0.12" stroke-linecap="round" filter="url(#g)"/>
+<path d="M100 140 Q132 124 150 106 Q166 88 156 68 Q146 48 120 46 Q96 44 78 60 Q62 76 68 100 Q74 122 97 132"
+  fill="none" stroke="#ffeebb" stroke-width="5" stroke-opacity="0.2" stroke-linecap="round"/>
+<!-- Spiral arm 2 — cool blue stars -->
+<path d="M100 140 Q68 156 50 174 Q34 192 44 212 Q54 232 80 234 Q106 236 124 218 Q140 200 132 180 Q124 158 103 148"
+  fill="none" stroke="#aaddff" stroke-width="15" stroke-opacity="0.10" stroke-linecap="round" filter="url(#g)"/>
+<path d="M100 140 Q68 156 50 174 Q34 192 44 212 Q54 232 80 234 Q106 236 124 218 Q140 200 132 180 Q124 158 103 148"
+  fill="none" stroke="#bbddff" stroke-width="4" stroke-opacity="0.17" stroke-linecap="round"/>
+<!-- Star clusters along arms -->
+<g fill="#ffe8cc" filter="url(#sg)" opacity="0.72">
+  <circle cx="150" cy="106" r="1.2"/><circle cx="156" cy="68" r="1.0"/><circle cx="120" cy="46" r="1.4"/>
+  <circle cx="68" cy="100" r="1.0"/><circle cx="50" cy="174" r="1.2"/><circle cx="80" cy="234" r="1.0"/>
+  <circle cx="124" cy="218" r="1.1"/>
+</g>
+<!-- Galactic core -->
+<circle cx="100" cy="140" r="20" fill="url(#core)" filter="url(#g)"/>
+<circle cx="100" cy="140" r="7" fill="#fff8e0" filter="url(#sg)"/>
+<circle cx="100" cy="140" r="3" fill="white"/>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#000502"/><stop offset="55%" stop-color="#010d04"/><stop offset="100%" stop-color="#020f06"/>
+  </linearGradient>
+  <linearGradient id="a1" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#00ff88" stop-opacity="0"/><stop offset="30%" stop-color="#00cc66" stop-opacity="0.72"/><stop offset="72%" stop-color="#008844" stop-opacity="0.4"/><stop offset="100%" stop-color="#004422" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="a2" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#44ffcc" stop-opacity="0"/><stop offset="25%" stop-color="#00ffaa" stop-opacity="0.62"/><stop offset="68%" stop-color="#00aa77" stop-opacity="0.35"/><stop offset="100%" stop-color="#00554a" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="a3" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#88ff22" stop-opacity="0"/><stop offset="35%" stop-color="#55dd00" stop-opacity="0.52"/><stop offset="75%" stop-color="#337700" stop-opacity="0.28"/><stop offset="100%" stop-color="#113300" stop-opacity="0"/>
+  </linearGradient>
+  <filter id="g"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <radialGradient id="v" cx="50%" cy="50%" r="70%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#44ee88"/><stop offset="100%" stop-color="#116633"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<g fill="white" opacity="0.55">
+  <circle cx="14" cy="10" r="0.6"/><circle cx="38" cy="22" r="0.5"/><circle cx="60" cy="7" r="0.7"/>
+  <circle cx="118" cy="14" r="0.5"/><circle cx="152" cy="8" r="0.8"/><circle cx="188" cy="20" r="0.5"/>
+  <circle cx="8" cy="38" r="0.6"/><circle cx="175" cy="38" r="0.7"/><circle cx="30" cy="60" r="0.5"/>
+  <circle cx="168" cy="55" r="0.6"/><circle cx="10" cy="82" r="0.7"/><circle cx="192" cy="75" r="0.5"/>
+</g>
+<!-- Aurora band 1 — leftish -->
+<path d="M-8 0 Q18 42 12 82 Q22 124 6 162 Q18 200 14 232 L38 232 Q42 200 32 162 Q46 124 36 82 Q30 42 58 0Z" fill="url(#a1)" filter="url(#g)"/>
+<!-- Aurora band 2 — center-left -->
+<path d="M32 0 Q56 52 48 92 Q62 136 46 176 Q58 216 52 240 L82 240 Q80 216 90 176 Q76 136 86 92 Q78 52 102 0Z" fill="url(#a2)" filter="url(#g)"/>
+<!-- Aurora band 3 — center-right -->
+<path d="M92 0 Q115 46 107 88 Q120 132 110 172 Q120 212 116 240 L148 240 Q142 212 152 172 Q142 132 154 88 Q147 46 170 0Z" fill="url(#a3)" filter="url(#g)"/>
+<!-- Aurora band 4 — right -->
+<path d="M155 0 Q175 44 168 84 Q180 124 172 164 Q180 204 178 236 L200 236 L200 0Z" fill="url(#a1)" filter="url(#g)" opacity="0.65"/>
+<!-- Alien terrain horizon -->
+<path d="M0 222 Q20 212 42 217 Q68 202 92 210 Q118 218 142 204 Q168 192 192 207 L200 222 L200 280 L0 280Z" fill="#010d04"/>
+<path d="M0 238 Q32 228 62 232 Q92 236 122 228 Q152 220 182 230 L200 238 L200 280 L0 280Z" fill="#000a03"/>
+<!-- Horizon aurora reflection -->
+<path d="M0 222 Q100 218 200 222 L200 228 Q100 224 0 228Z" fill="#00cc66" fill-opacity="0.12"/>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2" filter="url(#g)"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="#44ee88" stroke-width="0.6" stroke-opacity="0.7"/>
+<g fill="#228844" opacity="0.9"><polygon points="9,9 20,9 9,20"/><polygon points="191,9 180,9 191,20"/><polygon points="9,271 20,271 9,260"/><polygon points="191,271 180,271 191,260"/></g>
+<rect x="52" y="257" width="96" height="16" rx="4" fill="rgba(0,0,0,0.65)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="'Courier New',monospace" font-weight="bold" text-anchor="middle" fill="#55ee99" letter-spacing="2.5">AURORA</text>
+</svg>

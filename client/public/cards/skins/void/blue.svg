@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#01040e"/><stop offset="55%" stop-color="#030818"/><stop offset="100%" stop-color="#050c22"/>
+  </linearGradient>
+  <radialGradient id="n1" cx="40%" cy="42%" r="40%">
+    <stop offset="0%" stop-color="#2244bb" stop-opacity="0.75"/><stop offset="100%" stop-color="#030818" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="n2" cx="65%" cy="58%" r="35%">
+    <stop offset="0%" stop-color="#1166dd" stop-opacity="0.6"/><stop offset="100%" stop-color="#030818" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="n3" cx="48%" cy="72%" r="30%">
+    <stop offset="0%" stop-color="#3388ff" stop-opacity="0.45"/><stop offset="100%" stop-color="#030818" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="core" cx="42%" cy="44%" r="12%">
+    <stop offset="0%" stop-color="#bbddff"/><stop offset="100%" stop-color="#2244bb" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="g"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="sg"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <radialGradient id="v" cx="50%" cy="50%" r="70%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.55)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#66aaff"/><stop offset="100%" stop-color="#113399"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<g fill="white" opacity="0.7">
+  <circle cx="15" cy="12" r="0.7"/><circle cx="38" cy="25" r="0.5"/><circle cx="65" cy="8" r="0.9" filter="url(#sg)"/>
+  <circle cx="135" cy="18" r="0.7"/><circle cx="162" cy="9" r="0.6"/><circle cx="188" cy="30" r="0.5"/>
+  <circle cx="8" cy="56" r="0.8"/><circle cx="192" cy="48" r="0.6"/><circle cx="178" cy="82" r="0.7"/>
+  <circle cx="22" cy="98" r="0.5"/><circle cx="172" cy="140" r="0.7"/><circle cx="18" cy="160" r="0.6"/>
+  <circle cx="188" cy="175" r="0.8" filter="url(#sg)"/><circle cx="32" cy="220" r="0.6"/><circle cx="180" cy="230" r="0.7"/>
+</g>
+<!-- Embedded hot star cluster -->
+<g fill="#aaccff" filter="url(#sg)" opacity="0.8">
+  <circle cx="86" cy="118" r="1.2"/><circle cx="100" cy="110" r="1.8"/><circle cx="114" cy="122" r="1.1"/><circle cx="92" cy="130" r="0.9"/>
+</g>
+<!-- Nebula layers -->
+<ellipse cx="80" cy="112" rx="82" ry="66" fill="url(#n1)"/>
+<ellipse cx="130" cy="155" rx="72" ry="56" fill="url(#n2)"/>
+<ellipse cx="100" cy="196" rx="66" ry="50" fill="url(#n3)"/>
+<!-- Glowing filament -->
+<path d="M52 80 Q78 102 68 132 Q90 122 112 142 Q132 116 156 132 Q146 102 168 80"
+  fill="none" stroke="#3366cc" stroke-width="20" stroke-opacity="0.18" stroke-linecap="round"/>
+<path d="M52 80 Q78 102 68 132 Q90 122 112 142 Q132 116 156 132 Q146 102 168 80"
+  fill="none" stroke="#5588ee" stroke-width="6" stroke-opacity="0.28" stroke-linecap="round"/>
+<!-- Core star -->
+<circle cx="88" cy="84" r="20" fill="url(#core)" filter="url(#g)"/>
+<circle cx="88" cy="84" r="6" fill="#ddeeff" filter="url(#g)"/>
+<circle cx="88" cy="84" r="3" fill="white"/>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2" filter="url(#g)"/>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="#66aaff" stroke-width="0.6" stroke-opacity="0.7"/>
+<g fill="#3366bb" opacity="0.9"><polygon points="9,9 20,9 9,20"/><polygon points="191,9 180,9 191,20"/><polygon points="9,271 20,271 9,260"/><polygon points="191,271 180,271 191,260"/></g>
+<rect x="52" y="257" width="96" height="16" rx="4" fill="rgba(0,0,0,0.65)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="'Courier New',monospace" font-weight="bold" text-anchor="middle" fill="#88bbff" letter-spacing="2.5">NEBULA</text>
+</svg>

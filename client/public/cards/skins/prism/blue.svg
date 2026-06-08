@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+<defs>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#080c14"/><stop offset="50%" stop-color="#0c1220"/><stop offset="100%" stop-color="#101828"/>
+  </linearGradient>
+  <radialGradient id="rc" cx="50%" cy="44%" r="40%">
+    <stop offset="0%" stop-color="#4488ff" stop-opacity="0.9"/><stop offset="45%" stop-color="#1144cc" stop-opacity="0.45"/><stop offset="100%" stop-color="#080c14" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="rg"><feGaussianBlur stdDeviation="4.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="sg"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <radialGradient id="v" cx="50%" cy="50%" r="70%">
+    <stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.58)"/>
+  </radialGradient>
+  <linearGradient id="fr" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#55aaff"/><stop offset="100%" stop-color="#112255"/>
+  </linearGradient>
+</defs>
+<rect width="200" height="280" fill="url(#s)" rx="10"/>
+<!-- Velvet sheen -->
+<g stroke="#0e1628" stroke-width="0.4" stroke-opacity="0.4">
+  <line x1="0" y1="35" x2="200" y2="35"/><line x1="0" y1="70" x2="200" y2="70"/>
+  <line x1="0" y1="105" x2="200" y2="105"/><line x1="0" y1="140" x2="200" y2="140"/>
+  <line x1="0" y1="175" x2="200" y2="175"/><line x1="0" y1="210" x2="200" y2="210"/>
+  <line x1="0" y1="245" x2="200" y2="245"/>
+</g>
+<ellipse cx="100" cy="126" rx="54" ry="62" fill="url(#rc)"/>
+<!-- Sapphire — oval cut (most popular for sapphires) -->
+<!-- Glow -->
+<g filter="url(#rg)" opacity="0.75">
+  <ellipse cx="100" cy="126" rx="52" ry="64" fill="none" stroke="#2266ff" stroke-width="6"/>
+</g>
+<!-- Outer oval -->
+<ellipse cx="100" cy="126" rx="52" ry="64"
+  fill="rgba(30,80,220,0.08)" stroke="#4488ee" stroke-width="1.3" stroke-opacity="0.75"/>
+<!-- Upper facet band -->
+<path d="M52,106 Q76,90 100,88 Q124,90 148,106" fill="none" stroke="#5599ff" stroke-width="0.9" stroke-opacity="0.6"/>
+<!-- Lower facet band -->
+<path d="M52,146 Q76,162 100,164 Q124,162 148,146" fill="none" stroke="#5599ff" stroke-width="0.9" stroke-opacity="0.6"/>
+<!-- Left/right facet verticals -->
+<path d="M54,118 Q52,126 54,134" fill="none" stroke="#4488ee" stroke-width="0.9" stroke-opacity="0.55"/>
+<path d="M146,118 Q148,126 146,134" fill="none" stroke="#4488ee" stroke-width="0.9" stroke-opacity="0.55"/>
+<!-- Table oval (center) -->
+<ellipse cx="100" cy="126" rx="30" ry="36"
+  fill="rgba(80,140,255,0.14)" stroke="#88bbff" stroke-width="0.9" stroke-opacity="0.7"/>
+<!-- Crown facets from table to outer edge -->
+<line x1="100" y1="90" x2="100" y2="62" stroke="#4488ee" stroke-width="0.8" stroke-opacity="0.5"/>
+<line x1="100" y1="162" x2="100" y2="190" stroke="#4488ee" stroke-width="0.8" stroke-opacity="0.5"/>
+<line x1="70" y1="104" x2="52" y2="110" stroke="#4488ee" stroke-width="0.8" stroke-opacity="0.5"/>
+<line x1="130" y1="104" x2="148" y2="110" stroke="#4488ee" stroke-width="0.8" stroke-opacity="0.5"/>
+<line x1="70" y1="148" x2="52" y2="142" stroke="#4488ee" stroke-width="0.8" stroke-opacity="0.5"/>
+<line x1="130" y1="148" x2="148" y2="142" stroke="#4488ee" stroke-width="0.8" stroke-opacity="0.5"/>
+<!-- Core brilliance -->
+<ellipse cx="100" cy="126" rx="14" ry="17" fill="#2255ff" fill-opacity="0.55" filter="url(#rg)"/>
+<!-- Sparkle -->
+<g filter="url(#sg)" stroke="#aaccff" stroke-linecap="round" stroke-opacity="0.9">
+  <line x1="100" y1="108" x2="100" y2="98" stroke-width="1.5"/>
+  <line x1="100" y1="144" x2="100" y2="154" stroke-width="1.5"/>
+  <line x1="82" y1="126" x2="72" y2="126" stroke-width="1.5"/>
+  <line x1="118" y1="126" x2="128" y2="126" stroke-width="1.5"/>
+  <line x1="88" y1="112" x2="81" y2="105" stroke-width="1"/>
+  <line x1="112" y1="112" x2="119" y2="105" stroke-width="1"/>
+</g>
+<rect x="5" y="5" width="190" height="270" rx="8" fill="none" stroke="url(#fr)" stroke-width="2.5"/>
+<rect x="9" y="9" width="182" height="262" rx="6" fill="none" stroke="#3366aa" stroke-width="0.7" stroke-opacity="0.45"/>
+<g fill="#112244" opacity="0.75">
+  <polygon points="9,9 22,9 9,22"/><polygon points="191,9 178,9 191,22"/>
+  <polygon points="9,271 22,271 9,258"/><polygon points="191,271 178,271 191,258"/>
+</g>
+<rect width="200" height="280" fill="url(#v)" rx="10"/>
+<rect x="40" y="257" width="120" height="16" rx="4" fill="rgba(0,0,0,0.5)"/>
+<text x="100" y="268.5" font-size="8.5" font-family="Georgia,serif" font-weight="bold" text-anchor="middle" fill="#88bbff" letter-spacing="2">SAPPHIRE</text>
+</svg>
