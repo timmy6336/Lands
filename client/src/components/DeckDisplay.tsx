@@ -1,6 +1,7 @@
 // Compact deck display showing a fan of face-down cards with a count badge.
 // Used inside the Field row in both GameBoard and ReplayViewer.
 import { useCardImages } from '../hooks/useCardImages';
+import { useScaledSize } from '../hooks/useCardScale';
 
 interface Props {
   count: number;
@@ -9,9 +10,8 @@ interface Props {
 
 export function DeckDisplay({ count, small }: Props) {
   const cardImageUrls = useCardImages();
-  const w = small ? 40 : 56;
-  const h = small ? 56 : 78;
-  const OFFSET = 3;
+  const { w, h, scale } = useScaledSize(small ? 40 : 56, small ? 56 : 78);
+  const OFFSET = Math.max(2, Math.round(3 * scale));
   const shadowDepth = Math.min(Math.max(count - 1, 0), 3);
 
   return (

@@ -152,8 +152,8 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
   // ── Shared info bar style factory ─────────────────────────────────────────
   const activeBarStyle = (active: boolean, color: string): React.CSSProperties => ({
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    borderRadius: 8, padding: '0.4rem 1rem',
-    fontSize: '0.85rem', flexShrink: 0,
+    borderRadius: 6, padding: '0.2rem 0.6rem',
+    fontSize: '0.72rem', flexShrink: 0,
     background: active ? `rgba(${color}, 0.1)` : 'var(--surface)',
     border: active ? `2px solid rgba(${color}, 0.55)` : '2px solid transparent',
     boxShadow: active ? `0 0 12px rgba(${color}, 0.2)` : 'none',
@@ -161,7 +161,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
   });
 
   return (
-    <div className="flex flex-col h-screen p-3 gap-1.5">
+    <div className="game-root flex flex-col h-screen">
 
       {/* ── Opponent info bar ───────────────────────────────────────────────── */}
       <div style={activeBarStyle(!isMyTurn, '241,196,15')}>
@@ -199,7 +199,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
           customizations={opponent.customizations}
           label="Grave"
         />
-        <div className="border border-border rounded-[10px] px-1.5 py-2 flex flex-col items-center justify-center gap-1"
+        <div className="deck-box border border-border rounded-[10px] flex flex-col items-center justify-center gap-1"
           style={{ background: 'rgba(255,255,255,0.03)' }}>
           <DeckDisplay count={opponent.deckCount} />
           <span className="text-[0.6rem] text-muted uppercase" style={{ letterSpacing: '0.06em' }}>Deck</span>
@@ -207,7 +207,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
       </div>
 
       {/* ── Status bar ──────────────────────────────────────────────────────── */}
-      <div className="bg-surface-2 rounded-lg px-4 py-1.5 flex justify-between items-center text-sm shrink-0">
+      <div className="bg-surface-2 rounded-lg flex justify-between items-center shrink-0 px-2.5 py-0.5 text-xs">
         <span className="text-muted text-[0.8rem]">Turn {gameState.turnNumber}</span>
         <span className="text-muted">{phaseLabel}</span>
         <span className="text-muted text-[0.8rem]">&nbsp;</span>
@@ -225,7 +225,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
           customizations={me.customizations}
           label="Grave"
         />
-        <div className="border border-border rounded-[10px] px-1.5 py-2 flex flex-col items-center justify-center gap-1"
+        <div className="deck-box border border-border rounded-[10px] flex flex-col items-center justify-center gap-1"
           style={{ background: 'rgba(255,255,255,0.03)' }}>
           <DeckDisplay count={me.deckCount} />
           <span className="text-[0.6rem] text-muted uppercase" style={{ letterSpacing: '0.06em' }}>Deck</span>

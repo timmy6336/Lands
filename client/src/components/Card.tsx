@@ -18,6 +18,7 @@
 import { useState } from 'react';
 import { useCardImages } from '../hooks/useCardImages';
 import { useUISettings } from '../hooks/useUISettings';
+import { useScaledSize } from '../hooks/useCardScale';
 import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
 
 const COLOR_CSS: Record<Color, string> = {
@@ -59,8 +60,7 @@ export function Card({ card, customizations, selected, faceDown, small, onClick,
   const [hovered, setHovered] = useState(false);
   const custom = customizations?.[card.color] ?? DEFAULT_CUSTOMIZATIONS[card.color];
   const bgColor = COLOR_CSS[card.color];
-  const w = small ? 56 : 80;
-  const h = small ? 78 : 112;
+  const { w, h, scale } = useScaledSize(small ? 56 : 80, small ? 78 : 112);
   const isClickable = !!onClick && !disabled;
 
   if (faceDown) {
@@ -92,8 +92,8 @@ export function Card({ card, customizations, selected, faceDown, small, onClick,
   const showEffectTooltip = showCardEffectsOnHover && hovered;
 
   // Badge size scales with card size
-  const badgeSize = small ? 17 : 22;
-  const badgeFontSize = small ? '0.55rem' : '0.68rem';
+  const badgeSize = Math.round((small ? 17 : 22) * scale);
+  const badgeFontSize = `${(small ? 0.55 : 0.68) * Math.max(scale, 0.8)}rem`;
 
   return (
     // Outer wrapper: handles hover, transform, and is the positioning context for overlays.
@@ -208,8 +208,7 @@ export function Card({ card, customizations, selected, faceDown, small, onClick,
 /** A placeholder card shown when hand is hidden (opponent's hand) */
 export function HiddenCard({ small }: { small?: boolean }) {
   const cardImageUrls = useCardImages();
-  const w = small ? 56 : 72;
-  const h = small ? 78 : 100;
+  const { w, h } = useScaledSize(small ? 56 : 72, small ? 78 : 100);
   return (
     <div className="rounded-lg overflow-hidden border-2 border-border shrink-0 select-none" style={{ width: w, height: h }}>
       <img

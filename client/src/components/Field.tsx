@@ -4,6 +4,7 @@
 // are clickable; the rest are dimmed.
 import { useState } from 'react';
 import { Card } from './Card';
+import { useCardScale, useScaledSize } from '../hooks/useCardScale';
 import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
 
 interface Props {
@@ -23,6 +24,7 @@ const COLOR_CSS: Record<Color, string> = {
 };
 
 export function Field({ cards, customizations, label, selectableIds, onSelect }: Props) {
+  const scale = useCardScale();
   // Group cards by color, preserving insertion order
   const groups = new Map<Color, CardType[]>();
   for (const card of cards) {
@@ -31,15 +33,15 @@ export function Field({ cards, customizations, label, selectableIds, onSelect }:
   }
 
   return (
-    <div className="border border-border rounded-[10px] px-4 py-3 min-h-[120px] flex-1"
+    <div className="field-box border border-border rounded-[10px] flex-1"
       style={{ background: 'rgba(255,255,255,0.03)' }}>
       <div className="text-xs text-muted mb-2.5 uppercase tracking-wider">
         {label} — {cards.length} land{cards.length !== 1 ? 's' : ''} in play
       </div>
 
-      <div className="flex flex-wrap gap-4 min-h-[80px] items-end pb-5">
+      <div className="field-cards-row flex flex-wrap items-end">
         {groups.size === 0
-          ? <p className="text-muted text-sm self-center m-0">No lands yet</p>
+          ? <p className="text-muted self-center m-0" style={{ fontSize: `${0.875 * Math.max(scale, 0.7)}rem` }}>No lands yet</p>
           : [...groups.entries()].map(([color, stackCards]) => {
               const isSelectable = stackCards.some(c => selectableIds?.has(c.id));
               // For selection, return the last card in the stack (top of pile)
@@ -73,10 +75,11 @@ interface StackProps {
 
 function ColorStack({ cards, topCard, customizations, isSelectable, onSelect }: StackProps) {
   const count = cards.length;
-  const OFFSET = 4; // px offset per card in the shadow stack
+  const { w: cardW, h: cardH, scale } = useScaledSize(80, 112);
+  const OFFSET = Math.max(2, Math.round(4 * scale)); // px offset per card in the shadow stack
   const shadowDepth = Math.min(count - 1, 3); // show up to 3 shadow layers
-  const stackHeight = 112 + shadowDepth * OFFSET;
-  const stackWidth = 80 + shadowDepth * OFFSET;
+  const stackHeight = cardH + shadowDepth * OFFSET;
+  const stackWidth = cardW + shadowDepth * OFFSET;
   const [hovered, setHovered] = useState(false);
 
   const custom = customizations?.[topCard.color] ?? DEFAULT_CUSTOMIZATIONS[topCard.color];
@@ -107,8 +110,8 @@ function ColorStack({ cards, topCard, customizations, isSelectable, onSelect }: 
             position: 'absolute',
             top: (shadowDepth - i - 1) * OFFSET,
             left: (shadowDepth - i - 1) * OFFSET,
-            width: 80,
-            height: 112,
+            width: cardW,
+            height: cardH,
             borderRadius: 8,
             border: '2px solid rgba(255,255,255,0.12)',
             background: bg,

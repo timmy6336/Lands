@@ -19,11 +19,11 @@ export function Hand({ cards, hiddenCount, customizations, label, selectableIds,
   const isHidden = hiddenCount !== undefined && cards.length === 0;
 
   return (
-    <div className="border border-border rounded-[10px] px-4 py-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+    <div className="hand-box border border-border rounded-[10px]" style={{ background: 'rgba(255,255,255,0.03)' }}>
       <div className="text-xs text-muted mb-1.5 uppercase tracking-widest">
         {label} — {isHidden ? hiddenCount : cards.length} card{(isHidden ? hiddenCount! : cards.length) !== 1 ? 's' : ''}
       </div>
-      <div className="flex flex-wrap gap-2 min-h-[80px]">
+      <div className="hand-cards-row flex flex-wrap">
         {isHidden
           ? Array.from({ length: hiddenCount! }).map((_, i) => <HiddenCard key={i} />)
           : cards.map(card => (
