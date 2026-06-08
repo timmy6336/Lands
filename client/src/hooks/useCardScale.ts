@@ -13,8 +13,15 @@
 // and solve for the exact scale that makes it fit the viewport. Because that
 // "chrome" height is independent of the card scale (it only depends on viewport
 // height, via the CSS breakpoints), a single measurement yields an exact answer
-// — regardless of which starting estimate was used to take it — so every
-// component converges on the same corrected value.
+// — regardless of which starting estimate was used to take it.
+//
+// That measurement must only happen ONCE per viewport height, though — a card
+// that mounts later (drawn mid-game, or remounted for its entrance animation)
+// would otherwise measure a "polluted" DOM where some cards already sit at the
+// converged scale and it itself is still at the naive one, solving for a
+// different (wrong) answer and ending up a visibly different size. A
+// module-level cache makes every instance — including late-mounting ones —
+// reuse the first instance's measurement and converge on the same value.
 import { useEffect, useLayoutEffect, useState } from 'react';
 
 // Combined natural height (at scale 1, in px) of the four card rows whose size
@@ -43,14 +50,29 @@ function initialState(): ScaleState {
   return { scale: naiveScale(h), correctedFor: -1 };
 }
 
+// Module-level cache: the corrected scale already solved for a given viewport
+// height, shared by every component instance so late-mounting cards don't
+// re-derive (and potentially mismatch) it from a mid-transition DOM.
+let cachedFor = -1;
+let cachedScale = -1;
+
 export function useCardScale(): number {
   const [state, setState] = useState<ScaleState>(initialState);
 
   // Solve for the exact scale that makes the board's natural content height
   // match the viewport, using one measurement of the currently-rendered board.
+  // Only the first instance to run this for a given viewport height actually
+  // measures; everyone else (including cards that mount afterwards) reuses
+  // that cached answer so all cards stay the same size.
   useLayoutEffect(() => {
     const vh = window.innerHeight;
     if (state.correctedFor === vh) return;
+
+    if (cachedFor === vh) {
+      if (state.scale !== cachedScale) setState({ scale: cachedScale, correctedFor: vh });
+      return;
+    }
+
     const root = document.querySelector('.game-root') as HTMLElement | null;
     if (!root) return;
 
@@ -61,6 +83,8 @@ export function useCardScale(): number {
 
     const chrome = natural - CARD_ROWS_HEIGHT * state.scale;
     const corrected = clamp((vh - chrome) / CARD_ROWS_HEIGHT);
+    cachedFor = vh;
+    cachedScale = corrected;
     setState({ scale: corrected, correctedFor: vh });
   });
 
