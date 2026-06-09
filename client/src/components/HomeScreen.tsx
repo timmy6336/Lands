@@ -10,10 +10,10 @@ interface Props {
 }
 
 const menuItems = [
-  { label: '▶  Play',      sub: 'Single or multiplayer',    primary: true  },
-  { label: '📖  Rules',    sub: 'Learn how to play',         primary: false },
-  { label: '▷  Replays',  sub: 'Watch past games',           primary: false },
-  { label: '⚙  Settings', sub: 'Customize your experience',  primary: false },
+  { label: '▶  Play',      sub: 'Single or multiplayer',   primary: true  },
+  { label: '📖  Rules',   sub: 'Learn how to play',        primary: false },
+  { label: '▷  Replays', sub: 'Watch past games',          primary: false },
+  { label: '⚙  Settings', sub: 'Customize your experience', primary: false },
 ] as const;
 
 export function HomeScreen({ onPlay, onSettings, onRules, onReplays, onProfile, onShop, username }: Props) {
@@ -21,13 +21,18 @@ export function HomeScreen({ onPlay, onSettings, onRules, onReplays, onProfile, 
 
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', height: '100%',
-      padding: 'max(env(safe-area-inset-top,0px),1rem) 1.25rem max(env(safe-area-inset-bottom,0px),1rem)',
-      gap: 36, position: 'relative',
+      display: 'flex', flexDirection: 'column',
+      height: '100dvh',
+      paddingTop: 'max(env(safe-area-inset-top, 0px), 0.6rem)',
+      paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)',
+      paddingLeft: '1.1rem', paddingRight: '1.1rem',
     }}>
-      {/* ── Top chips (Profile + Shop) ── */}
-      <div style={{ position: 'absolute', top: 'max(env(safe-area-inset-top,0px),0.75rem)', right: '1rem', display: 'flex', gap: 8 }}>
+
+      {/* ── 1. Top bar: Shop + Profile ── */}
+      <div style={{
+        display: 'flex', justifyContent: 'flex-end', gap: 8,
+        flexShrink: 0, paddingBottom: '0.4rem',
+      }}>
         <button
           onClick={onShop}
           style={{
@@ -42,7 +47,8 @@ export function HomeScreen({ onPlay, onSettings, onRules, onReplays, onProfile, 
         <button
           onClick={onProfile}
           style={{
-            background: 'var(--surface)', border: `1px solid ${username ? 'var(--accent)' : 'var(--border)'}`,
+            background: 'var(--surface)',
+            border: `1px solid ${username ? 'var(--accent)' : 'var(--border)'}`,
             borderRadius: 22, padding: '0.45rem 1rem',
             color: username ? 'var(--accent)' : 'var(--muted)',
             fontSize: '0.85rem', fontWeight: username ? 700 : 400,
@@ -53,12 +59,17 @@ export function HomeScreen({ onPlay, onSettings, onRules, onReplays, onProfile, 
         </button>
       </div>
 
-      {/* ── Title block ── */}
-      <div style={{ textAlign: 'center', userSelect: 'none' }}>
+      {/* ── 2. Title — fills remaining middle space ── */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        userSelect: 'none', paddingBottom: '0.5rem',
+      }}>
         <div style={{ position: 'relative', display: 'inline-block' }}>
           <h1 style={{
-            margin: 0, fontSize: 'clamp(3.5rem, 16vw, 5.5rem)', fontWeight: 900,
-            letterSpacing: '0.22em', lineHeight: 1,
+            margin: 0,
+            fontSize: 'clamp(3rem, 14vw, 5rem)',
+            fontWeight: 900, letterSpacing: '0.22em', lineHeight: 1,
             color: 'var(--accent)',
             textShadow: '0 0 60px rgba(129,140,248,0.45), 0 0 120px rgba(99,102,241,0.2)',
           }}>
@@ -71,22 +82,22 @@ export function HomeScreen({ onPlay, onSettings, onRules, onReplays, onProfile, 
           }} />
         </div>
         <p style={{
-          margin: '1.1rem 0 0', color: 'var(--muted)', fontSize: '0.82rem',
+          margin: '1rem 0 0', color: 'var(--muted)', fontSize: '0.8rem',
           letterSpacing: '0.16em', textTransform: 'uppercase',
         }}>
           A 2-Player Land Card Duel
         </p>
       </div>
 
-      {/* ── Menu buttons ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 360 }}>
+      {/* ── 3. Menu buttons — anchored to bottom ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9, flexShrink: 0 }}>
         {menuItems.map((item, i) => (
           <button
             key={item.label}
             onClick={handlers[i]}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '0.9rem 1.25rem', borderRadius: 12, minHeight: 56,
+              padding: '0.85rem 1.1rem', borderRadius: 12, minHeight: 54,
               border: item.primary
                 ? '1px solid rgba(99,102,241,0.6)'
                 : '1px solid var(--border)',
@@ -106,6 +117,7 @@ export function HomeScreen({ onPlay, onSettings, onRules, onReplays, onProfile, 
           </button>
         ))}
       </div>
+
     </div>
   );
 }
