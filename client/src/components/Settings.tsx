@@ -1,24 +1,14 @@
-// Settings screen: manage server port, UPnP, player name, and custom card artwork.
-// Card image changes persist to Electron’s userData/cards/ directory.
 import { useEffect, useState } from 'react';
 import { AppSettings } from '../electron.d';
 import { ALL_COLORS, Color } from '@lands/shared';
 import { useUISettings } from '../hooks/useUISettings';
 
 const COLOR_LABELS: Record<Color, string> = {
-  white: 'White',
-  red:   'Red',
-  blue:  'Blue',
-  green: 'Green',
-  black: 'Black',
+  white: 'White', red: 'Red', blue: 'Blue', green: 'Green', black: 'Black',
 };
 
 const COLOR_PREVIEW_BG: Record<Color, string> = {
-  white: '#f0ead6',
-  red:   '#c0392b',
-  blue:  '#2980b9',
-  green: '#27ae60',
-  black: '#1a1a2a',
+  white: '#f0ead6', red: '#c0392b', blue: '#2980b9', green: '#27ae60', black: '#1a1a2a',
 };
 
 interface Props {
@@ -103,181 +93,233 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
     setTimeout(() => setSettingsSaved(false), 2000);
   }
 
+  const sectionHeadingStyle: React.CSSProperties = {
+    color: 'var(--text)', fontSize: '0.9rem', fontWeight: 700,
+    marginTop: 0, marginBottom: 10,
+    textTransform: 'uppercase', letterSpacing: '0.07em',
+  };
+
+  const cardStyle: React.CSSProperties = {
+    background: 'var(--surface)', border: '1px solid var(--border)',
+    borderRadius: 10, padding: '0 1rem',
+  };
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    gap: 12, minHeight: 52, borderBottom: '1px solid var(--border)',
+  };
+
+  const lastRowStyle: React.CSSProperties = {
+    ...rowStyle, borderBottom: 'none',
+  };
+
+  const rowLabelStyle: React.CSSProperties = {
+    color: 'var(--muted)', fontSize: '0.88rem', flex: 1,
+  };
+
+  const checkboxStyle: React.CSSProperties = {
+    width: 20, height: 20, cursor: 'pointer',
+    accentColor: 'var(--accent)', flexShrink: 0,
+  };
+
   return (
-    <div className="flex flex-col h-full px-5 py-5 gap-6 overflow-y-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button className="btn-secondary px-4 py-2" onClick={onBack} style={{ minHeight: 44 }}>← Back</button>
-        <h2 className="text-accent m-0">Settings</h2>
+    <div style={{
+      display: 'flex', flexDirection: 'column', height: '100dvh',
+      paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)',
+      paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0px)',
+    }}>
+      {/* Sticky header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
+        padding: '0.65rem 1rem',
+        paddingTop: 'max(env(safe-area-inset-top, 0px), 0.65rem)',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <button className="btn-secondary" onClick={onBack} style={{ padding: '0.4rem 1rem', minHeight: 44, fontSize: '0.9rem' }}>
+          ← Back
+        </button>
+        <h2 style={{ margin: 0, color: 'var(--accent)', fontSize: '1.3rem' }}>Settings</h2>
       </div>
 
-      {/* Player Name */}
-      <section>
-        <h3 className="text-foreground mb-3 text-base mt-0">Player</h3>
-        <div className="bg-surface border border-border rounded-[10px] px-5 py-4 max-w-[380px]">
-          <label className="flex justify-between items-center gap-4">
-            <span className="text-muted text-sm shrink-0">Display name</span>
-            <input
-              value={playerName}
-              onChange={e => setPlayerName(e.target.value)}
-              onBlur={e => saveName(e.target.value)}
-              placeholder="Player"
-              maxLength={20}
-              style={{ textAlign: 'right', fontSize: '0.9rem', padding: '0.3rem 0.5rem', minWidth: 0, flex: 1 }}
-            />
-          </label>
-        </div>
-      </section>
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1rem', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-      {/* Card Images */}
-      <section>
-        <h3 className="text-foreground mb-3 text-base mt-0">Card Appearance</h3>
-        {!isElectron && (
-          <p className="text-muted text-sm mb-3">Card image upload is only available in the desktop app.</p>
-        )}
-
-        <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit" style={{ minHeight: 44 }}>
-          <input
-            type="checkbox"
-            checked={showCardTypeOnHover}
-            onChange={e => setShowCardTypeOnHover(e.target.checked)}
-            style={{ width: 20, height: 20, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
-          />
-          <span className="text-muted text-sm">Show card type on select</span>
-        </label>
-
-        <label className="flex items-center gap-3 mb-4 cursor-pointer w-fit" style={{ minHeight: 44 }}>
-          <input
-            type="checkbox"
-            checked={showCardEffectsOnHover}
-            onChange={e => setShowCardEffectsOnHover(e.target.checked)}
-            style={{ width: 20, height: 20, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
-          />
-          <span className="text-muted text-sm">Show card effect on select</span>
-        </label>
-      </section>
-
-      {/* Effect Notifications */}
-      <section>
-        <h3 className="text-foreground mb-1 text-base mt-0">Effect Notifications</h3>
-        <p className="text-muted text-sm mb-3 mt-0">Show a popup to the opponent after an effect resolves.</p>
-        <div className="bg-surface border border-border rounded-[10px] px-5 py-4 flex flex-col gap-3 max-w-[420px]">
-          {([
-            { key: 'red',   label: 'Red — land destroyed',                   val: showEffectResultRed,   set: setShowEffectResultRed   },
-            { key: 'green', label: 'Green — land retrieved from graveyard',   val: showEffectResultGreen, set: setShowEffectResultGreen },
-            { key: 'blue',  label: 'Blue — deck card kept on top / sent to bottom', val: showEffectResultBlue, set: setShowEffectResultBlue },
-            { key: 'black', label: 'Black — card discarded from hand',        val: showEffectResultBlack, set: setShowEffectResultBlack },
-          ] as const).map(({ key, label, val, set }) => (
-            <label key={key} className="flex items-center justify-between gap-4 cursor-pointer" style={{ minHeight: 44 }}>
-              <span className="text-muted text-sm">{label}</span>
+        {/* Player Name */}
+        <section>
+          <h3 style={sectionHeadingStyle}>Player</h3>
+          <div style={cardStyle}>
+            <label style={lastRowStyle}>
+              <span style={rowLabelStyle}>Display name</span>
               <input
-                type="checkbox"
-                checked={val}
-                onChange={e => set(e.target.checked)}
-                style={{ width: 20, height: 20, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
+                value={playerName}
+                onChange={e => setPlayerName(e.target.value)}
+                onBlur={e => saveName(e.target.value)}
+                placeholder="Player"
+                maxLength={20}
+                style={{ textAlign: 'right', fontSize: '0.9rem', padding: '0.3rem 0.5rem', minWidth: 0, maxWidth: 140, minHeight: 36 }}
               />
             </label>
-          ))}
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Card Images */}
-      <section>
-        <div className="flex flex-wrap gap-4">
-          {ALL_COLORS.map(color => (
-            <div key={color} className="bg-surface border border-border rounded-[10px] p-3 flex flex-col gap-2 items-center min-w-[120px]">
+        {/* Card Appearance */}
+        <section>
+          <h3 style={sectionHeadingStyle}>Card Appearance</h3>
+          {!isElectron && (
+            <p style={{ color: 'var(--muted)', fontSize: '0.82rem', marginBottom: 10, marginTop: 0 }}>
+              Card image upload is only available in the desktop app.
+            </p>
+          )}
+          <div style={cardStyle}>
+            <label style={rowStyle}>
+              <span style={rowLabelStyle}>Show card type on select</span>
+              <input
+                type="checkbox" checked={showCardTypeOnHover}
+                onChange={e => setShowCardTypeOnHover(e.target.checked)}
+                style={checkboxStyle}
+              />
+            </label>
+            <label style={lastRowStyle}>
+              <span style={rowLabelStyle}>Show card effect on select</span>
+              <input
+                type="checkbox" checked={showCardEffectsOnHover}
+                onChange={e => setShowCardEffectsOnHover(e.target.checked)}
+                style={checkboxStyle}
+              />
+            </label>
+          </div>
+        </section>
+
+        {/* Effect Notifications */}
+        <section>
+          <h3 style={sectionHeadingStyle}>Effect Notifications</h3>
+          <p style={{ color: 'var(--muted)', fontSize: '0.82rem', marginBottom: 10, marginTop: 0 }}>
+            Show a popup to the opponent after an effect resolves.
+          </p>
+          <div style={cardStyle}>
+            {([
+              { key: 'red',   label: 'Red — land destroyed',                   val: showEffectResultRed,   set: setShowEffectResultRed   },
+              { key: 'green', label: 'Green — land retrieved from graveyard',   val: showEffectResultGreen, set: setShowEffectResultGreen },
+              { key: 'blue',  label: 'Blue — deck card peeked / reordered',     val: showEffectResultBlue,  set: setShowEffectResultBlue  },
+              { key: 'black', label: 'Black — card discarded from hand',        val: showEffectResultBlack, set: setShowEffectResultBlack },
+            ] as const).map(({ key, label, val, set }, i, arr) => (
+              <label key={key} style={i === arr.length - 1 ? lastRowStyle : rowStyle}>
+                <span style={rowLabelStyle}>{label}</span>
+                <input
+                  type="checkbox" checked={val}
+                  onChange={e => set(e.target.checked)}
+                  style={checkboxStyle}
+                />
+              </label>
+            ))}
+          </div>
+        </section>
+
+        {/* Card Images */}
+        <section>
+          <h3 style={sectionHeadingStyle}>Card Images</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            {ALL_COLORS.map(color => (
+              <div key={color} style={{
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: 10, padding: '0.75rem 0.6rem',
+                display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center',
+              }}>
+                <div style={{
+                  width: 60, height: 84, borderRadius: 7, overflow: 'hidden',
+                  border: '2px solid rgba(255,255,255,0.15)',
+                  background: COLOR_PREVIEW_BG[color], flexShrink: 0,
+                }}>
+                  <img
+                    src={previewUrls[color]} alt={color} key={previewUrls[color]}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    style={{ width: '100%', height: '70%', objectFit: 'cover', display: 'block' }}
+                  />
+                </div>
+                <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textAlign: 'center' }}>{COLOR_LABELS[color]}</span>
+                {imageStatus[color] && (
+                  <span style={{ fontSize: '0.7rem', color: '#4ade80' }}>{imageStatus[color]}</span>
+                )}
+                {isElectron && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+                    <button className="btn-primary" onClick={() => handleUpload(color)}
+                      style={{ fontSize: '0.7rem', padding: '0.3rem 0.4rem', minHeight: 32 }}>Upload</button>
+                    <button className="btn-secondary" onClick={() => handleReset(color)}
+                      style={{ fontSize: '0.7rem', padding: '0.3rem 0.4rem', minHeight: 32 }}>Default</button>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Card Back */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: 10, padding: '0.75rem 0.6rem',
+              display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center',
+            }}>
               <div style={{
-                width: 72, height: 100, borderRadius: 7, overflow: 'hidden',
-                border: '2px solid rgba(255,255,255,0.15)', position: 'relative',
-                background: COLOR_PREVIEW_BG[color], flexShrink: 0,
+                width: 60, height: 84, borderRadius: 7, overflow: 'hidden',
+                border: '2px solid rgba(255,255,255,0.15)',
+                background: '#12122a', flexShrink: 0,
               }}>
                 <img
-                  src={previewUrls[color]} alt={color} key={previewUrls[color]}
+                  src={previewUrls['back']} alt="card back" key={previewUrls['back']}
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  style={{ width: '100%', height: '70%', objectFit: 'cover', display: 'block' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
               </div>
-              <p className="text-[0.72rem] text-muted text-center m-0">{COLOR_LABELS[color]}</p>
-              {imageStatus[color] && (
-                <p className="text-[0.7rem] m-0" style={{ color: '#4ade80' }}>{imageStatus[color]}</p>
+              <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textAlign: 'center' }}>Card Back</span>
+              {imageStatus['back'] && (
+                <span style={{ fontSize: '0.7rem', color: '#4ade80' }}>{imageStatus['back']}</span>
               )}
               {isElectron && (
-                <div className="flex flex-col gap-1 w-full">
-                  <button className="btn-primary" onClick={() => handleUpload(color)}
-                    style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Upload</button>
-                  <button className="btn-secondary" onClick={() => handleReset(color)}
-                    style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Default</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+                  <button className="btn-primary" onClick={() => handleUpload('back')}
+                    style={{ fontSize: '0.7rem', padding: '0.3rem 0.4rem', minHeight: 32 }}>Upload</button>
+                  <button className="btn-secondary" onClick={() => handleReset('back')}
+                    style={{ fontSize: '0.7rem', padding: '0.3rem 0.4rem', minHeight: 32 }}>Default</button>
                 </div>
               )}
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Card Back */}
-      <section>
-        <h3 className="text-foreground mb-3 text-base mt-0">Card Back</h3>
-        <div className="flex flex-wrap gap-4">
-          <div className="bg-surface border border-border rounded-[10px] p-3 flex flex-col gap-2 items-center min-w-[120px]">
-            <div style={{
-              width: 72, height: 100, borderRadius: 7, overflow: 'hidden',
-              border: '2px solid rgba(255,255,255,0.15)', position: 'relative',
-              background: '#12122a', flexShrink: 0,
-            }}>
-              <img
-                src={previewUrls['back']} alt="card back" key={previewUrls['back']}
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            </div>
-            <p className="text-[0.72rem] text-muted text-center m-0">Card Back</p>
-            {imageStatus['back'] && (
-              <p className="text-[0.7rem] m-0" style={{ color: '#4ade80' }}>{imageStatus['back']}</p>
-            )}
-            {isElectron && (
-              <div className="flex flex-col gap-1 w-full">
-                <button className="btn-primary" onClick={() => handleUpload('back')}
-                  style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Upload</button>
-                <button className="btn-secondary" onClick={() => handleReset('back')}
-                  style={{ fontSize: '0.72rem', padding: '0.3rem 0.5rem' }}>Default</button>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Network Settings — Electron only */}
-      {isElectron && (
-        <section>
-          <h3 className="text-foreground mb-3 text-base mt-0">Network</h3>
-          <div className="bg-surface border border-border rounded-[10px] px-5 py-4 flex flex-col gap-3 max-w-[380px]">
-            <label className="flex justify-between items-center gap-4">
-              <span className="text-muted text-sm">Default hosting port</span>
-              <input
-                type="number" min={1024} max={65535} value={defaultPort}
-                onChange={e => setDefaultPort(Number(e.target.value))}
-                style={{ width: 80, textAlign: 'center', fontSize: '0.9rem', padding: '0.3rem 0.5rem' }}
-              />
-            </label>
-            <label className="flex justify-between items-center gap-4 cursor-pointer">
-              <div>
-                <span className="text-muted text-sm">Auto port forward (UPnP)</span>
-                <p className="m-0 text-xs text-muted" style={{ opacity: 0.7 }}>
-                  Attempt UPnP when starting a host game
-                </p>
-              </div>
-              <input
-                type="checkbox" checked={upnpEnabled}
-                onChange={e => setUpnpEnabled(e.target.checked)}
-                style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--accent)' }}
-              />
-            </label>
-            <button className="btn-primary self-start text-sm px-5 py-1.5" onClick={saveNetworkSettings}>
-              {settingsSaved ? '✓ Saved' : 'Save'}
-            </button>
           </div>
         </section>
-      )}
+
+        {/* Network — Electron only */}
+        {isElectron && (
+          <section>
+            <h3 style={sectionHeadingStyle}>Network</h3>
+            <div style={cardStyle}>
+              <label style={rowStyle}>
+                <span style={rowLabelStyle}>Default hosting port</span>
+                <input
+                  type="number" min={1024} max={65535} value={defaultPort}
+                  onChange={e => setDefaultPort(Number(e.target.value))}
+                  style={{ width: 80, textAlign: 'center', fontSize: '0.9rem', padding: '0.3rem 0.5rem', minHeight: 36 }}
+                />
+              </label>
+              <label style={rowStyle}>
+                <div style={{ flex: 1 }}>
+                  <span style={rowLabelStyle}>Auto port forward (UPnP)</span>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.7 }}>
+                    Attempt UPnP when starting a host game
+                  </p>
+                </div>
+                <input
+                  type="checkbox" checked={upnpEnabled}
+                  onChange={e => setUpnpEnabled(e.target.checked)}
+                  style={{ ...checkboxStyle }}
+                />
+              </label>
+              <div style={{ padding: '0.75rem 0' }}>
+                <button className="btn-primary" onClick={saveNetworkSettings}
+                  style={{ fontSize: '0.9rem', padding: '0.5rem 1.5rem', minHeight: 44 }}>
+                  {settingsSaved ? '✓ Saved' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,15 +1,9 @@
-// MatchmakingScreen — shown while the player is in the matchmaking queue.
-// Once the server pairs two players it emits game_state with phase 'customizing',
-// which App.tsx intercepts automatically.  This screen just shows queue status.
 import { useEffect, useState } from 'react';
 
 interface Props {
   playerName: string;
-  /** Current queue position from the server (null while connecting). */
   queuePosition: number | null;
-  /** True once the server has found an opponent but before game_state arrives. */
   found: boolean;
-  /** Whether the socket is connected to the server. */
   connected: boolean;
   onCancel: () => void;
 }
@@ -26,37 +20,45 @@ export function MatchmakingScreen({ playerName, queuePosition, found, connected,
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-8 text-center p-8">
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', height: '100dvh', gap: 28, textAlign: 'center',
+      padding: '1.5rem',
+      paddingTop: 'max(env(safe-area-inset-top, 0px), 1.5rem)',
+      paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 1.5rem)',
+    }}>
       <div>
-        <h2 className="text-accent mb-1 m-0">Matchmaking</h2>
-        <p className="text-muted text-sm m-0">Playing as <strong className="text-foreground">{playerName}</strong></p>
+        <h2 style={{ color: 'var(--accent)', fontSize: '1.6rem', margin: '0 0 4px' }}>Matchmaking</h2>
+        <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>
+          Playing as <strong style={{ color: 'var(--text)' }}>{playerName}</strong>
+        </p>
       </div>
 
-      <div
-        className="bg-surface border border-border rounded-xl px-10 py-8 flex flex-col items-center gap-4"
-        style={{ minWidth: 280 }}
-      >
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 14, padding: '1.5rem',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
+        width: '100%', maxWidth: 320,
+      }}>
         {found ? (
           <>
-            <p className="text-2xl m-0">🎮</p>
-            <p className="text-foreground font-semibold m-0">Match found!</p>
-            <p className="text-muted text-sm m-0">Starting game…</p>
+            <p style={{ fontSize: '2.5rem', margin: 0 }}>🎮</p>
+            <p style={{ color: 'var(--text)', fontWeight: 700, margin: 0 }}>Match found!</p>
+            <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>Starting game…</p>
           </>
         ) : !connected ? (
           <>
             <Spinner />
-            <p className="text-muted text-sm m-0">Connecting to server…</p>
+            <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>Connecting to server…</p>
           </>
         ) : (
           <>
             <Spinner />
-            <p className="text-foreground font-semibold m-0">Searching for opponent…</p>
-            <p className="text-muted text-sm m-0">
-              {queuePosition !== null
-                ? `Queue position: ${queuePosition}`
-                : 'Joining queue…'}
+            <p style={{ color: 'var(--text)', fontWeight: 600, margin: 0 }}>Searching for opponent…</p>
+            <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>
+              {queuePosition !== null ? `Queue position: ${queuePosition}` : 'Joining queue…'}
             </p>
-            <p className="text-muted text-xs m-0">{fmt(elapsed)}</p>
+            <p style={{ color: 'var(--muted)', fontSize: '0.78rem', margin: 0 }}>{fmt(elapsed)}</p>
           </>
         )}
       </div>
@@ -65,7 +67,7 @@ export function MatchmakingScreen({ playerName, queuePosition, found, connected,
         <button
           className="btn-secondary"
           onClick={onCancel}
-          style={{ fontSize: '0.95rem', minHeight: 50, padding: '0.6rem 2rem' }}
+          style={{ minHeight: 52, padding: '0.6rem 2.5rem', width: '100%', maxWidth: 280, fontSize: '0.95rem' }}
         >
           ✕ Cancel
         </button>
@@ -76,14 +78,10 @@ export function MatchmakingScreen({ playerName, queuePosition, found, connected,
 
 function Spinner() {
   return (
-    <div
-      className="animate-spin"
-      style={{
-        width: 36, height: 36,
-        border: '3px solid var(--border)',
-        borderTopColor: 'var(--accent)',
-        borderRadius: '50%',
-      }}
-    />
+    <div style={{
+      width: 36, height: 36,
+      border: '3px solid var(--border)', borderTopColor: 'var(--accent)',
+      borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+    }} />
   );
 }
