@@ -27,7 +27,7 @@ export function Hand({ cards, customizations, label, selectableIds, onSelect, hi
     <div className={paneClass}>
       {cards.length === 0
         ? <span style={{ color: 'var(--muted)', fontSize: '0.8rem', padding: '0 4px', width: '100%', textAlign: 'center' }}>
-            No cards \u2014 {label}
+            No cards — {label}
           </span>
         : cards.map(card => {
             const isPlayable = !!(selectableIds?.has(card.id));
