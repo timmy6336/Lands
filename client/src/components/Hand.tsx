@@ -1,5 +1,4 @@
-// Renders the player's hand as a horizontal row of 72×108px cards.
-// Each card shows: art image (top 62%) + info strip (bottom 38%) with name + "tap to play".
+// ui-opt-c-bighand: large card art hand (96x140px) as the dominant UI element.
 import { useCardImages } from '../hooks/useCardImages';
 import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
 
@@ -13,17 +12,19 @@ const COLOR_BG: Record<Color, string> = {
 
 interface Props {
   cards: CardType[];
-  hiddenCount?: number; // unused — opponent hand is now shown as a count badge only
+  hiddenCount?: number;
   customizations?: Customizations;
   label: string;
   selectableIds?: Set<string>;
   onSelect?: (cardId: string) => void;
   highlightIds?: Set<string>;
+  cardSize?: 'normal' | 'large';
 }
 
-export function Hand({ cards, customizations, label, selectableIds, onSelect, highlightIds }: Props) {
+export function Hand({ cards, customizations, label, selectableIds, onSelect, highlightIds, cardSize = 'normal' }: Props) {
+  const paneClass = cardSize === 'large' ? 'hand-pane-large' : 'hand-pane';
   return (
-    <div className="hand-pane">
+    <div className={paneClass}>
       {cards.length === 0
         ? <span style={{ color: 'var(--muted)', fontSize: '0.8rem', padding: '0 4px', width: '100%', textAlign: 'center' }}>
             No cards — {label}
@@ -40,6 +41,7 @@ export function Hand({ cards, customizations, label, selectableIds, onSelect, hi
                 isPlayable={isPlayable}
                 isDisabled={isDisabled}
                 isHighlighted={isHighlighted}
+                cardSize={cardSize}
                 onClick={isPlayable ? () => onSelect?.(card.id) : undefined}
               />
             );
@@ -55,20 +57,29 @@ interface HandCardProps {
   isPlayable: boolean;
   isDisabled: boolean;
   isHighlighted: boolean;
+  cardSize?: 'normal' | 'large';
   onClick?: () => void;
 }
 
-function HandCard({ card, customizations, isPlayable, isDisabled, isHighlighted, onClick }: HandCardProps) {
+function HandCard({ card, customizations, isPlayable, isDisabled, isHighlighted, cardSize = 'normal', onClick }: HandCardProps) {
   const cardImageUrls = useCardImages();
   const custom = customizations?.[card.color] ?? DEFAULT_CUSTOMIZATIONS[card.color];
   const isSelected = isPlayable || isHighlighted;
+  const isLarge = cardSize === 'large';
+
+  const cardW = isLarge ? 96 : 72;
+  const cardH = isLarge ? 140 : 108;
+  const artHeight = isLarge ? '65%' : '62%';
+  const nameFontSize = isLarge ? '0.75rem' : '0.66rem';
+  const tapFontSize = isLarge ? '0.6rem' : '0.52rem';
+  const liftY = isLarge ? -14 : -10;
 
   return (
     <div
       onClick={onClick}
       className={isPlayable ? 'tile-interactive' : undefined}
       style={{
-        width: 72, height: 108,
+        width: cardW, height: cardH,
         borderRadius: 10, flexShrink: 0,
         position: 'relative', overflow: 'hidden',
         background: COLOR_BG[card.color],
@@ -79,38 +90,36 @@ function HandCard({ card, customizations, isPlayable, isDisabled, isHighlighted,
         cursor: isPlayable ? 'pointer' : 'default',
         touchAction: 'manipulation',
         opacity: isDisabled ? 0.35 : 1,
-        transform: isSelected ? 'translateY(-10px)' : 'none',
+        transform: isSelected ? `translateY(${liftY}px)` : 'none',
         transition: 'transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s',
         animation: 'card-enter-hand 0.25s ease',
         userSelect: 'none',
       }}
     >
-      {/* Card art — top 62% */}
       <img
         src={cardImageUrls[card.color]}
         alt={card.color}
         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-        style={{ width: '100%', height: '62%', objectFit: 'cover', display: 'block' }}
+        style={{ width: '100%', height: artHeight, objectFit: 'cover', display: 'block' }}
       />
-      {/* Info strip — bottom 38% */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
         background: 'rgba(0,0,0,0.72)',
-        height: '40%',
+        height: isLarge ? '35%' : '40%',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         gap: 3, padding: '3px 5px',
         pointerEvents: 'none',
       }}>
         <span style={{
-          color: '#fff', fontWeight: 700, fontSize: '0.66rem',
+          color: '#fff', fontWeight: 700, fontSize: nameFontSize,
           textTransform: 'uppercase', letterSpacing: '0.04em',
           textAlign: 'center', lineHeight: 1.2,
         }}>
           {custom.displayName}
         </span>
         {isPlayable && (
-          <span style={{ color: 'rgba(255,255,255,0.62)', fontSize: '0.52rem', letterSpacing: '0.02em' }}>
+          <span style={{ color: 'rgba(255,255,255,0.62)', fontSize: tapFontSize, letterSpacing: '0.02em' }}>
             tap to play
           </span>
         )}

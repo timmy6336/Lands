@@ -1,5 +1,4 @@
-// Renders a player's field as horizontal color-tile strip.
-// Each color becomes one 66×96px tile: card art background + count overlay.
+// ui-opt-c-bighand: Field with size='normal' (52x68px art tiles) or size='compact' (28x40px tiny tiles).
 import { useCardImages } from '../hooks/useCardImages';
 import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
 
@@ -17,20 +16,23 @@ interface Props {
   label: string;
   selectableIds?: Set<string>;
   onSelect?: (cardId: string) => void;
+  size?: 'normal' | 'compact';
 }
 
-export function Field({ cards, customizations, label, selectableIds, onSelect }: Props) {
+export function Field({ cards, customizations, label, selectableIds, onSelect, size = 'normal' }: Props) {
   const groups = new Map<Color, CardType[]>();
   for (const card of cards) {
     if (!groups.has(card.color)) groups.set(card.color, []);
     groups.get(card.color)!.push(card);
   }
 
+  const paneClass = size === 'compact' ? 'field-pane-compact' : 'field-pane';
+
   return (
-    <div className="field-pane">
+    <div className={paneClass}>
       {groups.size === 0
-        ? <span style={{ color: 'var(--muted)', fontSize: '0.75rem', padding: '0 4px', flexShrink: 0 }}>
-            {label} — empty
+        ? <span style={{ color: 'var(--muted)', fontSize: size === 'compact' ? '0.65rem' : '0.75rem', padding: '0 4px', flexShrink: 0 }}>
+            {size === 'compact' ? '—' : `${label} — empty`}
           </span>
         : [...groups.entries()].map(([color, stackCards]) => {
             const isSelectable = !!selectableIds && stackCards.some(c => selectableIds.has(c.id));
@@ -43,6 +45,7 @@ export function Field({ cards, customizations, label, selectableIds, onSelect }:
                 customizations={customizations}
                 isSelectable={isSelectable}
                 onSelect={isSelectable ? () => onSelect?.(topCard.id) : undefined}
+                size={size}
               />
             );
           })
@@ -57,19 +60,26 @@ interface TileProps {
   customizations?: Customizations;
   isSelectable: boolean;
   onSelect?: () => void;
+  size?: 'normal' | 'compact';
 }
 
-function FieldTile({ color, count, customizations, isSelectable, onSelect }: TileProps) {
+function FieldTile({ color, count, customizations, isSelectable, onSelect, size = 'normal' }: TileProps) {
   const cardImageUrls = useCardImages();
   const custom = customizations?.[color] ?? DEFAULT_CUSTOMIZATIONS[color];
+  const isCompact = size === 'compact';
+
+  const tileW = isCompact ? 28 : 52;
+  const tileH = isCompact ? 40 : 68;
+  const borderRadius = isCompact ? 5 : 8;
+  const countFontSize = isCompact ? '0.9rem' : '1.6rem';
 
   return (
     <div
       onClick={isSelectable ? onSelect : undefined}
       className={isSelectable ? 'tile-interactive tile-selectable' : undefined}
       style={{
-        width: 66, height: 96,
-        borderRadius: 10, flexShrink: 0,
+        width: tileW, height: tileH,
+        borderRadius, flexShrink: 0,
         position: 'relative', overflow: 'hidden',
         background: COLOR_BG[color],
         border: isSelectable ? '2px solid rgba(255,255,255,0.85)' : '1px solid rgba(255,255,255,0.12)',
@@ -89,24 +99,25 @@ function FieldTile({ color, count, customizations, isSelectable, onSelect }: Til
         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.78 }}
       />
-      {/* gradient overlay */}
       <div style={{
         position: 'absolute', inset: 0,
         background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.52) 100%)',
         display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'space-between',
-        padding: '5px 3px 7px',
+        alignItems: 'center', justifyContent: isCompact ? 'center' : 'space-between',
+        padding: isCompact ? '2px 1px' : '4px 2px 5px',
         pointerEvents: 'none',
       }}>
+        {!isCompact && (
+          <span style={{
+            color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontSize: '0.52rem',
+            textTransform: 'uppercase', letterSpacing: '0.06em',
+            textShadow: '0 1px 4px rgba(0,0,0,0.9)', textAlign: 'center',
+          }}>
+            {custom.displayName}
+          </span>
+        )}
         <span style={{
-          color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontSize: '0.58rem',
-          textTransform: 'uppercase', letterSpacing: '0.07em',
-          textShadow: '0 1px 4px rgba(0,0,0,0.9)', textAlign: 'center',
-        }}>
-          {custom.displayName}
-        </span>
-        <span style={{
-          color: '#fff', fontWeight: 900, fontSize: '2rem', lineHeight: 1,
+          color: '#fff', fontWeight: 900, fontSize: countFontSize, lineHeight: 1,
           textShadow: '0 2px 6px rgba(0,0,0,0.9)',
         }}>
           {count}

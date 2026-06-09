@@ -120,76 +120,80 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
   const showCounterCounterWindow = phase === 'counter_response' && isMyTurn;
   const showEffect = ['effect_red_pick','effect_green_pick','effect_blue_look','effect_black_show','effect_black_pick'].includes(phase);
 
-  // ── Stat chip (used in both info bars) ──────────────────────────────────────
-  function StatChip({ icon, value }: { icon: string; value: number }) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, padding: '0 4px', flexShrink: 0 }}>
-        <span style={{ fontSize: '0.9rem', lineHeight: 1 }}>{icon}</span>
-        <span style={{ fontSize: '0.72rem', fontWeight: 700, lineHeight: 1, color: 'var(--text)' }}>{value}</span>
-      </div>
-    );
-  }
-
   return (
     <div className="game-root flex flex-col" style={{ height: '100dvh' }}>
 
-      {/* ── 1. Opponent info bar ──────────────────────────────────────────────── */}
+      {/* ── 1. Opponent bar (52px) ────────────────────────────────────────────── */}
       <div style={{
-        height: 50, flexShrink: 0,
-        display: 'flex', alignItems: 'center', gap: 6, padding: '0 6px',
-        background: !isMyTurn ? 'rgba(241,196,15,0.09)' : 'var(--surface)',
-        border: !isMyTurn ? '1.5px solid rgba(241,196,15,0.4)' : '1.5px solid transparent',
+        height: 52, flexShrink: 0,
+        display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px',
+        background: !isMyTurn ? 'rgba(241,196,15,0.08)' : 'var(--surface)',
+        border: !isMyTurn ? '1.5px solid rgba(241,196,15,0.35)' : '1.5px solid var(--border)',
         borderRadius: 10,
         transition: 'background 0.3s, border-color 0.3s',
       }}>
-        {!isMyTurn && (
-          <span style={{ color: '#f1c40f', fontSize: '0.8rem', fontWeight: 800, flexShrink: 0 }}>▶</span>
-        )}
-        <span style={{ fontWeight: 700, fontSize: '0.9rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
+        <span style={{
+          width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+          background: !isMyTurn ? '#f1c40f' : 'rgba(255,255,255,0.15)',
+          boxShadow: !isMyTurn ? '0 0 6px rgba(241,196,15,0.7)' : 'none',
+          display: 'inline-block',
+          transition: 'background 0.3s, box-shadow 0.3s',
+        }} />
+        <span style={{ fontWeight: 700, fontSize: '0.88rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
           {opponent.name}
         </span>
         {!opponent.isConnected && (
           <span style={{ color: '#e74c3c', fontSize: '0.72rem', flexShrink: 0 }}>⚠</span>
         )}
-        <StatChip icon="✋" value={opponent.handCount} />
-        <StatChip icon="🃏" value={opponent.deckCount} />
-        <Graveyard cards={opponent.graveyard} customizations={opponent.customizations} label={opponent.name} />
+        <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '2px 7px', fontWeight: 700, flexShrink: 0, color: 'var(--text)' }}>
+          ✋{opponent.handCount}
+        </span>
+        <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '2px 7px', fontWeight: 700, flexShrink: 0, color: 'var(--text)' }}>
+          💀{opponent.graveyard.length}
+        </span>
+        <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '2px 7px', fontWeight: 700, flexShrink: 0, color: 'var(--text)' }}>
+          🂠{opponent.deckCount}
+        </span>
       </div>
 
-      {/* ── 2. Opponent field ─────────────────────────────────────────────────── */}
+      {/* ── 2. Opponent field (56px) — pill chips ─────────────────────────────── */}
       <Field cards={opponent.field} customizations={opponent.customizations} label={`${opponent.name}'s field`} />
 
-      {/* ── 3. Status bar ─────────────────────────────────────────────────────── */}
+      {/* ── 3. Divider / Status bar (36px) ────────────────────────────────────── */}
       <div style={{
-        height: 40, flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '0 8px',
+        height: 36, flexShrink: 0,
+        display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px',
         background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)',
       }}>
-        <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontWeight: 500, flexShrink: 0 }}>
+        <span style={{ fontSize: '0.68rem', color: 'var(--muted)', fontWeight: 600, flexShrink: 0 }}>
           Turn {gameState.turnNumber}
         </span>
-        <span style={{ color: 'var(--muted)', opacity: 0.45 }}>·</span>
-        <span style={{
-          fontSize: '0.8rem', fontWeight: 800,
-          color: isMyTurn ? '#27ae60' : '#f1c40f',
-          textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0,
-        }}>
-          {isMyTurn ? 'Your turn' : `${opponent.name}`}
-        </span>
-        <span style={{ color: 'var(--muted)', opacity: 0.45 }}>·</span>
-        <span style={{ fontSize: '0.72rem', color: 'var(--text)', fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ color: 'var(--border)', fontSize: '0.8rem' }}>·</span>
+        <span style={{ fontSize: '0.72rem', color: 'var(--text)', fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {gameState.pendingPlay && !showCounterWindow && !showCounterCounterWindow
             ? (isMyTurn
                 ? `Waiting for ${opponent.name}…`
                 : `${opponent.name} played ${gameState.pendingPlay.color}`)
             : phaseLabel}
         </span>
+        <span style={{
+          width: 8, height: 8, borderRadius: '50%', flexShrink: 0, display: 'inline-block',
+          background: isMyTurn ? '#27ae60' : '#f1c40f',
+          boxShadow: isMyTurn ? '0 0 6px rgba(39,174,96,0.8)' : '0 0 6px rgba(241,196,15,0.8)',
+        }} />
+        <span style={{
+          fontSize: '0.68rem', fontWeight: 700, flexShrink: 0,
+          color: isMyTurn ? '#27ae60' : '#f1c40f',
+          textTransform: 'uppercase', letterSpacing: '0.05em',
+        }}>
+          {isMyTurn ? 'YOU' : 'OPP'}
+        </span>
       </div>
 
-      {/* ── 4. My field ───────────────────────────────────────────────────────── */}
+      {/* ── 4. My field (56px) — pill chips ───────────────────────────────────── */}
       <Field cards={me.field} customizations={me.customizations} label="Your field" />
 
-      {/* ── 5. My hand ────────────────────────────────────────────────────────── */}
+      {/* ── 5. My hand (flex 1, min 100px) — wide pill buttons ────────────────── */}
       <Hand
         cards={me.hand}
         customizations={me.customizations}
@@ -198,59 +202,54 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         onSelect={(cardId) => send('play_card', { cardId })}
       />
 
-      {/* ── 6. Bottom action bar ──────────────────────────────────────────────── */}
+      {/* ── 6. Bottom bar (52px) ──────────────────────────────────────────────── */}
       <div style={{
         height: 52, flexShrink: 0,
-        display: 'flex', alignItems: 'center', gap: 4, padding: '0 6px',
-        background: isMyTurn ? 'rgba(39,174,96,0.1)' : 'var(--surface)',
-        border: isMyTurn ? '1.5px solid rgba(39,174,96,0.4)' : '1.5px solid transparent',
+        display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px',
+        background: isMyTurn ? 'rgba(39,174,96,0.08)' : 'var(--surface)',
+        border: isMyTurn ? '1.5px solid rgba(39,174,96,0.35)' : '1.5px solid var(--border)',
         borderRadius: 10,
         transition: 'background 0.3s, border-color 0.3s',
       }}>
-        {/* My deck + grave */}
-        <StatChip icon="🃏" value={me.deckCount} />
+        <span style={{
+          width: 8, height: 8, borderRadius: '50%', flexShrink: 0, display: 'inline-block',
+          background: isMyTurn ? '#27ae60' : 'rgba(255,255,255,0.15)',
+          boxShadow: isMyTurn ? '0 0 6px rgba(39,174,96,0.8)' : 'none',
+          transition: 'background 0.3s, box-shadow 0.3s',
+        }} />
+        <span style={{ fontWeight: 700, fontSize: '0.88rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
+          {playerName}
+        </span>
         <Graveyard cards={me.graveyard} customizations={me.customizations} label="My" />
-
-        {/* Turn indicator text */}
-        {isMyTurn && (
-          <span style={{ fontSize: '0.7rem', color: '#27ae60', fontWeight: 700, letterSpacing: '0.04em', marginLeft: 4, flexShrink: 0 }}>
-            ▶ YOUR TURN
-          </span>
-        )}
-
-        <div style={{ flex: 1 }} />
-
-        {/* Chat */}
         <button
           onClick={() => { setChatOpen(v => !v); setLogOpen(false); }}
           style={{
             background: chatOpen ? 'var(--surface2)' : 'transparent',
             border: chatOpen ? '1px solid var(--accent)' : '1px solid var(--border)',
             borderRadius: 8, color: chatOpen ? 'var(--accent)' : 'var(--muted)',
-            fontSize: '0.85rem', padding: '0.2rem 0.5rem', minHeight: 38, fontWeight: 600,
+            fontSize: '0.75rem', padding: '0 0.5rem', minHeight: 34, height: 34,
+            fontWeight: 700, letterSpacing: '0.04em',
           }}
-        >💬</button>
-
-        {/* Log */}
+        >Chat</button>
         <button
           onClick={() => { setLogOpen(v => !v); setChatOpen(false); }}
           style={{
             background: logOpen ? 'var(--surface2)' : 'transparent',
             border: logOpen ? '1px solid var(--accent)' : '1px solid var(--border)',
             borderRadius: 8, color: logOpen ? 'var(--accent)' : 'var(--muted)',
-            fontSize: '0.85rem', padding: '0.2rem 0.5rem', minHeight: 38, fontWeight: 600,
+            fontSize: '0.75rem', padding: '0 0.5rem', minHeight: 34, height: 34,
+            fontWeight: 700, letterSpacing: '0.04em',
           }}
-        >📜</button>
-
-        {/* Surrender */}
+        >Log</button>
         <button
           onClick={() => setSurrenderOpen(true)}
           style={{
-            background: 'transparent', border: '1px solid rgba(231,76,60,0.35)',
+            background: 'transparent', border: '1px solid rgba(231,76,60,0.4)',
             borderRadius: 8, color: '#e74c3c',
-            fontSize: '0.78rem', padding: '0.2rem 0.6rem', minHeight: 38, fontWeight: 600,
+            fontSize: '0.75rem', padding: '0 0.5rem', minHeight: 34, height: 34,
+            fontWeight: 700, letterSpacing: '0.04em',
           }}
-        >⚑</button>
+        >GG</button>
       </div>
 
       {/* ── Overlays ─────────────────────────────────────────────────────────── */}
