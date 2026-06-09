@@ -10,6 +10,7 @@ import { ChatPanel } from './ChatPanel';
 import { useUISettings } from '../hooks/useUISettings';
 import { useSound } from '../hooks/useSound';
 import { useGameLog } from '../hooks/useGameLog';
+import { useCardImages } from '../hooks/useCardImages';
 
 interface Props {
   gameState: GameState;
@@ -104,6 +105,8 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
     prevRef.current = { turnNumber, pendingPlayId: pendingPlay?.id, chainLength: counterChain.length };
   }, [gameState]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const cardImageUrls = useCardImages();
+
   const me       = gameState.players[myIndex];
   const opponent = gameState.players[1 - myIndex];
   const isMyTurn = gameState.currentPlayerIndex === myIndex;
@@ -143,8 +146,14 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
           <span style={{ color: '#e74c3c', fontSize: '0.75rem', flexShrink: 0 }}>⚠</span>
         )}
         {/* hand count */}
-        <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '1px 6px', fontWeight: 700, flexShrink: 0, color: 'var(--text)', whiteSpace: 'nowrap' }}>
-          ✋ {opponent.handCount}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '1px 6px', fontWeight: 700, flexShrink: 0, color: 'var(--text)', whiteSpace: 'nowrap' }}>
+          <img
+            src={cardImageUrls.back}
+            alt="card back"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            style={{ width: 12, height: 17, borderRadius: 2, objectFit: 'cover', display: 'inline-block', verticalAlign: 'middle', flexShrink: 0 }}
+          />
+          <span style={{ fontSize: '0.7rem' }}>{opponent.handCount}</span>
         </span>
         {/* deck count */}
         <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '1px 6px', fontWeight: 700, flexShrink: 0, color: 'var(--text)', whiteSpace: 'nowrap' }}>
