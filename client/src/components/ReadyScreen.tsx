@@ -14,7 +14,7 @@ export function ReadyScreen({ gameState, myIndex, onReady }: Props) {
   const opponent = gameState.players[1 - myIndex];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 28, padding: '1.5rem 1.25rem', textAlign: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', gap: 28, paddingTop: 'max(env(safe-area-inset-top,0px),1.5rem)', paddingBottom: 'max(env(safe-area-inset-bottom,0px),1.5rem)', paddingLeft: '1.25rem', paddingRight: '1.25rem', textAlign: 'center' }}>
       <h2 style={{ color: 'var(--accent)', margin: 0, fontSize: '1.6rem' }}>Game Ready</h2>
 
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem 2rem', display: 'flex', gap: 36, justifyContent: 'center', width: '100%', maxWidth: 360 }}>

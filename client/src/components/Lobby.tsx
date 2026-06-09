@@ -37,7 +37,7 @@ function HostLobby({ playerName, connected, roomCode, error, onCreateRoom, onBac
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 24, padding: '1.5rem 1.25rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', gap: 24, paddingTop: 'max(env(safe-area-inset-top,0px),1.5rem)', paddingBottom: 'max(env(safe-area-inset-bottom,0px),1.5rem)', paddingLeft: '1.25rem', paddingRight: '1.25rem' }}>
       <div style={{ textAlign: 'center' }}>
         <h2 style={{ color: 'var(--accent)', margin: '0 0 6px' }}>Host Game</h2>
         <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>Create a private room and share the code</p>
@@ -106,7 +106,7 @@ function JoinLobby({ playerName, error, onConnect, onBack }: JoinProps) {
   const canConnect = roomCode.trim().length === 4;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 24, padding: '1.5rem 1.25rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', gap: 24, paddingTop: 'max(env(safe-area-inset-top,0px),1.5rem)', paddingBottom: 'max(env(safe-area-inset-bottom,0px),1.5rem)', paddingLeft: '1.25rem', paddingRight: '1.25rem' }}>
       <div style={{ textAlign: 'center' }}>
         <h2 style={{ color: 'var(--accent)', margin: '0 0 6px' }}>Join Game</h2>
         <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>Enter the room code your friend shared</p>

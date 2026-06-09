@@ -37,7 +37,11 @@ export function AuthScreen({ auth, serverUrl, onBack }: Props) {
 
   const containerStyle: React.CSSProperties = {
     display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', height: '100%', padding: '2rem', gap: 24,
+    justifyContent: 'center', minHeight: '100dvh',
+    paddingTop: 'max(env(safe-area-inset-top, 0px), 2rem)',
+    paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 2rem)',
+    paddingLeft: '1.25rem', paddingRight: '1.25rem',
+    gap: 24,
   };
   const cardStyle: React.CSSProperties = {
     background: 'var(--surface)',

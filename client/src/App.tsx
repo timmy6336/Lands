@@ -364,7 +364,7 @@ function AppInner() {
   if (screen === 'private-menu') {
     return (
       <PageTransition keyProp="private-menu">
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 28, padding: '1.5rem 1.25rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', gap: 28, paddingTop: 'max(env(safe-area-inset-top,0px),1.5rem)', paddingBottom: 'max(env(safe-area-inset-bottom,0px),1.5rem)', paddingLeft: '1.25rem', paddingRight: '1.25rem' }}>
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ color: 'var(--accent)', margin: '0 0 6px', fontSize: '1.6rem' }}>Private Room</h2>
             <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>Create a room or join one with a code</p>
