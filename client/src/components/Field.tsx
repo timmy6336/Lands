@@ -1,5 +1,4 @@
-// Renders a player's field as horizontal color-tile strip.
-// Each color becomes one 66×96px tile: card art background + count overlay.
+// ui-opt-d-split: field tiles with card art; horizontal (default) or vertical layout for battle arena.
 import { useCardImages } from '../hooks/useCardImages';
 import { Card as CardType, Customizations, DEFAULT_CUSTOMIZATIONS, Color } from '@lands/shared';
 
@@ -14,16 +13,44 @@ const COLOR_BG: Record<Color, string> = {
 interface Props {
   cards: CardType[];
   customizations?: Customizations;
-  label: string;
+  label?: string;
   selectableIds?: Set<string>;
   onSelect?: (cardId: string) => void;
+  layout?: 'horizontal' | 'vertical'; // default 'horizontal'
 }
 
-export function Field({ cards, customizations, label, selectableIds, onSelect }: Props) {
+export function Field({ cards, customizations, label, selectableIds, onSelect, layout = 'horizontal' }: Props) {
   const groups = new Map<Color, CardType[]>();
   for (const card of cards) {
     if (!groups.has(card.color)) groups.set(card.color, []);
     groups.get(card.color)!.push(card);
+  }
+
+  if (layout === 'vertical') {
+    return (
+      <div className="battle-col-field">
+        {groups.size === 0
+          ? <span style={{ color: 'var(--muted)', fontSize: '0.65rem', padding: '2px 4px', flexShrink: 0 }}>
+              empty
+            </span>
+          : [...groups.entries()].map(([color, stackCards]) => {
+              const isSelectable = !!selectableIds && stackCards.some(c => selectableIds.has(c.id));
+              const topCard = stackCards[stackCards.length - 1];
+              return (
+                <FieldTile
+                  key={color}
+                  color={color}
+                  count={stackCards.length}
+                  customizations={customizations}
+                  isSelectable={isSelectable}
+                  vertical
+                  onSelect={isSelectable ? () => onSelect?.(topCard.id) : undefined}
+                />
+              );
+            })
+        }
+      </div>
+    );
   }
 
   return (
@@ -57,18 +84,22 @@ interface TileProps {
   customizations?: Customizations;
   isSelectable: boolean;
   onSelect?: () => void;
+  vertical?: boolean;
 }
 
-function FieldTile({ color, count, customizations, isSelectable, onSelect }: TileProps) {
+function FieldTile({ color, count, customizations, isSelectable, onSelect, vertical }: TileProps) {
   const cardImageUrls = useCardImages();
   const custom = customizations?.[color] ?? DEFAULT_CUSTOMIZATIONS[color];
+
+  const width  = vertical ? 54 : 66;
+  const height = vertical ? 76 : 96;
 
   return (
     <div
       onClick={isSelectable ? onSelect : undefined}
       className={isSelectable ? 'tile-interactive tile-selectable' : undefined}
       style={{
-        width: 66, height: 96,
+        width, height,
         borderRadius: 10, flexShrink: 0,
         position: 'relative', overflow: 'hidden',
         background: COLOR_BG[color],
@@ -99,14 +130,14 @@ function FieldTile({ color, count, customizations, isSelectable, onSelect }: Til
         pointerEvents: 'none',
       }}>
         <span style={{
-          color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontSize: '0.58rem',
+          color: 'rgba(255,255,255,0.92)', fontWeight: 700, fontSize: vertical ? '0.5rem' : '0.58rem',
           textTransform: 'uppercase', letterSpacing: '0.07em',
           textShadow: '0 1px 4px rgba(0,0,0,0.9)', textAlign: 'center',
         }}>
           {custom.displayName}
         </span>
         <span style={{
-          color: '#fff', fontWeight: 900, fontSize: '2rem', lineHeight: 1,
+          color: '#fff', fontWeight: 900, fontSize: vertical ? '1.5rem' : '2rem', lineHeight: 1,
           textShadow: '0 2px 6px rgba(0,0,0,0.9)',
         }}>
           {count}

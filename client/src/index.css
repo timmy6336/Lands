@@ -203,3 +203,29 @@ h2 { font-size: 1.4rem; }
   box-shadow: 0 -6px 32px rgba(0,0,0,0.5);
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
 }
+
+/* == Battle arena layout (ui-opt-d-split) ================================== */
+.battle-zone {
+  height: 180px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+}
+.battle-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 2px;
+}
+.battle-col-field {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+  padding: 4px 2px;
+  overflow: hidden;
+}
