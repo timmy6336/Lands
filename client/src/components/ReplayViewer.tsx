@@ -92,11 +92,12 @@ export function ReplayViewer({ replay, onBack }: Props) {
         </div>
       </div>
 
-      {/* 2. Opponent hand — visible in replay (fixed height row) */}
+      {/* 2. Opponent hand — visible in replay, small cards */}
       <Hand
         cards={opponent.hand}
         customizations={opponent.customizations}
         label={`${opponent.name}'s hand`}
+        cardSize="small"
         paneClass="hand-pane-fixed"
       />
 
@@ -155,12 +156,13 @@ export function ReplayViewer({ replay, onBack }: Props) {
         </div>
       </div>
 
-      {/* 5. My hand — identical to in-game (large cards) */}
+      {/* 5. My hand — small cards to leave room for controls */}
       <Hand
         cards={me.hand}
         customizations={me.customizations}
         label="Your hand"
-        cardSize="large"
+        cardSize="small"
+        paneClass="hand-pane-small"
       />
 
       {/* 6. Replay controls — replaces the bottom action bar */}

@@ -18,7 +18,7 @@ interface Props {
   selectableIds?: Set<string>;
   onSelect?: (cardId: string) => void;
   highlightIds?: Set<string>;
-  cardSize?: 'normal' | 'large';
+  cardSize?: 'small' | 'normal' | 'large';
   paneClass?: string;
 }
 
@@ -58,7 +58,7 @@ interface HandCardProps {
   isPlayable: boolean;
   isDisabled: boolean;
   isHighlighted: boolean;
-  cardSize?: 'normal' | 'large';
+  cardSize?: 'small' | 'normal' | 'large';
   onClick?: () => void;
 }
 
@@ -67,13 +67,14 @@ function HandCard({ card, customizations, isPlayable, isDisabled, isHighlighted,
   const custom = customizations?.[card.color] ?? DEFAULT_CUSTOMIZATIONS[card.color];
   const isSelected = isPlayable || isHighlighted;
   const isLarge = cardSize === 'large';
+  const isSmall = cardSize === 'small';
 
-  const cardW = isLarge ? 96 : 72;
-  const cardH = isLarge ? 140 : 108;
-  const artHeight = isLarge ? '65%' : '62%';
-  const nameFontSize = isLarge ? '0.75rem' : '0.66rem';
-  const tapFontSize = isLarge ? '0.6rem' : '0.52rem';
-  const liftY = isLarge ? -14 : -10;
+  const cardW = isLarge ? 96 : isSmall ? 48 : 72;
+  const cardH = isLarge ? 140 : isSmall ? 70 : 108;
+  const artHeight = isLarge ? '65%' : isSmall ? '58%' : '62%';
+  const nameFontSize = isLarge ? '0.75rem' : isSmall ? '0.52rem' : '0.66rem';
+  const tapFontSize = isLarge ? '0.6rem' : isSmall ? '0.44rem' : '0.52rem';
+  const liftY = isLarge ? -14 : isSmall ? -6 : -10;
 
   return (
     <div
