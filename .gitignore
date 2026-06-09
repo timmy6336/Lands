@@ -32,4 +32,4 @@ Thumbs.db
 # TypeScript cache
 *.tsbuildinfo
 
-package.bat
+package.bat.claude/
