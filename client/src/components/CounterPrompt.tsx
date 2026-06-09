@@ -1,5 +1,4 @@
-// Floating overlay for counter window and counter-counter window.
-// Mobile-first: large buttons, compact card display.
+// Counter window — renders as a bottom sheet so the game board stays visible above.
 import { useEffect, useState } from 'react';
 import { GameState } from '@lands/shared';
 import { Card } from './Card';
@@ -77,26 +76,28 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
     : [];
 
   return (
-    <div className="overlay">
-      <div className="overlay-box">
-        <h2 style={{ color: 'var(--accent)', margin: 0, fontSize: '1.2rem' }}>
+    <div className="decision-overlay">
+      <div className="decision-box">
+        <div className="decision-box-handle" />
+
+        <h2 style={{ color: 'var(--accent)', margin: 0, fontSize: '1.1rem' }}>
           {needsTwoBlues ? 'Counter the Counter?' : 'Counter Opportunity'}
         </h2>
 
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
           <Card card={pendingCard} customizations={gameState.players[1 - myIndex].customizations} />
           <div style={{ flex: 1 }}>
-            <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0, lineHeight: 1.5 }}>
+            <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>
               {needsTwoBlues
                 ? 'Your land was countered. Spend 2 Blue cards to counter their counter.'
                 : `Opponent played ${pendingCard.color}. Spend 1 Blue + 1 ${pendingCard.color} to counter.`}
             </p>
             {timeLeft !== null && (
-              <p style={{ marginTop: 10, fontSize: '1.6rem', fontWeight: 800, color: timeLeft <= 3 ? '#e74c3c' : 'var(--text)', margin: '8px 0 0' }}>
+              <p style={{ marginTop: 8, fontSize: '1.5rem', fontWeight: 800, color: timeLeft <= 3 ? '#e74c3c' : 'var(--text)', margin: '6px 0 0' }}>
                 {timeLeft}s
               </p>
             )}
-            {isInfinite && <p style={{ color: 'var(--muted)', fontSize: '0.82rem', marginTop: 8 }}>No time limit</p>}
+            {isInfinite && <p style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: 6, margin: '6px 0 0' }}>No time limit</p>}
           </div>
         </div>
 
@@ -121,8 +122,8 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
         )}
 
         {confirming && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>These cards will be discarded:</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0 }}>These cards will be discarded:</p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {spentCards.map(c => (
                 <Card key={c.id} card={c} customizations={me.customizations} />

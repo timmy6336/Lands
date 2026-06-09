@@ -1,4 +1,4 @@
-// Effect resolution prompts — mobile-first with large touch targets.
+// Effect resolution prompts — bottom sheet so game board stays visible above.
 import { useState } from 'react';
 import { GameState, Card as CardType } from '@lands/shared';
 import { Card } from './Card';
@@ -54,10 +54,11 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
   if (effect.type === 'blue_look' && isMyTurn) {
     const topCard = effect.topCard;
     return (
-      <div className="overlay">
-        <div className="overlay-box">
-          <h2 style={{ margin: 0, color: 'var(--blue-land)', fontSize: '1.2rem' }}>Blue Land Effect</h2>
-          <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.9rem' }}>Top card of your deck:</p>
+      <div className="decision-overlay">
+        <div className="decision-box">
+          <div className="decision-box-handle" />
+          <h2 style={{ margin: 0, color: 'var(--blue-land)', fontSize: '1.1rem' }}>Blue Land Effect</h2>
+          <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.88rem' }}>Top card of your deck:</p>
           {topCard
             ? <Card card={topCard} customizations={me.customizations} />
             : <p style={{ color: 'var(--muted)', margin: 0 }}>Deck is empty.</p>
@@ -86,10 +87,11 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
   if (effect.type === 'black_pick' && isMyTurn) {
     const shown = effect.shownCards ?? [];
     return (
-      <div className="overlay">
-        <div className="overlay-box">
-          <h2 style={{ margin: 0, color: '#888', fontSize: '1.2rem' }}>Black Land Effect</h2>
-          <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.9rem' }}>
+      <div className="decision-overlay">
+        <div className="decision-box">
+          <div className="decision-box-handle" />
+          <h2 style={{ margin: 0, color: '#888', fontSize: '1.1rem' }}>Black Land Effect</h2>
+          <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.88rem' }}>
             Your opponent revealed these cards. Choose one to discard.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
@@ -107,19 +109,20 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
   }
 
   const waitingMessages: Partial<Record<typeof effect.type, string>> = {
-    red_pick:    "Waiting for opponent to choose which land to destroy…",
-    green_pick:  "Waiting for opponent to retrieve a land…",
-    blue_look:   "Opponent is looking at the top of their deck…",
-    black_show:  "Waiting for you to reveal 3 cards…",
-    black_pick:  "Opponent is choosing which card to discard…",
+    red_pick:    'Waiting for opponent to choose which land to destroy…',
+    green_pick:  'Waiting for opponent to retrieve a land…',
+    blue_look:   'Opponent is looking at the top of their deck…',
+    black_show:  'Waiting for you to reveal 3 cards…',
+    black_pick:  'Opponent is choosing which card to discard…',
   };
 
   const msg = waitingMessages[effect.type];
   if (msg) {
     return (
-      <div className="overlay">
-        <div className="overlay-box" style={{ alignItems: 'center' }}>
-          <p style={{ color: 'var(--muted)', textAlign: 'center', margin: 0 }}>{msg}</p>
+      <div className="decision-overlay">
+        <div className="decision-box" style={{ paddingTop: '1rem' }}>
+          <div className="decision-box-handle" />
+          <p style={{ color: 'var(--muted)', textAlign: 'center', margin: 0, padding: '0.5rem 0' }}>{msg}</p>
         </div>
       </div>
     );
@@ -141,10 +144,11 @@ function PickPrompt({
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
-    <div className="overlay">
-      <div className="overlay-box">
-        <h2 style={{ margin: 0, fontSize: '1.2rem' }}>{title}</h2>
-        <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.9rem' }}>{subtitle}</p>
+    <div className="decision-overlay">
+      <div className="decision-box">
+        <div className="decision-box-handle" />
+        <h2 style={{ margin: 0, fontSize: '1.1rem' }}>{title}</h2>
+        <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.88rem' }}>{subtitle}</p>
         {cards.length === 0
           ? <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>No valid targets — effect fizzles.</p>
           : (
@@ -193,10 +197,11 @@ function BlackShowPrompt({
   }
 
   return (
-    <div className="overlay">
-      <div className="overlay-box">
-        <h2 style={{ margin: 0, color: '#888', fontSize: '1.2rem' }}>Black Land Effect</h2>
-        <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.9rem' }}>
+    <div className="decision-overlay">
+      <div className="decision-box">
+        <div className="decision-box-handle" />
+        <h2 style={{ margin: 0, color: '#888', fontSize: '1.1rem' }}>Black Land Effect</h2>
+        <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.88rem' }}>
           {mustShowAll
             ? 'Your entire hand will be revealed to your opponent.'
             : `Choose 3 cards from your hand to reveal. (${selected.length}/3)`}
