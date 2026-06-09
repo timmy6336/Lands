@@ -190,6 +190,7 @@ h2 { font-size: 1.4rem; }
   align-items: flex-end;
   justify-content: center;
   z-index: 100;
+  pointer-events: none; /* backdrop is visual only — graveyard buttons still tappable */
 }
 .decision-box {
   background: #0c1128;
@@ -204,6 +205,7 @@ h2 { font-size: 1.4rem; }
   flex-direction: column;
   gap: 0.85rem;
   box-shadow: 0 -8px 40px rgba(0,0,0,0.7);
+  pointer-events: auto; /* panel itself is still fully interactive */
 }
 .decision-box-handle {
   width: 36px; height: 4px;
@@ -213,19 +215,19 @@ h2 { font-size: 1.4rem; }
   flex-shrink: 0;
 }
 
-/* ── Bottom sheet (chat / log panels) ─────────────────────────────────────── */
+/* ── Bottom sheet (chat / log / graveyard) ────────────────────────────────── */
 .bottom-sheet-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
-  z-index: 39;
+  z-index: 110; /* above decision-overlay so graveyard can open over it */
 }
 .bottom-sheet {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 40;
+  z-index: 111; /* above decision-overlay */
   display: flex;
   flex-direction: column;
   background: #0c1128;
