@@ -165,7 +165,7 @@ export function ReplayViewer({ replay, onBack }: Props) {
         paneClass="hand-pane-small"
       />
 
-      {/* 6. Replay controls — replaces the bottom action bar */}
+      {/* 6. Replay controls */}
       <div style={{
         flexShrink: 0,
         background: isMyTurn ? 'rgba(39,174,96,0.1)' : 'var(--surface)',
@@ -173,53 +173,55 @@ export function ReplayViewer({ replay, onBack }: Props) {
         borderRadius: 10,
         transition: 'background 0.3s, border-color 0.3s',
         padding: '4px 6px',
+        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 4px)',
         display: 'flex', flexDirection: 'column', gap: 4,
       }}>
-        {/* Row 1: Back, Flip, nav buttons, step */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        {/* Row 1: Back, Flip, nav buttons, step counter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 34, overflow: 'hidden' }}>
           <button
             onClick={onBack}
-            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)', fontSize: '0.78rem', padding: '0.2rem 0.55rem', minHeight: 34, fontWeight: 600 }}
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)', fontSize: '0.78rem', padding: '0 0.55rem', height: 34, fontWeight: 600, flexShrink: 0 }}
           >← Back</button>
           <button
             onClick={() => setMyIndex(i => i === 0 ? 1 : 0)}
-            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)', fontSize: '0.78rem', padding: '0.2rem 0.55rem', minHeight: 34, fontWeight: 600 }}
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)', fontSize: '0.78rem', padding: '0 0.55rem', height: 34, fontWeight: 600, flexShrink: 0 }}
             title="Flip perspective"
           >⇄ Flip</button>
           <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
           <button onClick={() => { setPlaying(false); goTo(0); }}
-            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0.15rem 0.45rem', minHeight: 34 }}>|◀</button>
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0 0.45rem', height: 34, flexShrink: 0 }}>|◀</button>
           <button onClick={() => { setPlaying(false); goTo(step - 1); }}
-            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0.15rem 0.45rem', minHeight: 34 }}>◀</button>
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0 0.45rem', height: 34, flexShrink: 0 }}>◀</button>
           <button
             onClick={() => setPlaying(p => !p)}
-            style={{ background: 'var(--accent)', border: 'none', borderRadius: 8, color: '#fff', fontSize: '0.82rem', padding: '0.15rem 0.7rem', minHeight: 34, minWidth: 52, fontWeight: 700 }}
+            style={{ background: 'var(--accent)', border: 'none', borderRadius: 8, color: '#fff', fontSize: '0.82rem', padding: '0 0.7rem', height: 34, minWidth: 44, fontWeight: 700, flexShrink: 0 }}
           >{playing ? '⏸' : '▶'}</button>
           <button onClick={() => { setPlaying(false); goTo(step + 1); }}
-            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0.15rem 0.45rem', minHeight: 34 }}>▶|</button>
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0 0.45rem', height: 34, flexShrink: 0 }}>▶</button>
           <button onClick={() => { setPlaying(false); goTo(total - 1); }}
-            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0.15rem 0.45rem', minHeight: 34 }}>▶|</button>
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0 0.45rem', height: 34, flexShrink: 0 }}>▶|</button>
           <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'var(--muted)', fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap' }}>
-            {step + 1} / {total}
+            {step + 1}/{total}
           </span>
         </div>
-        {/* Row 2: speed + scrubber */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* Row 2: speed buttons + scrubber */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 34 }}>
           <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
             {SPEEDS.map(s => (
               <button key={s} onClick={() => setSpeed(s)} style={{
-                padding: '0.1rem 0.4rem', fontSize: '0.7rem', minHeight: 28,
+                padding: '0 0.4rem', fontSize: '0.7rem', height: 28,
                 borderRadius: 5, border: '1px solid var(--border)',
                 background: speed === s ? 'var(--accent)' : 'var(--surface2)',
                 color: speed === s ? '#fff' : 'var(--muted)',
                 fontWeight: speed === s ? 700 : 400,
+                flexShrink: 0,
               }}>{s}x</button>
             ))}
           </div>
           <input
             type="range" min={0} max={total - 1} value={step}
             onChange={e => { setPlaying(false); goTo(Number(e.target.value)); }}
-            style={{ flex: 1, cursor: 'pointer', minWidth: 60 }}
+            style={{ flex: 1, cursor: 'pointer', minWidth: 60, height: 28, minHeight: 28, padding: 0 }}
           />
         </div>
       </div>
