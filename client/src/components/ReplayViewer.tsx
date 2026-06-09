@@ -3,7 +3,6 @@ import { ReplayFile } from '@lands/shared';
 import { Field } from './Field';
 import { Hand } from './Hand';
 import { Graveyard } from './Graveyard';
-import { DeckDisplay } from './DeckDisplay';
 
 interface Props {
   replay: ReplayFile;
@@ -11,17 +10,17 @@ interface Props {
 }
 
 const PHASE_LABELS: Record<string, string> = {
-  playing_draw:      'Drawing...',
+  playing_draw:      'Drawing…',
   playing_play:      'Play a land',
-  counter_window:    'Counter window open...',
-  counter_response:  'Counter-counter window open...',
-  effect_red_pick:   'Red land effect',
-  effect_green_pick: 'Green land effect',
-  effect_blue_look:  'Blue land effect',
-  effect_black_show: 'Black land effect',
-  effect_black_pick: 'Black land effect',
-  pre_target_red:    'Red - choosing target',
-  pre_target_green:  'Green - choosing target',
+  counter_window:    'Counter window…',
+  counter_response:  'Counter-counter…',
+  effect_red_pick:   'Red effect: destroy',
+  effect_green_pick: 'Green effect: retrieve',
+  effect_blue_look:  'Blue effect: peek',
+  effect_black_show: 'Black effect: discard',
+  effect_black_pick: 'Black effect: choose',
+  pre_target_red:    'Red: picking target',
+  pre_target_green:  'Green: picking target',
   ended:             'Game over',
 };
 
@@ -29,14 +28,14 @@ const SPEEDS = [0.5, 1, 2, 4] as const;
 type Speed = typeof SPEEDS[number];
 
 export function ReplayViewer({ replay, onBack }: Props) {
-  const [step, setStep] = useState(0);
+  const [step, setStep]       = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState<Speed>(1);
+  const [speed, setSpeed]     = useState<Speed>(1);
   const [myIndex, setMyIndex] = useState<0 | 1>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const total = replay.snapshots.length;
-  const snap = replay.snapshots[step];
+  const snap  = replay.snapshots[step];
 
   useEffect(() => {
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
@@ -52,166 +51,186 @@ export function ReplayViewer({ replay, onBack }: Props) {
 
   function goTo(n: number) { setStep(Math.max(0, Math.min(total - 1, n))); }
 
-  const me = snap.players[myIndex];
+  const me       = snap.players[myIndex];
   const opponent = snap.players[1 - myIndex as 0 | 1];
   const isMyTurn = snap.currentPlayerIndex === myIndex;
   const phaseLabel = PHASE_LABELS[snap.phase] ?? snap.phase;
 
-  const activeBarStyle = (active: boolean, color: string): React.CSSProperties => ({
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    borderRadius: 8, padding: '0.4rem 1rem',
-    fontSize: '0.85rem', flexShrink: 0,
-    background: active ? `rgba(${color}, 0.1)` : 'var(--surface)',
-    border: active ? `2px solid rgba(${color}, 0.55)` : '2px solid transparent',
-    boxShadow: active ? `0 0 12px rgba(${color}, 0.2)` : 'none',
-    transition: 'background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease',
-  });
-
   return (
-    <div className="flex flex-col h-screen p-3 gap-1.5">
+    <div className="game-root flex flex-col" style={{ height: '100dvh' }}>
 
-      {/* Opponent info bar */}
-      <div style={activeBarStyle(!isMyTurn, '241,196,15')}>
-        <span className="font-semibold flex items-center gap-1.5">
-          {!isMyTurn && (
-            <span className="font-bold text-[0.8rem]" style={{ color: '#f1c40f', letterSpacing: '0.04em' }}>
-              &gt; TURN
-            </span>
-          )}
+      {/* 1. Opponent strip — identical to in-game */}
+      <div style={{
+        height: 50, flexShrink: 0,
+        display: 'flex', alignItems: 'center', gap: 6, padding: '0 6px',
+        background: !isMyTurn ? 'rgba(241,196,15,0.09)' : 'var(--surface)',
+        border: !isMyTurn ? '1.5px solid rgba(241,196,15,0.4)' : '1.5px solid transparent',
+        borderRadius: 10,
+        transition: 'background 0.3s, border-color 0.3s',
+        overflow: 'hidden',
+      }}>
+        {!isMyTurn && (
+          <span style={{ color: '#f1c40f', fontSize: '0.85rem', fontWeight: 800, flexShrink: 0 }}>▶</span>
+        )}
+        <span style={{ fontWeight: 700, fontSize: '0.82rem', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)', flexShrink: 0 }}>
           {opponent.name}
         </span>
-        <span className="text-muted">Hand: {opponent.handCount}</span>
+        {/* deck count */}
+        <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '1px 6px', fontWeight: 700, flexShrink: 0, color: 'var(--text)', whiteSpace: 'nowrap' }}>
+          🃏 {opponent.deckCount}
+        </span>
+        {/* opponent graveyard */}
+        <Graveyard cards={opponent.graveyard} customizations={opponent.customizations} label="Opp" />
+        {/* opponent compact field */}
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+          <Field
+            cards={opponent.field}
+            customizations={opponent.customizations}
+            label={`${opponent.name}'s field`}
+            size="compact"
+          />
+        </div>
       </div>
 
-      {/* Opponent hand */}
+      {/* 2. Opponent hand — visible in replay (fixed height row) */}
       <Hand
         cards={opponent.hand}
-        hiddenCount={opponent.hand.length === 0 ? opponent.handCount : undefined}
         customizations={opponent.customizations}
-        label={`${opponent.name}'s Hand`}
+        label={`${opponent.name}'s hand`}
+        paneClass="hand-pane-fixed"
       />
 
-      {/* Opponent field + graveyard + deck */}
-      <div className="flex gap-2 flex-1 min-h-0">
-        <Field
-          cards={opponent.field}
-          customizations={opponent.customizations}
-          label={`${opponent.name}'s Field`}
-        />
-        <Graveyard
-          cards={opponent.graveyard}
-          customizations={opponent.customizations}
-          label="Grave"
-        />
-        <div className="border border-border rounded-[10px] px-1.5 py-2 flex flex-col items-center justify-center gap-1"
-          style={{ background: 'rgba(255,255,255,0.03)' }}>
-          <DeckDisplay count={opponent.deckCount} />
-          <span className="text-[0.6rem] text-muted uppercase" style={{ letterSpacing: '0.06em' }}>Deck</span>
+      {/* 3. Status bar — identical to in-game + step counter */}
+      <div style={{
+        height: 34, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 8px',
+        background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)',
+      }}>
+        <span style={{ fontSize: '0.68rem', color: 'var(--muted)', fontWeight: 600, flexShrink: 0 }}>
+          Turn {snap.turnNumber}
+        </span>
+        <span style={{ color: 'var(--border)', fontSize: '0.8rem' }}>·</span>
+        <span style={{ fontSize: '0.7rem', color: 'var(--text)', fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>
+          {snap.phase === 'ended' && snap.winner !== undefined
+            ? snap.winner === 'draw'
+              ? 'Draw!'
+              : `${snap.players[snap.winner as 0 | 1].name} wins!`
+            : phaseLabel}
+        </span>
+        <span style={{ color: 'var(--border)', fontSize: '0.8rem' }}>·</span>
+        <span style={{ fontSize: '0.68rem', color: 'var(--muted)', fontWeight: 600, flexShrink: 0 }}>
+          {step + 1}/{total}
+        </span>
+        <span style={{
+          width: 8, height: 8, borderRadius: '50%', flexShrink: 0, display: 'inline-block',
+          background: isMyTurn ? '#27ae60' : '#f1c40f',
+          boxShadow: isMyTurn ? '0 0 6px rgba(39,174,96,0.8)' : '0 0 6px rgba(241,196,15,0.8)',
+        }} />
+      </div>
+
+      {/* 4. My field row — identical to in-game */}
+      <div style={{
+        height: 84, flexShrink: 0,
+        display: 'flex', alignItems: 'center', gap: 6, padding: '0 4px',
+      }}>
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 2, flexShrink: 0, minWidth: 36,
+          background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '4px 6px',
+        }}>
+          <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>🃏</span>
+          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{me.deckCount}</span>
+        </div>
+        <div style={{
+          flexShrink: 0,
+          background: me.graveyard.length > 0 ? 'rgba(192,57,43,0.18)' : 'rgba(255,255,255,0.04)',
+          border: me.graveyard.length > 0 ? '1.5px solid rgba(192,57,43,0.5)' : '1.5px solid rgba(255,255,255,0.08)',
+          borderRadius: 8,
+          transition: 'background 0.2s, border-color 0.2s',
+        }}>
+          <Graveyard cards={me.graveyard} customizations={me.customizations} label="My" />
+        </div>
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+          <Field cards={me.field} customizations={me.customizations} label="Your field" size="normal" />
         </div>
       </div>
 
-      {/* Status bar */}
-      <div className="bg-surface-2 rounded-lg px-4 py-1.5 flex justify-between items-center text-sm shrink-0">
-        <span className="text-muted text-[0.8rem]">Turn {snap.turnNumber}</span>
-        <span className="text-muted">{phaseLabel}</span>
-        <span className="text-muted text-[0.8rem]">{step + 1} / {total}</span>
-      </div>
-
-      {/* My field + graveyard + deck */}
-      <div className="flex gap-2 flex-1 min-h-0">
-        <Field
-          cards={me.field}
-          customizations={me.customizations}
-          label="Your Field"
-        />
-        <Graveyard
-          cards={me.graveyard}
-          customizations={me.customizations}
-          label="Grave"
-        />
-        <div className="border border-border rounded-[10px] px-1.5 py-2 flex flex-col items-center justify-center gap-1"
-          style={{ background: 'rgba(255,255,255,0.03)' }}>
-          <DeckDisplay count={me.deckCount} />
-          <span className="text-[0.6rem] text-muted uppercase" style={{ letterSpacing: '0.06em' }}>Deck</span>
-        </div>
-      </div>
-
-      {/* My hand */}
+      {/* 5. My hand — identical to in-game (large cards) */}
       <Hand
         cards={me.hand}
-        hiddenCount={me.hand.length === 0 ? me.handCount : undefined}
         customizations={me.customizations}
-        label="Your Hand"
+        label="Your hand"
+        cardSize="large"
       />
 
-      {/* My info bar */}
-      <div style={activeBarStyle(isMyTurn, '39,174,96')}>
-        <span className="font-semibold flex items-center gap-1.5">
-          {isMyTurn && (
-            <span className="font-bold text-[0.8rem]" style={{ color: '#27ae60', letterSpacing: '0.04em' }}>
-              &gt; TURN
-            </span>
-          )}
-          {me.name}
-        </span>
-        {snap.phase === 'ended' && snap.winner !== undefined && (
-          <span style={{ fontWeight: 700, color: 'var(--accent)' }}>
-            {snap.winner === 'draw' ? 'Draw' : snap.players[snap.winner].name} wins!
+      {/* 6. Replay controls — replaces the bottom action bar */}
+      <div style={{
+        flexShrink: 0,
+        background: isMyTurn ? 'rgba(39,174,96,0.1)' : 'var(--surface)',
+        border: isMyTurn ? '1.5px solid rgba(39,174,96,0.4)' : '1.5px solid transparent',
+        borderRadius: 10,
+        transition: 'background 0.3s, border-color 0.3s',
+        padding: '4px 6px',
+        display: 'flex', flexDirection: 'column', gap: 4,
+      }}>
+        {/* Row 1: Back, Flip, nav buttons, step */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            onClick={onBack}
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)', fontSize: '0.78rem', padding: '0.2rem 0.55rem', minHeight: 34, fontWeight: 600 }}
+          >← Back</button>
+          <button
+            onClick={() => setMyIndex(i => i === 0 ? 1 : 0)}
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)', fontSize: '0.78rem', padding: '0.2rem 0.55rem', minHeight: 34, fontWeight: 600 }}
+            title="Flip perspective"
+          >⇄ Flip</button>
+          <div style={{ width: 1, height: 18, background: 'var(--border)', flexShrink: 0 }} />
+          <button onClick={() => { setPlaying(false); goTo(0); }}
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0.15rem 0.45rem', minHeight: 34 }}>|◀</button>
+          <button onClick={() => { setPlaying(false); goTo(step - 1); }}
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0.15rem 0.45rem', minHeight: 34 }}>◀</button>
+          <button
+            onClick={() => setPlaying(p => !p)}
+            style={{ background: 'var(--accent)', border: 'none', borderRadius: 8, color: '#fff', fontSize: '0.82rem', padding: '0.15rem 0.7rem', minHeight: 34, minWidth: 52, fontWeight: 700 }}
+          >{playing ? '⏸' : '▶'}</button>
+          <button onClick={() => { setPlaying(false); goTo(step + 1); }}
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0.15rem 0.45rem', minHeight: 34 }}>▶|</button>
+          <button onClick={() => { setPlaying(false); goTo(total - 1); }}
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', fontSize: '0.82rem', padding: '0.15rem 0.45rem', minHeight: 34 }}>▶|</button>
+          <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'var(--muted)', fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap' }}>
+            {step + 1} / {total}
           </span>
-        )}
-      </div>
-
-      {/* Replay controls bar */}
-      <div className="bg-surface rounded-[10px] px-3 py-2 flex items-center gap-2 shrink-0 flex-wrap"
-        style={{ border: '1px solid var(--border)' }}>
-
-        <button className="btn-secondary" onClick={onBack}
-          style={{ fontSize: '0.78rem', padding: '0.25rem 0.7rem' }}>
-          Back
-        </button>
-
-        <button className="btn-secondary" onClick={() => setMyIndex(i => (i === 0 ? 1 : 0))}
-          style={{ fontSize: '0.78rem', padding: '0.25rem 0.7rem' }} title="Flip perspective">
-          Flip
-        </button>
-
-        <div style={{ width: 1, height: 18, background: 'var(--border)', margin: '0 2px' }} />
-
-        <button className="btn-secondary" onClick={() => { setPlaying(false); goTo(0); }}
-          style={{ fontSize: '0.85rem', padding: '0.2rem 0.5rem' }} title="Go to start">|&lt;</button>
-        <button className="btn-secondary" onClick={() => { setPlaying(false); goTo(step - 1); }}
-          style={{ fontSize: '0.85rem', padding: '0.2rem 0.5rem' }} title="Previous">&lt;</button>
-        <button className="btn-primary" onClick={() => setPlaying(p => !p)}
-          style={{ fontSize: '0.85rem', padding: '0.2rem 0.7rem', minWidth: '2.5rem' }}>
-          {playing ? 'Pause' : 'Play'}
-        </button>
-        <button className="btn-secondary" onClick={() => { setPlaying(false); goTo(step + 1); }}
-          style={{ fontSize: '0.85rem', padding: '0.2rem 0.5rem' }} title="Next">&gt;</button>
-        <button className="btn-secondary" onClick={() => { setPlaying(false); goTo(total - 1); }}
-          style={{ fontSize: '0.85rem', padding: '0.2rem 0.5rem' }} title="Go to end">&gt;|</button>
-
-        <input type="range" min={0} max={total - 1} value={step}
-          onChange={e => { setPlaying(false); goTo(Number(e.target.value)); }}
-          style={{ flex: 1, minWidth: '60px', cursor: 'pointer' }}
-        />
-
-        <div className="flex gap-1">
-          {SPEEDS.map(s => (
-            <button key={s} onClick={() => setSpeed(s)} style={{
-              padding: '0.15rem 0.45rem', fontSize: '0.72rem', cursor: 'pointer',
-              borderRadius: 4, border: '1px solid var(--border)',
-              background: speed === s ? 'var(--accent)' : 'var(--surface)',
-              color: speed === s ? '#fff' : 'var(--text-muted)',
-            }}>
-              {s}x
-            </button>
-          ))}
+        </div>
+        {/* Row 2: speed + scrubber */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+            {SPEEDS.map(s => (
+              <button key={s} onClick={() => setSpeed(s)} style={{
+                padding: '0.1rem 0.4rem', fontSize: '0.7rem', minHeight: 28,
+                borderRadius: 5, border: '1px solid var(--border)',
+                background: speed === s ? 'var(--accent)' : 'var(--surface2)',
+                color: speed === s ? '#fff' : 'var(--muted)',
+                fontWeight: speed === s ? 700 : 400,
+              }}>{s}x</button>
+            ))}
+          </div>
+          <input
+            type="range" min={0} max={total - 1} value={step}
+            onChange={e => { setPlaying(false); goTo(Number(e.target.value)); }}
+            style={{ flex: 1, cursor: 'pointer', minWidth: 60 }}
+          />
         </div>
       </div>
 
-      {/* Pending play indicator */}
+      {/* Pending play toast */}
       {snap.pendingPlay && (
-        <div className="fixed top-3 left-1/2 -translate-x-1/2 bg-surface-2 border border-border rounded-lg px-4 py-1.5 text-sm text-muted pointer-events-none z-50">
+        <div style={{
+          position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 10, padding: '0.35rem 1rem',
+          fontSize: '0.8rem', color: 'var(--muted)',
+          pointerEvents: 'none', zIndex: 50, whiteSpace: 'nowrap',
+        }}>
           {snap.players[snap.currentPlayerIndex].name} played a {snap.pendingPlay.color} land
         </div>
       )}

@@ -238,6 +238,21 @@ h2 { font-size: 1.4rem; }
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
 }
 
+/* Replay viewer — opponent hand fixed-height row */
+.hand-pane-fixed {
+  flex-shrink: 0;
+  height: 130px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.hand-pane-fixed::-webkit-scrollbar { display: none; }
+
 /* ── ui-opt-c-bighand: large hand + compact field panes ──────────────────── */
 
 .hand-pane-large {

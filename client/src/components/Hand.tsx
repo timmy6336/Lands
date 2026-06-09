@@ -19,10 +19,11 @@ interface Props {
   onSelect?: (cardId: string) => void;
   highlightIds?: Set<string>;
   cardSize?: 'normal' | 'large';
+  paneClass?: string;
 }
 
-export function Hand({ cards, customizations, label, selectableIds, onSelect, highlightIds, cardSize = 'normal' }: Props) {
-  const paneClass = cardSize === 'large' ? 'hand-pane-large' : 'hand-pane';
+export function Hand({ cards, customizations, label, selectableIds, onSelect, highlightIds, cardSize = 'normal', paneClass: paneClassProp }: Props) {
+  const paneClass = paneClassProp ?? (cardSize === 'large' ? 'hand-pane-large' : 'hand-pane');
   return (
     <div className={paneClass}>
       {cards.length === 0
