@@ -8,9 +8,10 @@ interface Props {
 }
 
 const DIFFICULTIES: { id: AIDifficulty; label: string; desc: string; color: string }[] = [
-  { id: 'easy',   label: 'Sapling',   desc: 'Mostly random play. Good for learning.',              color: '#27ae60' },
-  { id: 'medium', label: 'Ironbark',  desc: 'Tracks win conditions and counters key threats.',      color: '#e67e22' },
-  { id: 'hard',   label: 'Dreadroot', desc: 'Fully strategic. Saves blues, targets your win path.', color: '#e74c3c' },
+  { id: 'easy',   label: 'Sapling',   desc: 'Mostly random play. Good for learning.',                                color: '#27ae60' },
+  { id: 'medium', label: 'Ironbark',  desc: 'Tracks win conditions and counters key threats.',                        color: '#e67e22' },
+  { id: 'hard',   label: 'Dreadroot', desc: 'Fully strategic. Saves blues, targets your win path.',                   color: '#e74c3c' },
+  { id: 'master', label: 'Worldtree', desc: 'Perfect information. Builds a full game tree to find the optimal path.', color: '#9b59b6' },
 ];
 
 export function SinglePlayerMenu({ onStart, onBack }: Props) {

@@ -95,7 +95,7 @@ export type GamePhase =
   | 'ended';
 
 export type RpsChoice = 'rock' | 'paper' | 'scissors';
-export type AIDifficulty = 'easy' | 'medium' | 'hard';
+export type AIDifficulty = 'easy' | 'medium' | 'hard' | 'master';
 
 /**
  * Represents one step in the counter-chain for the current pending play.

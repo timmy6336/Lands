@@ -24,6 +24,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { GameState, Card, Color, PlayerState, ALL_COLORS, AIDifficulty } from '../../../shared/types';
 import { GameEngine } from '../game/GameEngine';
+import { decideMaster, SimMove } from './MasterAI';
 
 // ── Difficulty tuning ─────────────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ const THINK_RANGE: Record<AIDifficulty, [number, number]> = {
   easy:   [200,  600],
   medium: [400, 1000],
   hard:   [700, 1600],
+  master: [150,  350],  // short delay — tree search is the real "thinking"
 };
 
 /** Probability of making a random move instead of a strategic one */
@@ -39,6 +41,7 @@ const RANDOM_CHANCE: Record<AIDifficulty, number> = {
   easy:   0.80,
   medium: 0.30,
   hard:   0.05,
+  master: 0.00,
 };
 
 /** Display names by difficulty */
@@ -46,6 +49,7 @@ export const AI_NAMES: Record<AIDifficulty, string> = {
   easy:   'Sapling',
   medium: 'Ironbark',
   hard:   'Dreadroot',
+  master: 'Worldtree',
 };
 
 // ── Win path analysis ─────────────────────────────────────────────────────────
@@ -313,6 +317,8 @@ export class AIPlayer {
   }
 
   private act(state: GameState) {
+    if (this.difficulty === 'master') { this.actMaster(state); return; }
+
     const myIndex  = this.myIndex;
     const me       = state.players[myIndex];
     const opponent = state.players[(1 - myIndex) as 0 | 1];
@@ -972,6 +978,38 @@ export class AIPlayer {
       ? me.graveyard[Math.floor(Math.random() * me.graveyard.length)]
       : (chooseBestGreenTarget(me.graveyard, me.field, getWinPaths(me)) ?? me.graveyard[0]);
     this.engine.effectResponse(this.playerId, { type: 'green_pick', targetCardId: target.id });
+  }
+
+  // ── Master AI (perfect-information game tree search) ──────────────────────
+
+  private actMaster(state: GameState) {
+    const move = decideMaster(state, this.myIndex, 1500);
+    this.executeMasterMove(move);
+  }
+
+  private executeMasterMove(move: SimMove): void {
+    switch (move.type) {
+      case 'play_card':
+        this.engine.playCard(this.playerId, move.cardId); break;
+      case 'counter':
+        this.engine.counterResponse(this.playerId, true, move.blueId, move.matchId); break;
+      case 'pass_counter':
+        this.engine.counterResponse(this.playerId, false); break;
+      case 'counter_counter':
+        this.engine.counterCounterResponse(this.playerId, true, move.blue1Id, move.blue2Id); break;
+      case 'pass_counter_counter':
+        this.engine.counterCounterResponse(this.playerId, false); break;
+      case 'red_pick':
+        this.engine.effectResponse(this.playerId, { type: 'red_pick',   targetCardId: move.targetId }); break;
+      case 'green_pick':
+        this.engine.effectResponse(this.playerId, { type: 'green_pick', targetCardId: move.targetId }); break;
+      case 'blue_look':
+        this.engine.effectResponse(this.playerId, { type: 'blue_look',  keepOnTop: move.keepOnTop }); break;
+      case 'black_show':
+        this.engine.effectResponse(this.playerId, { type: 'black_show', cardIds: move.cardIds }); break;
+      case 'black_pick':
+        this.engine.effectResponse(this.playerId, { type: 'black_pick', targetCardId: move.targetId }); break;
+    }
   }
 }
 
