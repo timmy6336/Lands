@@ -1,6 +1,7 @@
 // End-of-game screen — mobile-first layout.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GameState } from '@lands/shared';
+import { useSound } from '../hooks/useSound';
 
 const FUNNY_DRAW_LINES = [
   "The universe breaks. A draw? Impossible. Yet here we are.",
@@ -29,6 +30,12 @@ export function GameOver({ gameState, myIndex, onPlayAgain, onRematch }: Props) 
   const them   = players[1 - myIndex];
 
   const [funnyLine] = useState(() => FUNNY_DRAW_LINES[Math.floor(Math.random() * FUNNY_DRAW_LINES.length)]);
+  const { playVictory, playDefeat } = useSound();
+
+  useEffect(() => {
+    if (iWon) playVictory();
+    else if (!isDraw) playDefeat();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{
@@ -83,27 +90,42 @@ export function GameOver({ gameState, myIndex, onPlayAgain, onRematch }: Props) 
 
       {/* ── Stats ── */}
       <div style={{
-        display: 'flex', gap: 0,
+        display: 'flex', flexDirection: 'column', gap: 0,
         background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: 12, overflow: 'hidden',
         width: '100%', maxWidth: 340,
       }}>
-        {[me, them].map((p, i) => (
-          <div key={i} style={{
-            flex: 1, padding: '0.9rem 1rem',
-            borderRight: i === 0 ? '1px solid var(--border)' : 'none',
-          }}>
-            <p style={{ color: 'var(--muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, marginTop: 0 }}>
-              {i === 0 ? 'You' : 'Opponent'}
-            </p>
-            <p style={{ fontWeight: 700, fontSize: '0.92rem', margin: '0 0 2px', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {p.name}
-            </p>
-            <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0 }}>
-              {p.field.length} land{p.field.length !== 1 ? 's' : ''} in play
-            </p>
-          </div>
-        ))}
+        <div style={{ display: 'flex' }}>
+          {[me, them].map((p, i) => (
+            <div key={i} style={{
+              flex: 1, padding: '0.9rem 1rem',
+              borderRight: i === 0 ? '1px solid var(--border)' : 'none',
+            }}>
+              <p style={{ color: 'var(--muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, marginTop: 0 }}>
+                {i === 0 ? 'You' : 'Opponent'}
+              </p>
+              <p style={{ fontWeight: 700, fontSize: '0.92rem', margin: '0 0 2px', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {p.name}
+              </p>
+              <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0 }}>
+                {p.field.length} land{p.field.length !== 1 ? 's' : ''} in play
+              </p>
+            </div>
+          ))}
+        </div>
+        <div style={{
+          borderTop: '1px solid var(--border)',
+          padding: '0.5rem 1rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
+        }}>
+          <span style={{ color: 'var(--muted)', fontSize: '0.78rem' }}>
+            {gameState.turnNumber} turn{gameState.turnNumber !== 1 ? 's' : ''}
+          </span>
+          <span style={{ color: 'var(--border)' }}>|</span>
+          <span style={{ color: 'var(--muted)', fontSize: '0.78rem' }}>
+            {me.graveyard.length + them.graveyard.length} cards in graveyards
+          </span>
+        </div>
       </div>
 
       {/* ── Rematch ── */}

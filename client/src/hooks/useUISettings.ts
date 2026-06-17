@@ -22,6 +22,12 @@ interface UISettings {
   setShowEffectResultBlue: (v: boolean) => void;
   showEffectResultBlack: boolean;
   setShowEffectResultBlack: (v: boolean) => void;
+  soundEnabled: boolean;
+  setSoundEnabled: (v: boolean) => void;
+  animationsEnabled: boolean;
+  setAnimationsEnabled: (v: boolean) => void;
+  confirmBeforePlay: boolean;
+  setConfirmBeforePlay: (v: boolean) => void;
 }
 
 export const UISettingsContext = createContext<UISettings>({
@@ -37,6 +43,12 @@ export const UISettingsContext = createContext<UISettings>({
   setShowEffectResultBlue: () => {},
   showEffectResultBlack: true,
   setShowEffectResultBlack: () => {},
+  soundEnabled: true,
+  setSoundEnabled: () => {},
+  animationsEnabled: true,
+  setAnimationsEnabled: () => {},
+  confirmBeforePlay: false,
+  setConfirmBeforePlay: () => {},
 });
 
 /** Read UI preferences from context. Use this in any component that needs a setting. */
@@ -68,6 +80,15 @@ export function useUISettingsProvider(): UISettings {
   const [showEffectResultBlack, setShowEffectResultBlackState] = useState(
     () => localStorage.getItem('showEffectResultBlack') !== 'false'
   );
+  const [soundEnabled, setSoundEnabledState] = useState(
+    () => localStorage.getItem('soundEnabled') !== 'false'
+  );
+  const [animationsEnabled, setAnimationsEnabledState] = useState(
+    () => localStorage.getItem('animationsEnabled') !== 'false'
+  );
+  const [confirmBeforePlay, setConfirmBeforePlayState] = useState(
+    () => localStorage.getItem('confirmBeforePlay') === 'true'
+  );
 
   function setShowCardTypeOnHover(v: boolean) {
     localStorage.setItem('showCardTypeOnHover', String(v));
@@ -93,6 +114,18 @@ export function useUISettingsProvider(): UISettings {
     localStorage.setItem('showEffectResultBlack', String(v));
     setShowEffectResultBlackState(v);
   }
+  function setSoundEnabled(v: boolean) {
+    localStorage.setItem('soundEnabled', String(v));
+    setSoundEnabledState(v);
+  }
+  function setAnimationsEnabled(v: boolean) {
+    localStorage.setItem('animationsEnabled', String(v));
+    setAnimationsEnabledState(v);
+  }
+  function setConfirmBeforePlay(v: boolean) {
+    localStorage.setItem('confirmBeforePlay', String(v));
+    setConfirmBeforePlayState(v);
+  }
 
   return {
     showCardTypeOnHover, setShowCardTypeOnHover,
@@ -101,5 +134,8 @@ export function useUISettingsProvider(): UISettings {
     showEffectResultGreen, setShowEffectResultGreen,
     showEffectResultBlue, setShowEffectResultBlue,
     showEffectResultBlack, setShowEffectResultBlack,
+    soundEnabled, setSoundEnabled,
+    animationsEnabled, setAnimationsEnabled,
+    confirmBeforePlay, setConfirmBeforePlay,
   };
 }

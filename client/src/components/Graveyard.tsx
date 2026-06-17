@@ -1,7 +1,11 @@
 // Compact grave indicator: emoji + count badge. Tap to open a bottom-sheet list.
 import { useState } from 'react';
 import { Card } from './Card';
-import { Card as CardType, Customizations } from '@lands/shared';
+import { Card as CardType, Customizations, Color } from '@lands/shared';
+
+const COLOR_DOT: Record<Color, string> = {
+  white: '#f0ead6', red: '#e74c3c', blue: '#3498db', green: '#2ecc71', black: '#887799',
+};
 
 interface Props {
   cards: CardType[];
@@ -40,9 +44,28 @@ export function Graveyard({ cards, customizations, label }: Props) {
               padding: '0.75rem 1rem 0.5rem',
               borderBottom: '1px solid var(--border)', flexShrink: 0,
             }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                💀 {label ? `${label} ` : ''}Graveyard · {count} card{count !== 1 ? 's' : ''}
-              </span>
+              <div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  💀 {label ? `${label} ` : ''}Graveyard · {count}
+                </span>
+                {count > 0 && (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                    {(['white', 'red', 'blue', 'green', 'black'] as Color[]).map(c => {
+                      const n = cards.filter(cd => cd.color === c).length;
+                      if (n === 0) return null;
+                      return (
+                        <span key={c} style={{
+                          display: 'flex', alignItems: 'center', gap: 3,
+                          fontSize: '0.7rem', color: COLOR_DOT[c], fontWeight: 600,
+                        }}>
+                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR_DOT[c], display: 'inline-block', flexShrink: 0 }} />
+                          {n}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
               <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: '1.3rem', padding: '0.1rem 0.4rem', minHeight: 36 }}>×</button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 1rem' }}>

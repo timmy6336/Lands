@@ -27,6 +27,9 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
     showEffectResultGreen, setShowEffectResultGreen,
     showEffectResultBlue, setShowEffectResultBlue,
     showEffectResultBlack, setShowEffectResultBlack,
+    soundEnabled, setSoundEnabled,
+    animationsEnabled, setAnimationsEnabled,
+    confirmBeforePlay, setConfirmBeforePlay,
   } = useUISettings();
 
   const [defaultPort, setDefaultPort] = useState(3001);
@@ -157,6 +160,42 @@ export function Settings({ onBack, onRefreshImages, playerName, setPlayerName }:
                 placeholder="Player"
                 maxLength={20}
                 style={{ textAlign: 'right', fontSize: '0.9rem', padding: '0.3rem 0.5rem', minWidth: 0, maxWidth: 140, minHeight: 36 }}
+              />
+            </label>
+          </div>
+        </section>
+
+        {/* Gameplay */}
+        <section>
+          <h3 style={sectionHeadingStyle}>Gameplay</h3>
+          <div style={cardStyle}>
+            <label style={rowStyle}>
+              <div style={{ flex: 1 }}>
+                <span style={rowLabelStyle}>Confirm before playing</span>
+                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--muted)', opacity: 0.7 }}>
+                  Tap a card to select, tap again to play
+                </p>
+              </div>
+              <input
+                type="checkbox" checked={confirmBeforePlay}
+                onChange={e => setConfirmBeforePlay(e.target.checked)}
+                style={checkboxStyle}
+              />
+            </label>
+            <label style={rowStyle}>
+              <span style={rowLabelStyle}>Sound effects</span>
+              <input
+                type="checkbox" checked={soundEnabled}
+                onChange={e => setSoundEnabled(e.target.checked)}
+                style={checkboxStyle}
+              />
+            </label>
+            <label style={lastRowStyle}>
+              <span style={rowLabelStyle}>Animations</span>
+              <input
+                type="checkbox" checked={animationsEnabled}
+                onChange={e => setAnimationsEnabled(e.target.checked)}
+                style={checkboxStyle}
               />
             </label>
           </div>

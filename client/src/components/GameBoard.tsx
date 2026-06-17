@@ -26,6 +26,7 @@ interface Props {
 }
 
 const PHASE_LABELS: Record<string, string> = {
+  playing_draw:      'Drawing…',
   playing_play:      'Play a land',
   counter_window:    'Counter window…',
   counter_response:  'Counter-counter…',
@@ -49,12 +50,20 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
   const [logOpen, setLogOpen]   = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
-  const { playDraw, playPlay, playCounter } = useSound();
+  const {
+    playDraw, playPlay, playCounter, playYourTurn,
+    playDestroy, playRetrieve, playScry, playDiscard,
+    playVictory, playDefeat,
+  } = useSound();
   const { entries: logEntries, addEntry: addLogEntry } = useGameLog(gameState);
   const {
     showEffectResultRed, showEffectResultGreen,
     showEffectResultBlue, showEffectResultBlack,
+    animationsEnabled, confirmBeforePlay,
   } = useUISettings();
+
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [unreadChat, setUnreadChat] = useState(0);
 
   type EffectPopup =
     | { type: 'red';   cardColor: Color; ownerName: string }
@@ -85,25 +94,41 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
   const prevChatLenRef = useRef(0);
   useEffect(() => {
     if (chatMessages.length > prevChatLenRef.current) {
-      chatMessages.slice(prevChatLenRef.current).forEach(m => {
-        addLogEntry(`${m.playerName}: ${m.message}`);
-      });
+      const newMsgs = chatMessages.slice(prevChatLenRef.current);
+      newMsgs.forEach(m => addLogEntry(`${m.playerName}: ${m.message}`));
+      if (!chatOpen) setUnreadChat(u => u + newMsgs.length);
       prevChatLenRef.current = chatMessages.length;
     }
   }, [chatMessages]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sound: effect results
+  useEffect(() => {
+    const r = gameState.effectResult;
+    if (!r) return;
+    if (r.type === 'red') playDestroy();
+    else if (r.type === 'green') playRetrieve();
+    else if (r.type === 'blue') playScry();
+    else if (r.type === 'black') playDiscard();
+  }, [gameState.effectResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const prevRef = useRef({
     turnNumber: gameState.turnNumber,
     pendingPlayId: gameState.pendingPlay?.id,
     chainLength: gameState.counterChain.length,
+    isMyTurn: gameState.currentPlayerIndex === myIndex,
   });
   useEffect(() => {
     const prev = prevRef.current;
-    const { turnNumber, pendingPlay, counterChain } = gameState;
+    const { turnNumber, pendingPlay, counterChain, currentPlayerIndex } = gameState;
+    const nowMyTurn = currentPlayerIndex === myIndex;
     if (pendingPlay?.id && pendingPlay.id !== prev.pendingPlayId) playPlay();
     if (counterChain.length > 1 && counterChain.length > prev.chainLength) playCounter();
     if (turnNumber > prev.turnNumber) playDraw();
-    prevRef.current = { turnNumber, pendingPlayId: pendingPlay?.id, chainLength: counterChain.length };
+    if (nowMyTurn && !prev.isMyTurn && turnNumber > 1) {
+      playYourTurn();
+      try { navigator?.vibrate?.(80); } catch (_) { /* ignore */ }
+    }
+    prevRef.current = { turnNumber, pendingPlayId: pendingPlay?.id, chainLength: counterChain.length, isMyTurn: nowMyTurn };
   }, [gameState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cardImageUrls = useCardImages();
@@ -113,10 +138,28 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
   const isMyTurn = gameState.currentPlayerIndex === myIndex;
   const phase    = gameState.phase;
 
+  // Clear selected card when it's no longer our turn or phase changes
+  useEffect(() => {
+    if (!isMyTurn || phase !== 'playing_play') setSelectedCardId(null);
+  }, [isMyTurn, phase]);
+
   const playableIds: Set<string> | undefined =
     isMyTurn && phase === 'playing_play'
       ? new Set(me.hand.map(c => c.id))
       : undefined;
+
+  function handleCardTap(cardId: string) {
+    if (confirmBeforePlay) {
+      if (selectedCardId === cardId) {
+        send('play_card', { cardId });
+        setSelectedCardId(null);
+      } else {
+        setSelectedCardId(cardId);
+      }
+    } else {
+      send('play_card', { cardId });
+    }
+  }
 
   const phaseLabel = PHASE_LABELS[phase] ?? phase;
 
@@ -234,9 +277,37 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         customizations={me.customizations}
         label="Your hand"
         selectableIds={playableIds}
-        onSelect={(cardId) => send('play_card', { cardId })}
+        highlightIds={selectedCardId ? new Set([selectedCardId]) : undefined}
+        onSelect={handleCardTap}
         cardSize="large"
       />
+
+      {/* Confirm-to-play prompt */}
+      {confirmBeforePlay && selectedCardId && (() => {
+        const card = me.hand.find(c => c.id === selectedCardId);
+        return card ? (
+          <div style={{
+            flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: 8, padding: '4px 8px',
+            background: 'rgba(39,174,96,0.12)', borderRadius: 8,
+            border: '1px solid rgba(39,174,96,0.35)',
+          }}>
+            <span style={{ fontSize: '0.78rem', color: '#27ae60', fontWeight: 600 }}>
+              Tap {card.color} again to play
+            </span>
+            <button
+              onClick={() => setSelectedCardId(null)}
+              style={{
+                background: 'transparent', border: '1px solid var(--border)',
+                borderRadius: 6, color: 'var(--muted)', fontSize: '0.7rem',
+                padding: '2px 8px', minHeight: 28,
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : null;
+      })()}
 
       {/* 5. Bottom bar (52px) */}
       <div style={{
@@ -253,18 +324,37 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
           boxShadow: isMyTurn ? '0 0 6px rgba(39,174,96,0.8)' : 'none',
           transition: 'background 0.3s, box-shadow 0.3s',
         }} />
-        <span style={{ fontWeight: 700, fontSize: '0.88rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
+        <span style={{ fontWeight: 700, fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
           {playerName}
         </span>
+        <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '1px 6px', fontWeight: 700, flexShrink: 0, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+          ✋ {me.handCount}
+        </span>
+        <span style={{ flex: 1 }} />
         <button
-          onClick={() => { setChatOpen(v => !v); setLogOpen(false); }}
+          onClick={() => { setChatOpen(v => { if (!v) setUnreadChat(0); return !v; }); setLogOpen(false); }}
           style={{
+            position: 'relative',
             background: chatOpen ? 'var(--surface2)' : 'transparent',
             border: chatOpen ? '1px solid var(--accent)' : '1px solid var(--border)',
             borderRadius: 8, color: chatOpen ? 'var(--accent)' : 'var(--muted)',
             fontSize: '1rem', padding: '0.2rem 0.5rem', minHeight: 38, fontWeight: 600,
           }}
-        >💬</button>
+        >
+          💬
+          {unreadChat > 0 && (
+            <span style={{
+              position: 'absolute', top: -4, right: -4,
+              background: 'var(--accent)', color: '#fff',
+              borderRadius: '50%', width: 18, height: 18,
+              fontSize: '0.6rem', fontWeight: 800,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              lineHeight: 1, boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+            }}>
+              {unreadChat > 9 ? '9+' : unreadChat}
+            </span>
+          )}
+        </button>
         <button
           onClick={() => { setLogOpen(v => !v); setChatOpen(false); }}
           style={{
@@ -413,7 +503,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         onClose={() => setLogOpen(false)}
       />
 
-      <EffectAnimation gameState={gameState} myIndex={myIndex} />
+      {animationsEnabled && <EffectAnimation gameState={gameState} myIndex={myIndex} />}
 
       {!opponent.isConnected && gameState.disconnectDeadline && (
         <DisconnectOverlay deadline={gameState.disconnectDeadline} opponentName={opponent.name} />
