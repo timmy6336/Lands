@@ -181,10 +181,14 @@ export class RoomManager {
   }
 
   /** Reconnect a player who dropped and rejoined.  Returns the running engine so its state can be re-emitted. */
-  reconnectPlayer(roomCode: string, playerId: string): GameEngine | null {
+  reconnectPlayer(roomCode: string, playerIndex: 0 | 1, newPlayerId: string): GameEngine | null {
     const room = this.rooms.get(roomCode);
     if (!room?.engine) return null;
-    room.engine.playerReconnected(playerId);
+    const oldId = room.engine.state.players[playerIndex].id;
+    const pp = room.players.find(p => p.id === oldId);
+    if (pp) pp.id = newPlayerId;
+    room.engine.state.players[playerIndex].id = newPlayerId;
+    room.engine.playerReconnected(newPlayerId);
     return room.engine;
   }
 }

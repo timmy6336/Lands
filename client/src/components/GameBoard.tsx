@@ -7,6 +7,7 @@ import { CounterPrompt } from './CounterPrompt';
 import { EffectPrompt } from './EffectPrompt';
 import { GameLog } from './GameLog';
 import { ChatPanel } from './ChatPanel';
+import { EffectAnimation } from './EffectAnimation';
 import { useUISettings } from '../hooks/useUISettings';
 import { useSound } from '../hooks/useSound';
 import { useGameLog } from '../hooks/useGameLog';
@@ -411,6 +412,35 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         isOpen={logOpen}
         onClose={() => setLogOpen(false)}
       />
+
+      <EffectAnimation gameState={gameState} myIndex={myIndex} />
+
+      {!opponent.isConnected && gameState.disconnectDeadline && (
+        <DisconnectOverlay deadline={gameState.disconnectDeadline} opponentName={opponent.name} />
+      )}
+    </div>
+  );
+}
+
+function DisconnectOverlay({ deadline, opponentName }: { deadline: number; opponentName: string }) {
+  const [secondsLeft, setSecondsLeft] = useState(() => Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
+
+  useEffect(() => {
+    const tick = () => setSecondsLeft(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [deadline]);
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0,
+      background: 'rgba(231,76,60,0.92)', color: '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+      padding: '10px 16px', zIndex: 200, fontSize: '0.85rem', fontWeight: 600,
+    }}>
+      <span style={{ fontSize: '1.1rem' }}>&#9888;</span>
+      <span>{opponentName} disconnected — auto-forfeit in {secondsLeft}s</span>
     </div>
   );
 }

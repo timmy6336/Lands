@@ -91,7 +91,7 @@ function AppInner() {
 
   const { gameState: socketGameState, roomCode, error, connected, send: socketSend,
     chatMessages: socketChatMessages,
-    matchmakingStatus, matchmakingFound,
+    matchmakingStatus, matchmakingFound, setRejoinInfo,
   } = useSocket(serverUrl, auth.token);
   const { gameState: localGameState, send: localSend } = useLocalGame(localGameParams);
 
@@ -130,10 +130,18 @@ function AppInner() {
   useEffect(() => { roomActionSent.current = false; }, [serverUrl]);
   useEffect(() => { if (error) roomActionSent.current = false; }, [error]);
 
+  // Store rejoin info for reconnection when we're in an active multiplayer game
+  useEffect(() => {
+    if (!isLocalGame && gameState && gameState.phase !== 'ended' && gameState.viewerIndex !== undefined && gameState.roomCode) {
+      setRejoinInfo({ roomCode: gameState.roomCode, playerIndex: gameState.viewerIndex });
+    }
+  }, [gameState?.roomCode, gameState?.viewerIndex, gameState?.phase, isLocalGame, setRejoinInfo]);
+
   function goHome() {
     if (screen === 'matchmaking' && connected) {
       socketSend('leave_matchmaking');
     }
+    setRejoinInfo(null);
     setServerUrl(null);
     setPendingJoin(null);
     setLocalGameParams(null);

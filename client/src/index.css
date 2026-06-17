@@ -296,3 +296,116 @@ h2 { font-size: 1.4rem; }
   scrollbar-width: none;
 }
 .field-pane-compact::-webkit-scrollbar { display: none; }
+
+/* ── Effect animations ─────────────────────────────────────────────────────── */
+.effect-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Red — fire */
+.effect-fire-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 80%, rgba(231,76,60,0.35) 0%, transparent 70%);
+  animation: effect-flash 0.6s ease-out forwards;
+}
+@keyframes effect-flash {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.effect-fire-particle {
+  position: absolute;
+  bottom: 30%;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f39c12 0%, #e74c3c 50%, transparent 70%);
+  animation: fire-rise 1.2s ease-out forwards;
+  opacity: 0;
+}
+@keyframes fire-rise {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  10%  { opacity: 1; }
+  100% { transform: translateY(-50vh) scale(0.3); opacity: 0; }
+}
+
+/* Green — graveyard rise */
+.effect-green-card {
+  position: absolute;
+  left: 50%;
+  bottom: -100px;
+  width: 60px;
+  height: 85px;
+  margin-left: -30px;
+  border-radius: 8px;
+  border: 2px solid #27ae60;
+  background: rgba(39,174,96,0.2);
+  box-shadow: 0 0 20px rgba(39,174,96,0.6), 0 0 40px rgba(39,174,96,0.3);
+  animation: green-rise 1.4s ease-out forwards;
+}
+@keyframes green-rise {
+  0%   { transform: translateY(0); opacity: 0; }
+  20%  { opacity: 1; }
+  60%  { transform: translateY(-55vh); opacity: 1; }
+  100% { transform: translateY(-55vh); opacity: 0; }
+}
+
+.effect-green-sparkle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2ecc71;
+  box-shadow: 0 0 6px #2ecc71;
+  animation: sparkle-float 1.2s ease-out forwards;
+  opacity: 0;
+}
+@keyframes sparkle-float {
+  0%   { transform: translateY(0) scale(0); opacity: 0; }
+  20%  { opacity: 1; transform: scale(1); }
+  100% { transform: translateY(-40vh) translateX(var(--drift)) scale(0); opacity: 0; }
+}
+
+/* White — deck draw */
+.effect-white-card {
+  position: absolute;
+  right: -80px;
+  top: 50%;
+  width: 55px;
+  height: 78px;
+  margin-top: -39px;
+  border-radius: 8px;
+  border: 2px solid #d4c896;
+  background: rgba(240,234,214,0.15);
+  box-shadow: 0 0 18px rgba(240,234,214,0.5), 0 0 36px rgba(240,234,214,0.2);
+  animation: white-slide 1.3s ease-out forwards;
+}
+@keyframes white-slide {
+  0%   { transform: translateX(0); opacity: 0; }
+  15%  { opacity: 1; }
+  50%  { transform: translateX(-52vw); opacity: 1; }
+  100% { transform: translateX(-52vw); opacity: 0; }
+}
+
+.effect-white-shimmer {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  margin-top: -1px;
+  background: linear-gradient(to left, transparent, rgba(240,234,214,0.6), transparent);
+  animation: shimmer-trail 1.3s ease-out forwards;
+  border-radius: 2px;
+}
+@keyframes shimmer-trail {
+  0%   { width: 0; opacity: 0; }
+  15%  { opacity: 0.8; }
+  50%  { width: 52vw; opacity: 0.6; }
+  100% { width: 52vw; opacity: 0; }
+}

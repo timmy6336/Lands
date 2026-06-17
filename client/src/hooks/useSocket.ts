@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
   ServerToClientEvents, ClientToServerEvents, GameState, ChatMessage,
@@ -6,6 +6,11 @@ import {
 import { saveReplay } from '../lib/replayStorage';
 
 type LandsSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+
+export interface RejoinInfo {
+  roomCode: string;
+  playerIndex: 0 | 1;
+}
 
 /**
  * Manages the Socket.io connection to the game server.
@@ -20,6 +25,12 @@ export function useSocket(serverUrl: string | null, authToken?: string | null) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [matchmakingStatus, setMatchmakingStatus] = useState<{ position: number } | null>(null);
   const [matchmakingFound, setMatchmakingFound] = useState(false);
+
+  const rejoinRef = useRef<RejoinInfo | null>(null);
+
+  const setRejoinInfo = useCallback((info: RejoinInfo | null) => {
+    rejoinRef.current = info;
+  }, []);
 
   useEffect(() => {
     if (!serverUrl) {
@@ -39,11 +50,21 @@ export function useSocket(serverUrl: string | null, authToken?: string | null) {
 
     const socket: LandsSocket = io(serverUrl, {
       autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
       auth: authToken ? { token: authToken } : {},
     });
     socketRef.current = socket;
 
-    socket.on('connect', () => setConnected(true));
+    socket.on('connect', () => {
+      setConnected(true);
+      const info = rejoinRef.current;
+      if (info) {
+        socket.emit('rejoin_game', { roomCode: info.roomCode, playerIndex: info.playerIndex });
+      }
+    });
     socket.on('disconnect', () => setConnected(false));
     socket.on('game_state', (state) => setGameState(state));
     socket.on('room_created', ({ roomCode: code }) => setRoomCode(code));
@@ -69,5 +90,5 @@ export function useSocket(serverUrl: string | null, authToken?: string | null) {
     socketRef.current?.emit(event, ...args);
   }
 
-  return { gameState, roomCode, error, connected, send, chatMessages, matchmakingStatus, matchmakingFound };
+  return { gameState, roomCode, error, connected, send, chatMessages, matchmakingStatus, matchmakingFound, setRejoinInfo };
 }

@@ -415,8 +415,8 @@ export class GameEngine {
 
     switch (card.color as Color) {
       case 'white': {
-        // Draw 1 card
         drawOne(attacker);
+        s.effectResult = { type: 'white', attackerIndex: s.currentPlayerIndex };
         this.endTurn();
         break;
       }

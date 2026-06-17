@@ -42,6 +42,9 @@ const rpsWinnerMap = new Map<string, 0 | 1>();                  // roomCode → 
 // Single-player AI instances: roomCode → AIPlayer
 const singlePlayerAIs = new Map<string, AIPlayer>();
 
+// Disconnect timers: socketId → { roomCode, playerIndex, timer }
+const disconnectTimers = new Map<string, { roomCode: string; playerIndex: 0 | 1; timer: ReturnType<typeof setTimeout> }>();
+
 // ── Matchmaking queue ─────────────────────────────────────────────────────────
 /** Entry in the global matchmaking queue. */
 interface MatchmakingEntry { id: string; name: string; }
@@ -144,8 +147,8 @@ function wireEngine(
     broadcastState(io, state);
     if (state.phase === 'ended') {
       const replay = buildReplay(engine, mode);
-      io.to(p0id).emit('replay_complete', replay);
-      io.to(p1id).emit('replay_complete', replay);
+      io.to(state.players[0].id).emit('replay_complete', replay);
+      io.to(state.players[1].id).emit('replay_complete', replay);
 
       if (mode === 'multiplayer' && p0userId && p1userId) {
         recordGameResult({
@@ -487,28 +490,105 @@ export function registerHandlers(io: IO, socket: Sock) {
     removeFromMatchmaking(id);
   });
 
+  socket.on('rejoin_game', ({ roomCode: code, playerIndex }) => {
+    const room = rooms.getRoom(code);
+    if (!room?.engine) {
+      socket.emit('error', 'Game not found or already ended.');
+      return;
+    }
+    const slot = room.engine.state.players[playerIndex];
+    if (slot.isConnected) {
+      socket.emit('error', 'That slot is not disconnected.');
+      return;
+    }
+
+    // Cancel the disconnect forfeit timer
+    for (const [timerId, entry] of disconnectTimers) {
+      if (entry.roomCode === code && entry.playerIndex === playerIndex) {
+        clearTimeout(entry.timer);
+        disconnectTimers.delete(timerId);
+        break;
+      }
+    }
+
+    // Update socket data
+    socket.data.playerId = socket.id;
+    socket.data.roomCode = code;
+    socket.join(socket.id);
+    socket.join(code);
+
+    // Reconnect in room manager (updates player ID in engine)
+    const engine = rooms.reconnectPlayer(code, playerIndex, socket.id);
+    if (!engine) {
+      socket.emit('error', 'Reconnection failed.');
+      return;
+    }
+
+    // Clear disconnect deadline and broadcast
+    engine.state.disconnectDeadline = undefined;
+    broadcastState(io, engine.state);
+  });
+
   socket.on('disconnect', () => {
     removeFromMatchmaking(id);
-    // Snapshot the room code before removal so we can clean up associated state
-    const roomBeforeDisconnect = rooms.getRoomByPlayerId(id);
-    const roomCode = roomBeforeDisconnect?.code;
+    const room = rooms.getRoomByPlayerId(id);
+    if (!room) return;
+    const roomCode = room.code;
 
-    // If opponent disconnects during the lobby or RPS phase (no engine yet),
-    // the room will be deleted but the remaining player has no way to know.
-    // Emit an error so their client can show a "return to menu" prompt.
-    if (roomBeforeDisconnect && !roomBeforeDisconnect.engine && roomBeforeDisconnect.players.length === 2) {
-      const otherId = roomBeforeDisconnect.players.find(p => p.id !== id)?.id;
-      if (otherId) io.to(otherId).emit('error', 'Your opponent disconnected.');
+    if (!room.engine) {
+      // Pre-game: notify opponent and delete the room
+      if (room.players.length === 2) {
+        const otherId = room.players.find(p => p.id !== id)?.id;
+        if (otherId) io.to(otherId).emit('error', 'Your opponent disconnected.');
+      }
+      rooms.removePlayer(id);
+      if (!rooms.getRoom(roomCode)) {
+        rematchVoteMap.delete(roomCode);
+        rpsPickMap.delete(roomCode);
+        rpsWinnerMap.delete(roomCode);
+        singlePlayerAIs.delete(roomCode);
+      }
+      return;
     }
 
-    rooms.removePlayer(id);
-    // If removePlayer deleted the room, clean up any lingering per-room state
-    if (roomCode && !rooms.getRoom(roomCode)) {
-      rematchVoteMap.delete(roomCode);
-      rpsPickMap.delete(roomCode);
-      rpsWinnerMap.delete(roomCode);
-      singlePlayerAIs.delete(roomCode);
+    // In-game: mark disconnected, set 60s forfeit deadline
+    const playerIndex = room.engine.state.players[0].id === id ? 0 : 1;
+
+    // Single-player: forfeit immediately (no reconnection for AI games)
+    if (room.settings.isSinglePlayer) {
+      room.engine.surrender(id);
+      rooms.removePlayer(id);
+      if (!rooms.getRoom(roomCode)) {
+        singlePlayerAIs.delete(roomCode);
+      }
+      return;
     }
+
+    // If game already ended, just clean up
+    if (room.engine.state.phase === 'ended') {
+      rooms.removePlayer(id);
+      if (!rooms.getRoom(roomCode)) {
+        rematchVoteMap.delete(roomCode);
+        rpsPickMap.delete(roomCode);
+        rpsWinnerMap.delete(roomCode);
+      }
+      return;
+    }
+
+    // Set disconnect deadline and notify
+    room.engine.state.disconnectDeadline = Date.now() + 60_000;
+    room.engine.playerDisconnected(id);
+
+    // Start 60s forfeit timer
+    const timer = setTimeout(() => {
+      disconnectTimers.delete(id);
+      const currentRoom = rooms.getRoom(roomCode);
+      if (!currentRoom?.engine || currentRoom.engine.state.phase === 'ended') return;
+      currentRoom.engine.surrender(id);
+      currentRoom.engine.state.disconnectDeadline = undefined;
+    }, 60_000);
+
+    disconnectTimers.set(id, { roomCode, playerIndex: playerIndex as 0 | 1, timer });
   });
 }
 

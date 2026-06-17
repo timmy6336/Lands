@@ -164,7 +164,8 @@ export interface GameState {
     | { type: 'red';   cardColor: Color; ownerName: string; attackerIndex: 0 | 1 }
     | { type: 'green'; cardColor: Color; ownerName: string; attackerIndex: 0 | 1 }
     | { type: 'blue';  keptOnTop: boolean;                  attackerIndex: 0 | 1 }
-    | { type: 'black'; cardColor: Color; ownerName: string; attackerIndex: 0 | 1 };
+    | { type: 'black'; cardColor: Color; ownerName: string; attackerIndex: 0 | 1 }
+    | { type: 'white'; attackerIndex: 0 | 1 };
   /** Set by server per-player so clients always know their own index */
   viewerIndex?: 0 | 1;
   /** Result of the most recent RPS round */
@@ -172,6 +173,7 @@ export interface GameState {
     picks: [RpsChoice, RpsChoice]; // [player0choice, player1choice]
     winner: 0 | 1 | 'draw';
   };
+  disconnectDeadline?: number;
 }
 
 // ── Replay typings ───────────────────────────────────────────────────────────
@@ -266,6 +268,7 @@ export interface ClientToServerEvents {
   join_matchmaking:     (data: { playerName: string }) => void;
   /** Leave the matchmaking queue (e.g. user cancelled). */
   leave_matchmaking:    () => void;
+  rejoin_game: (data: { roomCode: string; playerIndex: 0 | 1 }) => void;
 }
 
 export interface InterServerEvents { /* reserved */ }
