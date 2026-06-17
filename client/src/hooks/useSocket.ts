@@ -60,7 +60,7 @@ export function useSocket(serverUrl: string | null, authToken?: string | null) {
       socketRef.current = null;
       setConnected(false);
     };
-  }, [serverUrl]);
+  }, [serverUrl, authToken]);
 
   function send<K extends keyof ClientToServerEvents>(
     event: K,

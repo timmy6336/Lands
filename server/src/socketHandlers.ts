@@ -507,6 +507,7 @@ export function registerHandlers(io: IO, socket: Sock) {
       rematchVoteMap.delete(roomCode);
       rpsPickMap.delete(roomCode);
       rpsWinnerMap.delete(roomCode);
+      singlePlayerAIs.delete(roomCode);
     }
   });
 }

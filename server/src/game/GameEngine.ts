@@ -149,6 +149,7 @@ export class GameEngine {
     if (s.phase === 'ended') return;
     const pi = this.getPlayerIndex(playerId);
     if (pi === -1) return;
+    this.clearCounterTimer();
     s.phase = 'ended';
     s.winner = (1 - pi) as 0 | 1;
     s.winReason = `${s.players[pi].name} surrendered.`;
@@ -236,8 +237,11 @@ export class GameEngine {
       const defender = s.players[defenderIndex];
       const blueCard = removeFromHand(defender, blueCardId);
       const matchCard = removeFromHand(defender, matchingCardId);
-      if (!blueCard || !matchCard || blueCard.color !== 'blue') {
-        // Invalid — treat as pass
+      const pendingColor = s.pendingPlay?.color;
+      if (
+        !blueCard || !matchCard || blueCard.color !== 'blue' ||
+        (pendingColor && matchCard.color !== pendingColor)
+      ) {
         if (blueCard) defender.hand.push(blueCard);
         if (matchCard) defender.hand.push(matchCard);
         this.resolveCounterWindow();
@@ -364,6 +368,7 @@ export class GameEngine {
    */
   private resolveCounterWindow() {
     const s = this.state;
+    if (s.phase !== 'counter_window' && s.phase !== 'counter_response') return;
     // Top of chain determines fate of pendingPlay
     const top = s.counterChain[s.counterChain.length - 1];
     const pendingCard = s.pendingPlay!;

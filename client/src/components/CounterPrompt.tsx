@@ -1,5 +1,5 @@
 // Counter window — renders as a bottom sheet so the game board stays visible above.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GameState } from '@lands/shared';
 import { Card } from './Card';
 
@@ -19,18 +19,20 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
 
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const onPassRef = useRef(onPass);
+  onPassRef.current = onPass;
 
   useEffect(() => {
     if (isInfinite || !deadline) { setTimeLeft(null); return; }
     const tick = () => {
       const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
       setTimeLeft(left);
-      if (left <= 0) onPass();
+      if (left <= 0) onPassRef.current();
     };
     tick();
     const id = setInterval(tick, 500);
     return () => clearInterval(id);
-  }, [deadline, isInfinite, onPass]);
+  }, [deadline, isInfinite]);
 
   const needsTwoBlues = isCounterCounter || gameState.counterChain.length >= 2;
   const blueCards = me.hand.filter(c => c.color === 'blue');

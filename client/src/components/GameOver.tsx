@@ -1,4 +1,5 @@
 // End-of-game screen — mobile-first layout.
+import { useState } from 'react';
 import { GameState } from '@lands/shared';
 
 const FUNNY_DRAW_LINES = [
@@ -27,7 +28,7 @@ export function GameOver({ gameState, myIndex, onPlayAgain, onRematch }: Props) 
   const me     = players[myIndex];
   const them   = players[1 - myIndex];
 
-  const funnyLine = FUNNY_DRAW_LINES[Math.floor(Math.random() * FUNNY_DRAW_LINES.length)];
+  const [funnyLine] = useState(() => FUNNY_DRAW_LINES[Math.floor(Math.random() * FUNNY_DRAW_LINES.length)]);
 
   return (
     <div style={{
