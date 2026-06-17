@@ -40,6 +40,10 @@ interface Snapshot {
   p1Field: Card[];
   p0Graveyard: Card[];
   p1Graveyard: Card[];
+  p0DeckCount: number;
+  p1DeckCount: number;
+  p0GraveyardCount: number;
+  p1GraveyardCount: number;
   currentPlayerIdx: 0 | 1;
 }
 
@@ -80,6 +84,10 @@ export function useGameLog(gameState: GameState): { entries: LogEntry[]; addEntr
       p1Field:     [...players[1].field],
       p0Graveyard: [...players[0].graveyard],
       p1Graveyard: [...players[1].graveyard],
+      p0DeckCount: players[0].deckCount,
+      p1DeckCount: players[1].deckCount,
+      p0GraveyardCount: players[0].graveyardCount,
+      p1GraveyardCount: players[1].graveyardCount,
       currentPlayerIdx: currentPlayerIndex,
     };
 
@@ -157,6 +165,21 @@ export function useGameLog(gameState: GameState): { entries: LogEntry[]; addEntr
       }
     }
 
+    // White effect: extra draw
+    const er = gameState.effectResult;
+    if (er && er.type === 'white' && prev.phase !== 'playing_play') {
+      add(`${players[er.attackerIndex].name} draws an extra card (White effect)`);
+    }
+
+    // Reshuffle detection: deck grew while graveyard shrank
+    for (const i of [0, 1] as const) {
+      const prevDeck = i === 0 ? prev.p0DeckCount : prev.p1DeckCount;
+      const prevGraveCount = i === 0 ? prev.p0GraveyardCount : prev.p1GraveyardCount;
+      if (players[i].deckCount > prevDeck && players[i].graveyardCount < prevGraveCount) {
+        add(`${players[i].name}'s graveyard reshuffled into deck`);
+      }
+    }
+
     // Turn change — logged after resolve/effects so order is: resolve → draw
     if (turnNumber > prev.turnNumber) {
       add(`Turn ${turnNumber} — ${players[currentPlayerIndex].name} draws`);
@@ -169,6 +192,21 @@ export function useGameLog(gameState: GameState): { entries: LogEntry[]; addEntr
       if (phase === 'effect_green_pick') add(`${name} chooses a card to retrieve`);
       if (phase === 'effect_blue_look')  add(`${name} peeks at their deck`);
       if (phase === 'effect_black_show') add(`${name} forces opponent to reveal cards`);
+    }
+
+    // Fizzle detection: colored card resolved but no effect phase followed
+    if (prev.pendingPlayId && !pendingPlay?.id && prev.pendingPlayColor) {
+      const fc = prev.pendingPlayColor;
+      const effectPhases = ['effect_red_pick', 'effect_green_pick', 'effect_blue_look', 'effect_black_show'];
+      const wentToEffect = effectPhases.includes(phase);
+      const wasInEffect = effectPhases.includes(prev.phase) || prev.phase === 'effect_black_pick';
+      if ((fc === 'red' || fc === 'green' || fc === 'black' || fc === 'blue') && !wentToEffect && !wasInEffect) {
+        const p0Grew = players[0].field.length > prev.p0Field.length;
+        const p1Grew = players[1].field.length > prev.p1Field.length;
+        if (p0Grew || p1Grew) {
+          add(`${cap(fc)} effect fizzles — no valid targets`);
+        }
+      }
     }
 
     // Game over

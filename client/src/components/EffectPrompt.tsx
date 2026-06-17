@@ -42,7 +42,8 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
       <CollapsibleSheet collapsed={collapsed} onExpand={expand} label="Red Effect">
         <PickPrompt
           title="Red Land Effect"
-          subtitle="Choose a land type to destroy."
+          subtitle="Choose a land type to destroy from opponent's field."
+          helpText="One card of the chosen color will be sent to their graveyard."
           cards={dedupedField}
           customizations={opponent.customizations}
           allowFizzle={opponent.field.length === 0}
@@ -65,6 +66,7 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
         <PickPrompt
           title="Green Land Effect"
           subtitle="Choose a land type to retrieve from your graveyard."
+          helpText="One card of the chosen color will be returned to your hand."
           cards={dedupedGraveyard}
           customizations={me.customizations}
           allowFizzle={me.graveyard.length === 0}
@@ -84,6 +86,9 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
             <CollapseHandle onCollapse={collapse} />
             <h2 style={{ margin: 0, color: 'var(--blue-land)', fontSize: '1.1rem' }}>Blue Land Effect</h2>
             <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.88rem' }}>Top card of your deck:</p>
+            <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.72rem', fontStyle: 'italic', opacity: 0.7 }}>
+              Keep it on top to draw it next turn, or send it to the bottom.
+            </p>
             {topCard
               ? <Card card={topCard} customizations={me.customizations} />
               : <p style={{ color: 'var(--muted)', margin: 0 }}>Deck is empty.</p>
@@ -125,6 +130,9 @@ export function EffectPrompt({ gameState, myIndex, onRespond }: Props) {
             <h2 style={{ margin: 0, color: '#888', fontSize: '1.1rem' }}>Black Land Effect</h2>
             <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.88rem' }}>
               Your opponent revealed these cards. Choose one to discard.
+            </p>
+            <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.72rem', fontStyle: 'italic', opacity: 0.7 }}>
+              The chosen card will be removed from their hand and sent to the graveyard.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {shown.map(c => (
@@ -232,10 +240,11 @@ function CollapseHandle({ onCollapse }: { onCollapse: () => void }) {
 // ── Sub-prompts ─────────────────────────────────────────────────────────────
 
 function PickPrompt({
-  title, subtitle, cards, customizations, allowFizzle, onConfirm, onCollapse,
+  title, subtitle, helpText, cards, customizations, allowFizzle, onConfirm, onCollapse,
 }: {
   title: string;
   subtitle: string;
+  helpText?: string;
   cards: CardType[];
   customizations: any;
   allowFizzle: boolean;
@@ -250,6 +259,11 @@ function PickPrompt({
         <CollapseHandle onCollapse={onCollapse} />
         <h2 style={{ margin: 0, fontSize: '1.1rem' }}>{title}</h2>
         <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.88rem' }}>{subtitle}</p>
+        {helpText && (
+          <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.72rem', fontStyle: 'italic', opacity: 0.7 }}>
+            {helpText}
+          </p>
+        )}
         {cards.length === 0
           ? <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>No valid targets — effect fizzles.</p>
           : (
@@ -307,6 +321,9 @@ function BlackShowPrompt({
           {mustShowAll
             ? 'Your entire hand will be revealed to your opponent.'
             : `Choose 3 cards from your hand to reveal. (${selected.length}/3)`}
+        </p>
+        <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.72rem', fontStyle: 'italic', opacity: 0.7 }}>
+          Your opponent will pick one of the revealed cards to discard.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {hand.map(c => {

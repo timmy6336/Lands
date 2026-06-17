@@ -10,6 +10,14 @@ const COLOR_BG: Record<Color, string> = {
   black: 'var(--black-land)',
 };
 
+const EFFECT_HINT: Record<Color, string> = {
+  white: 'Draw +1',
+  red:   'Destroy land',
+  blue:  'Peek deck',
+  green: 'Retrieve',
+  black: 'Discard',
+};
+
 interface Props {
   cards: CardType[];
   hiddenCount?: number;
@@ -20,9 +28,10 @@ interface Props {
   highlightIds?: Set<string>;
   cardSize?: 'small' | 'normal' | 'large';
   paneClass?: string;
+  showEffectHints?: boolean;
 }
 
-export function Hand({ cards, customizations, label, selectableIds, onSelect, highlightIds, cardSize = 'normal', paneClass: paneClassProp }: Props) {
+export function Hand({ cards, customizations, label, selectableIds, onSelect, highlightIds, cardSize = 'normal', paneClass: paneClassProp, showEffectHints }: Props) {
   const paneClass = paneClassProp ?? (cardSize === 'large' ? 'hand-pane-large' : 'hand-pane');
   return (
     <div className={paneClass}>
@@ -43,6 +52,7 @@ export function Hand({ cards, customizations, label, selectableIds, onSelect, hi
                 isDisabled={isDisabled}
                 isHighlighted={isHighlighted}
                 cardSize={cardSize}
+                showEffectHint={showEffectHints}
                 onClick={isPlayable ? () => onSelect?.(card.id) : undefined}
               />
             );
@@ -59,10 +69,11 @@ interface HandCardProps {
   isDisabled: boolean;
   isHighlighted: boolean;
   cardSize?: 'small' | 'normal' | 'large';
+  showEffectHint?: boolean;
   onClick?: () => void;
 }
 
-function HandCard({ card, customizations, isPlayable, isDisabled, isHighlighted, cardSize = 'normal', onClick }: HandCardProps) {
+function HandCard({ card, customizations, isPlayable, isDisabled, isHighlighted, cardSize = 'normal', showEffectHint, onClick }: HandCardProps) {
   const cardImageUrls = useCardImages();
   const custom = customizations?.[card.color] ?? DEFAULT_CUSTOMIZATIONS[card.color];
   const isSelected = isPlayable || isHighlighted;
@@ -120,6 +131,14 @@ function HandCard({ card, customizations, isPlayable, isDisabled, isHighlighted,
         }}>
           {custom.displayName}
         </span>
+        {showEffectHint && !isSmall && (
+          <span style={{
+            color: 'rgba(255,255,255,0.5)', fontSize: isLarge ? '0.52rem' : '0.45rem',
+            letterSpacing: '0.02em', fontStyle: 'italic', lineHeight: 1,
+          }}>
+            {EFFECT_HINT[card.color]}
+          </span>
+        )}
         {isPlayable && (
           <span style={{ color: 'rgba(255,255,255,0.62)', fontSize: tapFontSize, letterSpacing: '0.02em' }}>
             tap to play

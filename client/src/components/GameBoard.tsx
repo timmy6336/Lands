@@ -8,6 +8,7 @@ import { EffectPrompt } from './EffectPrompt';
 import { GameLog } from './GameLog';
 import { ChatPanel } from './ChatPanel';
 import { EffectAnimation } from './EffectAnimation';
+import { WinProgress } from './WinProgress';
 import { useUISettings } from '../hooks/useUISettings';
 import { useSound } from '../hooks/useSound';
 import { useGameLog } from '../hooks/useGameLog';
@@ -59,6 +60,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
   const {
     showEffectResultRed, showEffectResultGreen,
     showEffectResultBlue, showEffectResultBlack,
+    showCardEffectsOnHover,
     animationsEnabled, confirmBeforePlay,
   } = useUISettings();
 
@@ -205,6 +207,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         </span>
         {/* opponent graveyard — tappable */}
         <Graveyard cards={opponent.graveyard} customizations={opponent.customizations} label="Opp" />
+        <WinProgress field={opponent.field} compact />
         {/* opponent compact field */}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', minWidth: 0 }}>
           <Field
@@ -265,6 +268,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         }}>
           <Graveyard cards={me.graveyard} customizations={me.customizations} label="My" />
         </div>
+        <WinProgress field={me.field} />
         {/* My field tiles */}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', minWidth: 0 }}>
           <Field cards={me.field} customizations={me.customizations} label="Your field" size="normal" />
@@ -280,6 +284,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         highlightIds={selectedCardId ? new Set([selectedCardId]) : undefined}
         onSelect={handleCardTap}
         cardSize="large"
+        showEffectHints={showCardEffectsOnHover}
       />
 
       {/* Confirm-to-play prompt */}

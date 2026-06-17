@@ -2,8 +2,35 @@
 // (and your hand) stays visible above. Tap "▼ hide" to collapse, tap the
 // floating tab to bring it back. Timer keeps ticking while collapsed.
 import { useEffect, useRef, useState } from 'react';
-import { GameState } from '@lands/shared';
+import { GameState, Color } from '@lands/shared';
 import { Card } from './Card';
+
+const COST_DOT_COLORS: Record<Color, string> = {
+  white: '#f0ead6', red: '#e74c3c', blue: '#3498db', green: '#2ecc71', black: '#887799',
+};
+
+function CostDot({ color, have }: { color: Color; have: boolean }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 3,
+    }}>
+      <div style={{
+        width: 14, height: 14, borderRadius: '50%',
+        background: have ? COST_DOT_COLORS[color] : 'transparent',
+        border: `2px solid ${COST_DOT_COLORS[color]}`,
+        opacity: have ? 1 : 0.4,
+        transition: 'background 0.2s, opacity 0.2s',
+      }} />
+      <span style={{
+        fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase',
+        color: have ? COST_DOT_COLORS[color] : 'var(--muted)',
+        opacity: have ? 1 : 0.5,
+      }}>
+        {color}
+      </span>
+    </div>
+  );
+}
 
 interface Props {
   gameState: GameState;
@@ -114,8 +141,35 @@ export function CounterPrompt({ gameState, myIndex, onCounter, onPass, isCounter
                 <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>
                   {needsTwoBlues
                     ? 'Your land was countered. Spend 2 Blue cards to counter their counter.'
-                    : `Opponent played ${pendingCard.color}. Spend 1 Blue + 1 ${pendingCard.color} to counter.`}
+                    : `Opponent played ${pendingCard.color}. Spend 1 Blue + 1 matching to counter.`}
                 </p>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6, marginTop: 8,
+                  background: canCounter ? 'rgba(39,174,96,0.12)' : 'rgba(231,76,60,0.12)',
+                  border: `1px solid ${canCounter ? 'rgba(39,174,96,0.35)' : 'rgba(231,76,60,0.35)'}`,
+                  borderRadius: 8, padding: '4px 10px',
+                }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: canCounter ? '#27ae60' : '#e74c3c' }}>
+                    Need:
+                  </span>
+                  {needsTwoBlues ? (
+                    <>
+                      <CostDot color="blue" have={blueCards.length >= 1} />
+                      <CostDot color="blue" have={blueCards.length >= 2} />
+                    </>
+                  ) : pendingCard.color === 'blue' ? (
+                    <>
+                      <CostDot color="blue" have={blueCards.length >= 1} />
+                      <CostDot color="blue" have={blueCards.length >= 2} />
+                    </>
+                  ) : (
+                    <>
+                      <CostDot color="blue" have={blueCards.length >= 1} />
+                      <span style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>+</span>
+                      <CostDot color={pendingCard.color} have={matchingCards.length >= 1} />
+                    </>
+                  )}
+                </div>
                 {timeLeft !== null && (
                   <p style={{ marginTop: 8, fontSize: '1.5rem', fontWeight: 800, color: timeLeft <= 3 ? '#e74c3c' : 'var(--text)', margin: '6px 0 0' }}>
                     {timeLeft}s

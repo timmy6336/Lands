@@ -598,8 +598,8 @@ export class GameEngine {
 
     s.winner = index;
     s.winReason = fiveKind
-      ? `Five ${fiveKind[0]} lands on the field!`
-      : 'One of each land on the field!';
+      ? `Five-of-a-Kind: ${fiveKind[0].charAt(0).toUpperCase() + fiveKind[0].slice(1)} lands!`
+      : 'Rainbow: One of each land color!';
     s.phase = 'ended';
     this.clearCounterTimer();
     this.emit();
