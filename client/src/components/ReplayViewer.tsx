@@ -77,7 +77,7 @@ export function ReplayViewer({ replay, onBack }: Props) {
         </span>
         {/* deck count */}
         <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '1px 6px', fontWeight: 700, flexShrink: 0, color: 'var(--text)', whiteSpace: 'nowrap' }}>
-          🃏 {opponent.deckCount}
+          Deck {opponent.deckCount}
         </span>
         {/* opponent graveyard */}
         <Graveyard cards={opponent.graveyard} customizations={opponent.customizations} label="Opp" />
@@ -139,8 +139,8 @@ export function ReplayViewer({ replay, onBack }: Props) {
           gap: 2, flexShrink: 0, minWidth: 36,
           background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '4px 6px',
         }}>
-          <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>🃏</span>
-          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{me.deckCount}</span>
+          <span style={{ fontSize: '0.55rem', lineHeight: 1, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.03em' }}>DECK</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{me.deckCount}</span>
         </div>
         <div style={{
           flexShrink: 0,

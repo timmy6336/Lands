@@ -19,7 +19,7 @@ export function MultiplayerMenu({ onPrivate, onMatchmaking, onBack }: Props) {
           onClick={onPrivate}
           style={{ textAlign: 'left', fontSize: '1.05rem', padding: '0.9rem 1.25rem', minHeight: 64, borderRadius: 12 }}
         >
-          <span style={{ display: 'block', fontWeight: 700 }}>🔐 Private Room</span>
+          <span style={{ display: 'block', fontWeight: 700 }}>Private Room</span>
           <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 400, opacity: 0.7, marginTop: 3 }}>
             Host or join a game with a room code
           </span>
@@ -30,7 +30,7 @@ export function MultiplayerMenu({ onPrivate, onMatchmaking, onBack }: Props) {
           onClick={onMatchmaking}
           style={{ textAlign: 'left', fontSize: '1.05rem', padding: '0.9rem 1.25rem', minHeight: 64, borderRadius: 12 }}
         >
-          <span style={{ display: 'block', fontWeight: 700 }}>🔍 Matchmaking</span>
+          <span style={{ display: 'block', fontWeight: 700 }}>Matchmaking</span>
           <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 400, opacity: 0.65, marginTop: 3 }}>
             Get matched with another player automatically
           </span>

@@ -201,7 +201,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
         </span>
         {/* deck count */}
         <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '1px 6px', fontWeight: 700, flexShrink: 0, color: 'var(--text)', whiteSpace: 'nowrap' }}>
-          🃏 {opponent.deckCount}
+          Deck {opponent.deckCount}
         </span>
         {/* opponent graveyard — tappable */}
         <Graveyard cards={opponent.graveyard} customizations={opponent.customizations} label="Opp" />
@@ -252,8 +252,8 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
           gap: 2, flexShrink: 0, minWidth: 36,
           background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: '4px 6px',
         }}>
-          <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>🃏</span>
-          <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{me.deckCount}</span>
+          <span style={{ fontSize: '0.55rem', lineHeight: 1, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.03em' }}>DECK</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{me.deckCount}</span>
         </div>
         {/* My graveyard — prominent tappable button */}
         <div style={{
@@ -328,7 +328,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
           {playerName}
         </span>
         <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: '1px 6px', fontWeight: 700, flexShrink: 0, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-          ✋ {me.handCount}
+          Hand {me.handCount}
         </span>
         <span style={{ flex: 1 }} />
         <button
@@ -338,10 +338,10 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
             background: chatOpen ? 'var(--surface2)' : 'transparent',
             border: chatOpen ? '1px solid var(--accent)' : '1px solid var(--border)',
             borderRadius: 8, color: chatOpen ? 'var(--accent)' : 'var(--muted)',
-            fontSize: '1rem', padding: '0.2rem 0.5rem', minHeight: 38, fontWeight: 600,
+            fontSize: '0.72rem', padding: '0.2rem 0.5rem', minHeight: 38, fontWeight: 600,
           }}
         >
-          💬
+          Chat
           {unreadChat > 0 && (
             <span style={{
               position: 'absolute', top: -4, right: -4,
@@ -361,9 +361,9 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
             background: logOpen ? 'var(--surface2)' : 'transparent',
             border: logOpen ? '1px solid var(--accent)' : '1px solid var(--border)',
             borderRadius: 8, color: logOpen ? 'var(--accent)' : 'var(--muted)',
-            fontSize: '1rem', padding: '0.2rem 0.5rem', minHeight: 38, fontWeight: 600,
+            fontSize: '0.72rem', padding: '0.2rem 0.5rem', minHeight: 38, fontWeight: 600,
           }}
-        >📜</button>
+        >Log</button>
         {isMyTurn && (
           <span style={{ fontSize: '0.7rem', color: '#27ae60', fontWeight: 700, letterSpacing: '0.04em', flexShrink: 0 }}>
             ▶ YOUR TURN
@@ -376,13 +376,12 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
             borderRadius: 8, color: '#e74c3c',
             fontSize: '0.78rem', padding: '0.2rem 0.6rem', minHeight: 38, fontWeight: 600,
           }}
-        >⚑</button>
+        >GG</button>
       </div>
 
       {surrenderOpen && (
         <div className="overlay">
           <div className="overlay-box" style={{ maxWidth: 320, alignItems: 'center', textAlign: 'center' }}>
-            <p style={{ fontSize: '1.5rem', margin: 0 }}>🏳</p>
             <h3 style={{ margin: 0, color: 'var(--accent)' }}>Surrender?</h3>
             <p style={{ margin: 0, color: 'var(--muted)', fontSize: '0.9rem' }}>You&apos;ll forfeit the game.</p>
             <div style={{ display: 'flex', gap: 10, width: '100%' }}>
@@ -444,8 +443,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
           >
             {effectPopup.type === 'red' ? (
               <>
-                <span style={{ fontSize: '2rem' }}>💥</span>
-                <p style={{ margin: 0, fontWeight: 600, color: EFFECT_COLORS.red }}>Land Destroyed</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: EFFECT_COLORS.red, letterSpacing: '0.04em' }}>Land Destroyed</p>
                 <div style={{ borderRadius: 8, padding: '0.4rem 0.9rem', fontWeight: 700, fontSize: '0.85rem', background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}>
                   {effectPopup.cardColor.charAt(0).toUpperCase() + effectPopup.cardColor.slice(1)} land
                 </div>
@@ -455,8 +453,7 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
               </>
             ) : effectPopup.type === 'green' ? (
               <>
-                <span style={{ fontSize: '2rem' }}>♻️</span>
-                <p style={{ margin: 0, fontWeight: 600, color: EFFECT_COLORS.green }}>Land Retrieved</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: EFFECT_COLORS.green, letterSpacing: '0.04em' }}>Land Retrieved</p>
                 <div style={{ borderRadius: 8, padding: '0.4rem 0.9rem', fontWeight: 700, fontSize: '0.85rem', background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}>
                   {effectPopup.cardColor.charAt(0).toUpperCase() + effectPopup.cardColor.slice(1)} land
                 </div>
@@ -466,16 +463,14 @@ export function GameBoard({ gameState, myIndex, send, chatMessages, onSendChat, 
               </>
             ) : effectPopup.type === 'blue' ? (
               <>
-                <span style={{ fontSize: '2rem' }}>🔮</span>
-                <p style={{ margin: 0, fontWeight: 600, color: EFFECT_COLORS.blue }}>Blue Land Effect</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: EFFECT_COLORS.blue, letterSpacing: '0.04em' }}>Scry</p>
                 <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: 0 }}>
                   Top card <strong style={{ color: 'var(--text)' }}>{effectPopup.keptOnTop ? 'kept on top' : 'sent to bottom'}</strong>
                 </p>
               </>
             ) : (
               <>
-                <span style={{ fontSize: '2rem' }}>💀</span>
-                <p style={{ margin: 0, fontWeight: 600, color: EFFECT_COLORS.black }}>Card Discarded</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: EFFECT_COLORS.black, letterSpacing: '0.04em' }}>Card Discarded</p>
                 <div style={{ borderRadius: 8, padding: '0.4rem 0.9rem', fontWeight: 700, fontSize: '0.85rem', background: `${EFFECT_COLORS[effectPopup.cardColor]}22`, color: EFFECT_COLORS[effectPopup.cardColor], border: `1px solid ${EFFECT_COLORS[effectPopup.cardColor]}66` }}>
                   {effectPopup.cardColor.charAt(0).toUpperCase() + effectPopup.cardColor.slice(1)} land
                 </div>

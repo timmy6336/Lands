@@ -4,11 +4,11 @@ import { GameState } from '@lands/shared';
 import { useSound } from '../hooks/useSound';
 
 const FUNNY_DRAW_LINES = [
-  "The universe breaks. A draw? Impossible. Yet here we are.",
-  "Both players have achieved quantum superposition. Neither won. Neither lost.",
-  "Error 418: I'm a teapot. Also, somehow a draw occurred.",
-  "The ancient prophecy said one shall win. The ancient prophecy was wrong.",
-  "Scientists baffled. Philosophers wept. It's a draw.",
+  "Neither side could find the edge. A rare equilibrium.",
+  "Two evenly matched opponents. The board concedes.",
+  "No victor, no vanquished. Just a well-fought game.",
+  "The lands are balanced. Neither claim prevails.",
+  "An impasse — both strategies proved equal.",
 ];
 
 interface Props {
@@ -51,21 +51,42 @@ export function GameOver({ gameState, myIndex, onPlayAgain, onRematch }: Props) 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
         {isDraw ? (
           <>
-            <p style={{ fontSize: '4.5rem', margin: 0, lineHeight: 1 }}>🤯</p>
-            <h1 style={{ color: 'var(--muted)', margin: 0, fontSize: '2.2rem', letterSpacing: '0.04em' }}>DRAW???</h1>
+            <div style={{
+              width: 72, height: 72, borderRadius: '50%', margin: 0,
+              background: 'rgba(255,255,255,0.06)', border: '2px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '2rem', color: 'var(--muted)',
+            }}>
+              =
+            </div>
+            <h1 style={{ color: 'var(--muted)', margin: 0, fontSize: '2.2rem', letterSpacing: '0.04em' }}>Draw</h1>
             <p style={{ color: 'var(--muted)', margin: 0, maxWidth: 300, lineHeight: 1.55, fontSize: '0.9rem' }}>{funnyLine}</p>
           </>
         ) : iWon ? (
           <>
-            <p style={{ fontSize: '4.5rem', margin: 0, lineHeight: 1 }}>🏆</p>
-            <h1 style={{ color: '#f1c40f', margin: 0, fontSize: '2.4rem', letterSpacing: '0.04em' }}>Victory!</h1>
+            <div style={{
+              width: 72, height: 72, borderRadius: '50%', margin: 0,
+              background: 'rgba(241,196,15,0.12)', border: '2px solid rgba(241,196,15,0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.5rem', color: '#f1c40f',
+            }}>
+              ★
+            </div>
+            <h1 style={{ color: '#f1c40f', margin: 0, fontSize: '2.4rem', letterSpacing: '0.04em' }}>Victory</h1>
             <p style={{ color: 'var(--muted)', fontSize: '1rem', margin: 0 }}>
               You defeated <strong style={{ color: 'var(--text)' }}>{them.name}</strong>
             </p>
           </>
         ) : (
           <>
-            <p style={{ fontSize: '4.5rem', margin: 0, lineHeight: 1 }}>💀</p>
+            <div style={{
+              width: 72, height: 72, borderRadius: '50%', margin: 0,
+              background: 'rgba(231,76,60,0.12)', border: '2px solid rgba(231,76,60,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '1.5rem', color: 'var(--accent)',
+            }}>
+              —
+            </div>
             <h1 style={{ color: 'var(--accent)', margin: 0, fontSize: '2.4rem', letterSpacing: '0.04em' }}>Defeat</h1>
             <p style={{ color: 'var(--muted)', fontSize: '1rem', margin: 0 }}>
               <strong style={{ color: 'var(--text)' }}>
@@ -136,7 +157,7 @@ export function GameOver({ gameState, myIndex, onPlayAgain, onRematch }: Props) 
           disabled={myVote}
           style={{ width: '100%', minHeight: 54, fontSize: '1rem', opacity: myVote ? 0.6 : 1 }}
         >
-          {myVote ? '✓ Rematch Voted' : '🔄 Rematch'}
+          {myVote ? '✓ Rematch Voted' : 'Rematch'}
         </button>
         {opponentVote && !myVote && (
           <p style={{ color: '#4ade80', fontSize: '0.88rem', margin: 0 }}>{them.name} wants a rematch!</p>

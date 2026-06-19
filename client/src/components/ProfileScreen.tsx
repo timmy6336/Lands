@@ -71,7 +71,7 @@ export function ProfileScreen({ auth, serverUrl: _serverUrl, onBack, onLogout, o
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 12px', fontSize: '2rem',
         }}>
-          🧙
+          <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{profile.username.charAt(0).toUpperCase()}</span>
         </div>
         <h2 style={{ margin: 0, fontSize: '1.6rem', color: 'var(--foreground)' }}>{profile.username}</h2>
         <span style={{
@@ -104,7 +104,7 @@ export function ProfileScreen({ auth, serverUrl: _serverUrl, onBack, onLogout, o
 
       {/* Streak */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <StatBox label="Current Streak" value={profile.win_streak > 0 ? `🔥 ${profile.win_streak}` : profile.win_streak} />
+        <StatBox label="Current Streak" value={profile.win_streak} />
         <StatBox label="Best Streak"    value={profile.best_win_streak} />
         <StatBox label="Total Games"    value={totalGames} />
       </div>
@@ -152,7 +152,7 @@ export function ProfileScreen({ auth, serverUrl: _serverUrl, onBack, onLogout, o
             fontSize: '0.95rem', minHeight: 52,
           }}
         >
-          <span>🎨 Card Skins</span>
+          <span>Card Skins</span>
           <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
             {(() => { const active = profile.active_pack_id ?? 'default'; return active === 'default' ? 'Classic' : active.charAt(0).toUpperCase() + active.slice(1); })()} →
           </span>
@@ -167,7 +167,7 @@ export function ProfileScreen({ auth, serverUrl: _serverUrl, onBack, onLogout, o
             minHeight: 48, touchAction: 'manipulation',
           }}
         >
-          <span>🛒 Pack Shop</span>
+          <span>Pack Shop</span>
           <span style={{ fontSize: '0.75rem' }}>Browse →</span>
         </button>
       </div>

@@ -56,48 +56,48 @@ export function EffectAnimation({ gameState }: Props) {
   }, [gameState.counterChain, gameState.counterChain.length]);
 
   const fireParticles = useMemo(
-    () => Array.from({ length: 12 }, () => ({
-      left: 35 + Math.random() * 30,
-      delay: Math.random() * 0.4,
-      size: 20 + Math.random() * 16,
+    () => Array.from({ length: 6 }, () => ({
+      left: 38 + Math.random() * 24,
+      delay: Math.random() * 0.3,
+      size: 14 + Math.random() * 10,
     })),
     [],
   );
 
   const greenSparkles = useMemo(
-    () => Array.from({ length: 8 }, () => ({
-      left: 40 + Math.random() * 20,
-      bottom: 10 + Math.random() * 30,
-      delay: Math.random() * 0.5,
-      drift: -20 + Math.random() * 40,
+    () => Array.from({ length: 5 }, () => ({
+      left: 42 + Math.random() * 16,
+      bottom: 15 + Math.random() * 25,
+      delay: Math.random() * 0.4,
+      drift: -15 + Math.random() * 30,
     })),
     [],
   );
 
   const playBursts = useMemo(
-    () => Array.from({ length: 10 }, (_, i) => ({
-      angle: (i * 36) + Math.random() * 18 - 9,
-      distance: 50 + Math.random() * 50,
-      delay: Math.random() * 0.12,
-      size: 6 + Math.random() * 8,
+    () => Array.from({ length: 6 }, (_, i) => ({
+      angle: (i * 60) + Math.random() * 20 - 10,
+      distance: 40 + Math.random() * 40,
+      delay: Math.random() * 0.1,
+      size: 4 + Math.random() * 5,
     })),
     [],
   );
 
   const blueOrbs = useMemo(
-    () => Array.from({ length: 6 }, (_, i) => ({
-      angle: i * 60 + Math.random() * 20,
-      delay: i * 0.08,
-      radius: 35 + Math.random() * 25,
+    () => Array.from({ length: 4 }, (_, i) => ({
+      angle: i * 90 + Math.random() * 30,
+      delay: i * 0.1,
+      radius: 30 + Math.random() * 20,
     })),
     [],
   );
 
   const blackWisps = useMemo(
-    () => Array.from({ length: 6 }, () => ({
-      left: 15 + Math.random() * 70,
-      delay: Math.random() * 0.4,
-      width: 60 + Math.random() * 140,
+    () => Array.from({ length: 4 }, () => ({
+      left: 20 + Math.random() * 60,
+      delay: Math.random() * 0.3,
+      width: 50 + Math.random() * 100,
     })),
     [],
   );
@@ -107,15 +107,15 @@ export function EffectAnimation({ gameState }: Props) {
 
   return (
     <>
-      {/* Card play — color burst from center-bottom */}
+      {/* Card play — subtle color pulse from center-bottom */}
       {playAnim && (
         <div className="effect-overlay">
           <div className="effect-play-glow" style={{
-            background: `radial-gradient(ellipse at 50% 75%, ${LAND_HEX[playAnim]}55 0%, transparent 60%)`,
+            background: `radial-gradient(ellipse at 50% 75%, ${LAND_HEX[playAnim]}44 0%, transparent 55%)`,
           }} />
           <div className="effect-play-ring" style={{
             borderColor: LAND_HEX[playAnim],
-            boxShadow: `0 0 18px ${LAND_HEX[playAnim]}88, 0 0 36px ${LAND_HEX[playAnim]}44`,
+            boxShadow: `0 0 12px ${LAND_HEX[playAnim]}66`,
           }} />
           {playBursts.map((b, i) => {
             const rad = (b.angle * Math.PI) / 180;
@@ -126,7 +126,7 @@ export function EffectAnimation({ gameState }: Props) {
                 left: '50%', bottom: '32%',
                 width: b.size, height: b.size,
                 background: LAND_HEX[playAnim],
-                boxShadow: `0 0 6px ${LAND_HEX[playAnim]}`,
+                boxShadow: `0 0 4px ${LAND_HEX[playAnim]}`,
                 animationDelay: `${b.delay}s`,
                 '--dx': `${dx}px`,
                 '--dy': `${dy}px`,
@@ -136,26 +136,24 @@ export function EffectAnimation({ gameState }: Props) {
         </div>
       )}
 
-      {/* Counter — blue shield */}
+      {/* Counter — blue shield flash */}
       {counterAnim === 'counter' && (
         <div className="effect-overlay">
           <div className="effect-counter-flash" />
           <div className="effect-counter-shield" />
-          <div className="effect-counter-text">COUNTERED</div>
         </div>
       )}
 
-      {/* Counter-counter — dual blue bolts */}
+      {/* Counter-counter — dual blue lines */}
       {counterAnim === 'counter_counter' && (
         <div className="effect-overlay">
           <div className="effect-cc-flash" />
           <div className="effect-cc-bolt" style={{ left: '48%', transform: 'translate(-50%, -50%) rotate(-12deg)' }} />
           <div className="effect-cc-bolt" style={{ left: '52%', transform: 'translate(-50%, -50%) rotate(12deg)', animationDelay: '0.06s' }} />
-          <div className="effect-counter-text">OVERRULED</div>
         </div>
       )}
 
-      {/* Red — fire */}
+      {/* Red — warm glow with rising embers */}
       {activeEffect === 'red' && (
         <div className="effect-overlay">
           <div className="effect-fire-glow" />
@@ -169,7 +167,7 @@ export function EffectAnimation({ gameState }: Props) {
         </div>
       )}
 
-      {/* Green — rising card in the actual retrieved color */}
+      {/* Green — rising card silhouette in the retrieved color */}
       {activeEffect === 'green' && (() => {
         const c = effectColor ?? 'green';
         const hex = LAND_HEX[c];
@@ -177,8 +175,8 @@ export function EffectAnimation({ gameState }: Props) {
           <div className="effect-overlay">
             <div className="effect-green-card" style={{
               borderColor: hex,
-              background: `${hex}33`,
-              boxShadow: `0 0 20px ${hex}99, 0 0 40px ${hex}4D`,
+              background: `${hex}22`,
+              boxShadow: `0 0 16px ${hex}66`,
             }} />
             {greenSparkles.map((s, i) => (
               <div key={i} className="effect-green-sparkle" style={{
@@ -186,7 +184,7 @@ export function EffectAnimation({ gameState }: Props) {
                 bottom: `${s.bottom}%`,
                 animationDelay: `${s.delay}s`,
                 background: hex,
-                boxShadow: `0 0 6px ${hex}`,
+                boxShadow: `0 0 4px ${hex}`,
                 '--drift': `${s.drift}px`,
               } as React.CSSProperties} />
             ))}
@@ -202,7 +200,7 @@ export function EffectAnimation({ gameState }: Props) {
         </div>
       )}
 
-      {/* Blue — scrying orb */}
+      {/* Blue — subtle orb pulse */}
       {activeEffect === 'blue' && (
         <div className="effect-overlay">
           <div className="effect-blue-glow" />
@@ -220,7 +218,7 @@ export function EffectAnimation({ gameState }: Props) {
         </div>
       )}
 
-      {/* Black — dark mist + skull */}
+      {/* Black — dark mist */}
       {activeEffect === 'black' && (
         <div className="effect-overlay">
           <div className="effect-black-mist" />
@@ -231,7 +229,6 @@ export function EffectAnimation({ gameState }: Props) {
               animationDelay: `${w.delay}s`,
             }} />
           ))}
-          <div className="effect-black-skull">&#128128;</div>
         </div>
       )}
     </>

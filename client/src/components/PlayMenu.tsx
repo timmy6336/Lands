@@ -19,7 +19,7 @@ export function PlayMenu({ onSinglePlayer, onMultiplayer, onBack }: Props) {
           onClick={onSinglePlayer}
           style={{ textAlign: 'left', fontSize: '1.05rem', padding: '0.9rem 1.25rem', minHeight: 64, borderRadius: 12 }}
         >
-          <span style={{ display: 'block', fontWeight: 700 }}>🌱 Single Player</span>
+          <span style={{ display: 'block', fontWeight: 700 }}>Single Player</span>
           <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 400, opacity: 0.7, marginTop: 3 }}>
             Play against AI — Easy, Medium, or Hard
           </span>
@@ -30,7 +30,7 @@ export function PlayMenu({ onSinglePlayer, onMultiplayer, onBack }: Props) {
           onClick={onMultiplayer}
           style={{ textAlign: 'left', fontSize: '1.05rem', padding: '0.9rem 1.25rem', minHeight: 64, borderRadius: 12 }}
         >
-          <span style={{ display: 'block', fontWeight: 700 }}>🌐 Multiplayer</span>
+          <span style={{ display: 'block', fontWeight: 700 }}>Multiplayer</span>
           <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 400, opacity: 0.65, marginTop: 3 }}>
             Private room or matchmaking
           </span>
