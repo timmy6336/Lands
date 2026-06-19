@@ -27,7 +27,7 @@ export function GameLog({ entries, isOpen, onClose }: Props) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem 0.5rem', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            📜 Game Log
+            Game Log
           </span>
           <button
             onClick={onClose}

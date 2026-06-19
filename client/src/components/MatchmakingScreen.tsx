@@ -42,8 +42,7 @@ export function MatchmakingScreen({ playerName, queuePosition, found, connected,
       }}>
         {found ? (
           <>
-            <p style={{ fontSize: '2.5rem', margin: 0 }}>🎮</p>
-            <p style={{ color: 'var(--text)', fontWeight: 700, margin: 0 }}>Match found!</p>
+            <p style={{ color: 'var(--text)', fontWeight: 700, fontSize: '1.1rem', margin: 0 }}>Match found!</p>
             <p style={{ color: 'var(--muted)', fontSize: '0.88rem', margin: 0 }}>Starting game…</p>
           </>
         ) : !connected ? (

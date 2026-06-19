@@ -10,10 +10,10 @@ interface Props {
 }
 
 const menuItems = [
-  { label: '▶  Play',      sub: 'Single or multiplayer',   primary: true  },
-  { label: '📖  Rules',   sub: 'Learn how to play',        primary: false },
-  { label: '▷  Replays', sub: 'Watch past games',          primary: false },
-  { label: '⚙  Settings', sub: 'Customize your experience', primary: false },
+  { label: 'Play',     sub: 'Single or multiplayer',     primary: true  },
+  { label: 'Rules',    sub: 'Learn how to play',         primary: false },
+  { label: 'Replays',  sub: 'Watch past games',          primary: false },
+  { label: 'Settings', sub: 'Customize your experience', primary: false },
 ] as const;
 
 export function HomeScreen({ onPlay, onSettings, onRules, onReplays, onProfile, onShop, username }: Props) {
@@ -42,7 +42,7 @@ export function HomeScreen({ onPlay, onSettings, onRules, onReplays, onProfile, 
             minHeight: 40,
           }}
         >
-          🛍 Shop
+          Shop
         </button>
         <button
           onClick={onProfile}
@@ -55,7 +55,7 @@ export function HomeScreen({ onPlay, onSettings, onRules, onReplays, onProfile, 
             minHeight: 40,
           }}
         >
-          {username ? `🧙 ${username}` : '👤 Sign In'}
+          {username ?? 'Sign In'}
         </button>
       </div>
 

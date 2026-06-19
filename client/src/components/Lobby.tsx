@@ -72,7 +72,7 @@ function HostLobby({ playerName, connected, roomCode, error, onCreateRoom, onBac
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button className="btn-primary" onClick={handleCreate} style={{ flex: 1, minHeight: 50 }}>
-              🖥 Create Room
+              Create Room
             </button>
             <button className="btn-secondary" onClick={onBack} style={{ flex: 1, minHeight: 50 }}>Back</button>
           </div>
@@ -84,7 +84,7 @@ function HostLobby({ playerName, connected, roomCode, error, onCreateRoom, onBac
             {roomCode}
           </p>
           <p style={{ color: 'var(--muted)', fontSize: '0.88rem', textAlign: 'center', margin: 0 }}>
-            ⏳ Waiting for your opponent to enter this code…
+            Waiting for your opponent to enter this code…
           </p>
           <button className="btn-secondary" onClick={onBack} style={{ minHeight: 48, padding: '0.6rem 1.75rem' }}>✕ Cancel</button>
         </div>
@@ -142,7 +142,7 @@ function JoinLobby({ playerName, error, onConnect, onBack }: JoinProps) {
             onClick={() => onConnect(roomCode.trim())}
             style={{ flex: 1, minHeight: 50 }}
           >
-            🔗 Connect
+            Connect
           </button>
           <button className="btn-secondary" onClick={onBack} style={{ flex: 1, minHeight: 50 }}>Back</button>
         </div>

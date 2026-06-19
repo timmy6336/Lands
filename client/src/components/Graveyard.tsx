@@ -1,4 +1,4 @@
-// Compact grave indicator: emoji + count badge. Tap to open a bottom-sheet list.
+// Compact graveyard indicator: label + count badge. Tap to open a bottom-sheet list.
 import { useState } from 'react';
 import { Card } from './Card';
 import { Card as CardType, Customizations, Color } from '@lands/shared';
@@ -31,7 +31,7 @@ export function Graveyard({ cards, customizations, label }: Props) {
           touchAction: 'manipulation', flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: '1rem', lineHeight: 1 }}>💀</span>
+        <span style={{ fontSize: '0.6rem', lineHeight: 1, fontWeight: 700, letterSpacing: '0.03em', opacity: 0.8 }}>GY</span>
         <span style={{ fontSize: '0.73rem', fontWeight: 700, lineHeight: 1 }}>{count}</span>
       </button>
 
@@ -46,7 +46,7 @@ export function Graveyard({ cards, customizations, label }: Props) {
             }}>
               <div>
                 <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  💀 {label ? `${label} ` : ''}Graveyard · {count}
+                  {label ? `${label} ` : ''}Graveyard · {count}
                 </span>
                 {count > 0 && (
                   <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>

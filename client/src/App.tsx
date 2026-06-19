@@ -383,7 +383,7 @@ function AppInner() {
               onClick={() => setScreen('host')}
               style={{ textAlign: 'left', fontSize: '1.05rem', padding: '0.9rem 1.25rem', minHeight: 64, borderRadius: 12 }}
             >
-              <span style={{ display: 'block', fontWeight: 700 }}>🖥 Host a Game</span>
+              <span style={{ display: 'block', fontWeight: 700 }}>Host a Game</span>
               <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 400, opacity: 0.7, marginTop: 3 }}>
                 Get a room code to share with your friend
               </span>
@@ -393,7 +393,7 @@ function AppInner() {
               onClick={() => setScreen('join')}
               style={{ textAlign: 'left', fontSize: '1.05rem', padding: '0.9rem 1.25rem', minHeight: 64, borderRadius: 12 }}
             >
-              <span style={{ display: 'block', fontWeight: 700 }}>🔗 Join a Game</span>
+              <span style={{ display: 'block', fontWeight: 700 }}>Join a Game</span>
               <span style={{ display: 'block', fontSize: '0.78rem', fontWeight: 400, opacity: 0.65, marginTop: 3 }}>
                 Enter the code your friend gave you
               </span>
